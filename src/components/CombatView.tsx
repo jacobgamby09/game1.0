@@ -1,7 +1,21 @@
 import { useEffect } from 'react'
-import { Swords, Shield, Plus, Skull, Tent, Archive } from 'lucide-react'
-import { useGameStore } from '../stores/useGameStore'
-import type { Player, Mob, MapNode } from '../stores/useGameStore'
+import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap } from 'lucide-react'
+import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
+import type { Player, Mob, MapNode, Item, EquipSlot } from '../stores/useGameStore'
+
+// ─── Slot icon maps (shared by LootCard) ──────────────────────────────────────
+
+const SLOT_ICONS: Record<EquipSlot, React.ElementType> = {
+  head: Crown, chest: Shirt, legs: Layers,
+  mainHand: Swords, offHand: Shield,
+  amulet: Gem, ring1: Circle, ring2: Circle, spell: Zap,
+}
+
+const SLOT_LABELS: Record<EquipSlot, string> = {
+  head: 'Head', chest: 'Chest', legs: 'Legs',
+  mainHand: 'Main Hand', offHand: 'Off Hand',
+  amulet: 'Amulet', ring1: 'Ring 1', ring2: 'Ring 2', spell: 'Spell',
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -238,11 +252,17 @@ interface ActiveSkillsProps {
   shieldBashCooldown: number
   onShieldBash: () => void
   isCombatActive: boolean
+  spellItem: Item | null
+  equippedSpellCooldown: number
+  onUseSpell: () => void
 }
 
-function ActiveSkills({ shieldBashCooldown, onShieldBash, isCombatActive }: ActiveSkillsProps) {
+function ActiveSkills({ shieldBashCooldown, onShieldBash, isCombatActive, spellItem, equippedSpellCooldown, onUseSpell }: ActiveSkillsProps) {
   const bashReady = shieldBashCooldown <= 0
   const bashDisabled = !isCombatActive || !bashReady
+
+  const spellReady = equippedSpellCooldown <= 0
+  const spellDisabled = !isCombatActive || !spellReady
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-3">
@@ -263,10 +283,25 @@ function ActiveSkills({ shieldBashCooldown, onShieldBash, isCombatActive }: Acti
           {bashReady ? 'Shield Bash' : `${(shieldBashCooldown / 1000).toFixed(1)}s`}
         </button>
 
-        <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-dashed border-gray-700 text-gray-600 opacity-40 cursor-not-allowed select-none">
-          <Plus size={16} />
-          Empty Slot
-        </div>
+        {spellItem?.ability ? (
+          <button
+            onClick={onUseSpell}
+            disabled={spellDisabled}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
+              ${spellReady && isCombatActive
+                ? 'border border-orange-500 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 ring-1 ring-orange-400/50'
+                : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
+              }`}
+          >
+            <Flame size={16} />
+            {spellReady ? spellItem.ability.name : `${(equippedSpellCooldown / 1000).toFixed(1)}s`}
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-dashed border-gray-700 text-gray-600 opacity-40 cursor-not-allowed select-none">
+            <Plus size={16} />
+            Empty Slot
+          </div>
+        )}
       </div>
     </div>
   )
@@ -277,14 +312,20 @@ function ActiveSkills({ shieldBashCooldown, onShieldBash, isCombatActive }: Acti
 function CombatArena() {
   const {
     player,
+    equipment,
     currentMob,
     playerAttackProgress,
     mobAttackProgress,
     isCombatActive,
     shieldBashCooldown,
+    equippedSpellCooldown,
     useShieldBash,
+    useEquippedSpell,
     resetRun,
   } = useGameStore()
+
+  const eff = getEffectiveStats(player, equipment)
+  const displayPlayer = { ...player, maxHp: eff.maxHp, baseDamage: eff.damage, attackSpeed: eff.attackSpeed }
 
   useEffect(() => {
     if (!isCombatActive) return
@@ -307,7 +348,7 @@ function CombatArena() {
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-3xl">
         <div className="flex flex-col gap-4 flex-1">
           <CombatantPanel
-            combatant={player}
+            combatant={displayPlayer}
             attackProgress={playerAttackProgress}
             atkBarColor="amber"
             icon={<Swords size={20} />}
@@ -316,6 +357,9 @@ function CombatArena() {
             shieldBashCooldown={shieldBashCooldown}
             onShieldBash={useShieldBash}
             isCombatActive={isCombatActive}
+            spellItem={equipment.spell}
+            equippedSpellCooldown={equippedSpellCooldown}
+            onUseSpell={useEquippedSpell}
           />
         </div>
 
@@ -346,6 +390,73 @@ function CombatArena() {
   )
 }
 
+// ─── LootCard ─────────────────────────────────────────────────────────────────
+
+function LootCard({ item, onSelect }: { item: Item; onSelect: () => void }) {
+  const Icon = SLOT_ICONS[item.equipSlot]
+  const rc = RARITY_COLORS[item.rarity]
+  return (
+    <div
+      onClick={onSelect}
+      className={`bg-gray-900 border rounded-2xl p-6 w-56 flex flex-col gap-4
+                  hover:bg-gray-800/80 transition-all duration-200 cursor-pointer group
+                  ${rc.border} ${rc.glow}`}
+    >
+      <div className="flex justify-center">
+        <div className="w-20 h-20 rounded-xl bg-amber-500/10 border border-amber-500/30
+                        flex items-center justify-center text-amber-400
+                        group-hover:bg-amber-500/20 transition-colors">
+          <Icon size={40} />
+        </div>
+      </div>
+
+      <div className="text-center">
+        <p className={`font-bold text-lg leading-tight ${rc.text}`}>{item.name}</p>
+        <p className="text-gray-500 text-xs">{SLOT_LABELS[item.equipSlot]}</p>
+        <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${rc.text}`}>{item.rarity}</p>
+      </div>
+
+      <p className="text-gray-400 text-sm italic text-center leading-snug">{item.description}</p>
+
+      <div className="flex flex-col gap-1">
+        {item.stats.damage      !== undefined && <p className="text-red-400 text-sm font-semibold">+{item.stats.damage} Damage</p>}
+        {item.stats.hp          !== undefined && <p className="text-green-400 text-sm font-semibold">+{item.stats.hp} Max HP</p>}
+        {item.stats.attackSpeed !== undefined && <p className="text-blue-400 text-sm font-semibold">+{item.stats.attackSpeed.toFixed(1)} Atk Speed</p>}
+        {item.ability && <p className="text-orange-400 text-sm font-semibold">✦ {item.ability.name}: {item.ability.description}</p>}
+      </div>
+
+      <button className="mt-auto w-full bg-amber-500/20 border border-amber-500 text-amber-300
+                         py-2 rounded-lg font-bold text-sm uppercase tracking-widest
+                         hover:bg-amber-500/30 transition-colors">
+        Claim
+      </button>
+    </div>
+  )
+}
+
+// ─── LootSelectionOverlay ─────────────────────────────────────────────────────
+
+function LootSelectionOverlay() {
+  const { lootChoices, isLootPickerVisible, selectLoot } = useGameStore()
+  if (!isLootPickerVisible) return null
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="flex flex-col items-center gap-8">
+        <div className="text-center">
+          <p className="text-xs text-amber-400/60 uppercase tracking-widest mb-1">Treasure Found</p>
+          <h2 className="text-3xl font-bold tracking-widest uppercase text-white">Choose Your Reward</h2>
+        </div>
+        <div className="flex gap-6 flex-wrap justify-center">
+          {lootChoices.map((item) => (
+            <LootCard key={item.id} item={item} onSelect={() => selectLoot(item)} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── CombatView (root) ────────────────────────────────────────────────────────
 
 export default function CombatView() {
@@ -356,5 +467,10 @@ export default function CombatView() {
     if (act1Map.length === 0) generateMap()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return isMapVisible ? <MapView /> : <CombatArena />
+  return (
+    <>
+      {isMapVisible ? <MapView /> : <CombatArena />}
+      <LootSelectionOverlay />
+    </>
+  )
 }
