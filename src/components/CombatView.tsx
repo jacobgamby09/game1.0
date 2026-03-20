@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap, Heart } from 'lucide-react'
 import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
-import type { Player, Mob, MapNode, Item, EquipSlot } from '../stores/useGameStore'
+import type { Player, Mob, MapNode, Item, EquipSlot, MobTier } from '../stores/useGameStore'
 
 // ─── Slot icon maps (shared by LootCard) ──────────────────────────────────────
 
@@ -224,20 +224,41 @@ interface PanelProps {
   attackProgress: number
   atkBarColor: 'amber' | 'orange'
   icon: React.ReactNode
+  tier?: MobTier
 }
 
-function CombatantPanel({ combatant, attackProgress, atkBarColor, icon }: PanelProps) {
+function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier }: PanelProps) {
   const hpPct = Math.max(0, (combatant.currentHp / combatant.maxHp) * 100)
   const atkPct = Math.min(100, attackProgress)
   const atkFill = atkBarColor === 'amber' ? 'bg-amber-400' : 'bg-orange-500'
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <span className="text-amber-400">{icon}</span>
-        <h2 className="text-lg font-bold tracking-widest uppercase text-white">
-          {combatant.name}
-        </h2>
+      <div className="flex flex-col gap-1">
+        {tier === 'elite' && (
+          <span className="self-start text-[10px] font-bold tracking-widest uppercase
+                           text-red-400 bg-red-900/40 border border-red-700/50 px-2 py-0.5 rounded">
+            ⚡ ELITE
+          </span>
+        )}
+        {tier === 'boss' && (
+          <span className="self-start text-[10px] font-bold tracking-widest uppercase
+                           text-purple-300 bg-purple-900/40 border border-purple-600/50 px-2 py-0.5 rounded animate-pulse">
+            ☠ BOSS
+          </span>
+        )}
+        <div className="flex items-center gap-2">
+          <span className="text-amber-400">{icon}</span>
+          <h2 className={`font-bold tracking-widest uppercase ${
+            tier === 'boss'
+              ? 'text-2xl text-purple-300 drop-shadow-[0_0_12px_rgb(168_85_247)]'
+              : tier === 'elite'
+              ? 'text-lg text-red-400 drop-shadow-[0_0_8px_rgb(239_68_68)]'
+              : 'text-lg text-white'
+          }`}>
+            {combatant.name}
+          </h2>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1">
@@ -397,6 +418,7 @@ function CombatArena() {
             attackProgress={mobAttackProgress}
             atkBarColor="orange"
             icon={<Shield size={20} />}
+            tier={currentMob.tier}
           />
         </div>
       </div>

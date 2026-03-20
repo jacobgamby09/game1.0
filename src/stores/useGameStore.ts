@@ -93,12 +93,15 @@ export interface Player {
   attackSpeed: number // attacks per second
 }
 
+export type MobTier = 'normal' | 'elite' | 'boss'
+
 export interface Mob {
   name: string
   maxHp: number
   currentHp: number
   baseDamage: number
   attackSpeed: number // attacks per second
+  tier: MobTier
 }
 
 export interface MapNode {
@@ -119,12 +122,55 @@ const DEFAULT_PLAYER: Player = {
   attackSpeed: 1.2,
 }
 
-const ORC_GRUNT: Mob = {
-  name: 'Orc Grunt',
-  maxHp: 80,
-  currentHp: 80,
-  baseDamage: 8,
-  attackSpeed: 0.8,
+const DEFAULT_MOB: Mob = {
+  name: 'Orc Warrior', maxHp: 40, currentHp: 40,
+  baseDamage: 7, attackSpeed: 1.5, tier: 'normal',
+}
+
+// ─── Bestiary ─────────────────────────────────────────────────────────────────
+
+type MobBase = Omit<Mob, 'tier' | 'currentHp'>
+
+const BESTIARY: MobBase[] = [
+  { name: 'Goblin Rogue',  maxHp: 20,  baseDamage: 3,  attackSpeed: 0.8 },
+  { name: 'Undead Brute',  maxHp: 60,  baseDamage: 12, attackSpeed: 2.5 },
+  { name: 'Orc Warrior',   maxHp: 40,  baseDamage: 7,  attackSpeed: 1.5 },
+]
+
+const VOID_WARDEN_BASE: MobBase = {
+  name: 'The Void Warden', maxHp: 200, baseDamage: 15, attackSpeed: 1.8,
+}
+
+function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob {
+  const floorMult = 1 + floor * 0.25
+
+  let base: MobBase
+  let tier: MobTier
+
+  if (nodeType === 'boss') {
+    base = { ...VOID_WARDEN_BASE }
+    tier = 'boss'
+  } else {
+    base = { ...BESTIARY[Math.floor(Math.random() * BESTIARY.length)] }
+    if (nodeType === 'elite') {
+      base = { ...base, maxHp: base.maxHp * 2, baseDamage: base.baseDamage * 2 }
+      tier = 'elite'
+    } else {
+      tier = 'normal'
+    }
+  }
+
+  const scaledHp  = Math.round(base.maxHp     * floorMult)
+  const scaledDmg = Math.round(base.baseDamage * floorMult)
+
+  return {
+    name:        base.name,
+    maxHp:       scaledHp,
+    currentHp:   scaledHp,
+    baseDamage:  scaledDmg,
+    attackSpeed: base.attackSpeed,
+    tier,
+  }
 }
 
 const EMPTY_EQUIPMENT: Record<EquipSlot, Item | null> = {
@@ -214,6 +260,8 @@ function buildMap(): MapNode[][] {
 
     if (f === 1) {
       types = ['mob']
+    } else if (f === 5 || f === 8) {
+      types = ['elite']
     } else if (f === 11) {
       types = ['boss']
     } else {
@@ -438,7 +486,7 @@ export const useGameStore = create<GameStore>((set) => ({
         return {
           currentMapNodeId: nodeId,
           isMapVisible: false,
-          currentMob: { ...ORC_GRUNT },
+          currentMob: spawnMob(node.floor, node.type),
           playerAttackProgress: 0,
           mobAttackProgress: 0,
           shieldBashCooldown: 0,
@@ -477,7 +525,7 @@ export const useGameStore = create<GameStore>((set) => ({
 
   // ── Combat state ────────────────────────────────────────────────────────────
   player: { ...DEFAULT_PLAYER },
-  currentMob: { ...ORC_GRUNT },
+  currentMob: { ...DEFAULT_MOB },
   playerAttackProgress: 0,
   mobAttackProgress: 0,
   isCombatActive: false,
@@ -501,7 +549,7 @@ export const useGameStore = create<GameStore>((set) => ({
   // ── startCombat ─────────────────────────────────────────────────────────────
   startCombat: () =>
     set({
-      currentMob: { ...ORC_GRUNT },
+      currentMob: { ...DEFAULT_MOB },
       playerAttackProgress: 0,
       mobAttackProgress: 0,
       shieldBashCooldown: 0,
@@ -566,7 +614,7 @@ export const useGameStore = create<GameStore>((set) => ({
         isMapVisible: false,
         activeView: 'hub' as const,
         player: { ...DEFAULT_PLAYER, currentHp: effMaxHp },
-        currentMob: { ...ORC_GRUNT },
+        currentMob: { ...DEFAULT_MOB },
         playerAttackProgress: 0,
         mobAttackProgress: 0,
         shieldBashCooldown: 0,
