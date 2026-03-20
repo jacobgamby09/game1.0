@@ -1,0 +1,360 @@
+import { useEffect } from 'react'
+import { Swords, Shield, Plus, Skull, Tent, Archive } from 'lucide-react'
+import { useGameStore } from '../stores/useGameStore'
+import type { Player, Mob, MapNode } from '../stores/useGameStore'
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const CONTAINER_W = 320
+const FLOOR_H = 60
+const NODE_R = 24 // radius of node circle
+
+function nodeX(nodesOnFloor: number, index: number): number {
+  return (CONTAINER_W / (nodesOnFloor + 1)) * (index + 1)
+}
+
+function nodeY(floor: number): number {
+  return (11 - floor) * FLOOR_H + FLOOR_H / 2
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function hpColor(pct: number): string {
+  if (pct > 50) return 'bg-green-500'
+  if (pct > 25) return 'bg-yellow-500'
+  return 'bg-red-500'
+}
+
+function NodeIcon({ type, size = 16 }: { type: MapNode['type']; size?: number }) {
+  if (type === 'mob')   return <Swords size={size} />
+  if (type === 'elite') return <Skull size={size} />
+  if (type === 'boss')  return <Skull size={size} />
+  if (type === 'rest')  return <Tent size={size} />
+  if (type === 'chest') return <Archive size={size} />
+  return null
+}
+
+// ─── MapView ──────────────────────────────────────────────────────────────────
+
+function MapView() {
+  const { act1Map, currentFloor, currentMapNodeId, playerXp, chooseNode } = useGameStore()
+
+  const allNodes = act1Map.flat()
+  const prevNode = allNodes.find((n) => n.id === currentMapNodeId) ?? null
+  const totalH = 11 * FLOOR_H
+
+  // A node is selectable if it's on the current floor and connected from the prev node
+  function isAvailable(node: MapNode): boolean {
+    if (node.floor !== currentFloor) return false
+    if (node.isCompleted) return false
+    if (currentMapNodeId === null) return true // floor 1: all open
+    return prevNode?.connectedTo.includes(node.id) ?? false
+  }
+
+  // Edge color for SVG lines
+  function edgeColor(fromNode: MapNode): string {
+    if (fromNode.isCompleted) return '#6b7280' // gray-500 past path
+    if (fromNode.id === currentMapNodeId) return '#f59e0b' // amber-400 active path
+    return '#374151' // gray-700 locked
+  }
+
+  const actComplete = currentFloor > 11
+
+  return (
+    <div className="flex flex-col items-center w-full min-h-full p-4 gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between w-full max-w-sm">
+        <div className="flex items-center gap-2">
+          <Swords className="text-amber-400" size={20} />
+          <h1 className="text-lg font-bold tracking-widest uppercase text-white">
+            Act 1: The Ascent
+          </h1>
+        </div>
+        <div className="flex items-center gap-3 text-xs font-semibold text-gray-400">
+          <span className="text-amber-400">⭐ {playerXp} XP</span>
+          <span>Floor {Math.min(currentFloor, 11)} / 11</span>
+        </div>
+      </div>
+
+      {actComplete && (
+        <p className="text-amber-400 text-xl font-bold tracking-widest uppercase animate-pulse">
+          ✨ Act 1 Complete!
+        </p>
+      )}
+
+      {/* Map container */}
+      <div
+        className="relative bg-gray-950 border border-gray-800 rounded-xl overflow-hidden"
+        style={{ width: CONTAINER_W, height: totalH }}
+      >
+        {/* SVG connection lines */}
+        <svg
+          className="absolute inset-0 pointer-events-none"
+          width={CONTAINER_W}
+          height={totalH}
+        >
+          {act1Map.map((floorNodes) =>
+            floorNodes.map((node) =>
+              node.connectedTo.map((toId) => {
+                const toNode = allNodes.find((n) => n.id === toId)
+                if (!toNode) return null
+                const x1 = nodeX(floorNodes.length, floorNodes.indexOf(node))
+                const y1 = nodeY(node.floor)
+                const toFloor = act1Map[toNode.floor - 1]
+                const x2 = nodeX(toFloor.length, toFloor.indexOf(toNode))
+                const y2 = nodeY(toNode.floor)
+                const color = edgeColor(node)
+                return (
+                  <line
+                    key={`${node.id}-${toId}`}
+                    x1={x1} y1={y1}
+                    x2={x2} y2={y2}
+                    stroke={color}
+                    strokeWidth={node.id === currentMapNodeId ? 2 : 1.5}
+                    strokeDasharray={node.isCompleted ? '4 3' : undefined}
+                    opacity={node.isCompleted ? 0.5 : 0.8}
+                  />
+                )
+              })
+            )
+          )}
+        </svg>
+
+        {/* Node buttons */}
+        {act1Map.map((floorNodes) =>
+          floorNodes.map((node, idx) => {
+            const cx = nodeX(floorNodes.length, idx)
+            const cy = nodeY(node.floor)
+            const available = isAvailable(node)
+            const isCurrent = node.id === currentMapNodeId
+            const isBoss = node.type === 'boss'
+
+            let btnClass = 'absolute flex items-center justify-center rounded-full border-2 transition-all duration-200 '
+            if (node.isCompleted || isCurrent) {
+              btnClass += 'bg-gray-800 border-gray-600 text-gray-400 opacity-50 cursor-default'
+            } else if (available) {
+              btnClass += isBoss
+                ? 'bg-red-900/40 border-red-500 text-red-300 ring-2 ring-red-400/40 hover:bg-red-500/30 cursor-pointer scale-110'
+                : 'bg-amber-500/20 border-amber-400 text-amber-300 ring-2 ring-amber-400/40 hover:bg-amber-500/30 cursor-pointer scale-110'
+            } else if (node.floor < currentFloor) {
+              btnClass += 'bg-gray-800 border-gray-700 text-gray-400 opacity-50 cursor-default'
+            } else {
+              btnClass += 'bg-gray-800 border-gray-600 text-gray-300 opacity-70 cursor-default'
+            }
+
+            return (
+              <button
+                key={node.id}
+                disabled={!available}
+                onClick={() => chooseNode(node.id)}
+                title={node.type.charAt(0).toUpperCase() + node.type.slice(1)}
+                className={btnClass}
+                style={{
+                  width: NODE_R * 2,
+                  height: NODE_R * 2,
+                  left: cx - NODE_R,
+                  top: cy - NODE_R,
+                }}
+              >
+                <NodeIcon type={node.type} size={18} />
+              </button>
+            )
+          })
+        )}
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap justify-center gap-3 text-xs text-gray-500 max-w-sm">
+        {([['mob','Mob'],['elite','Elite'],['boss','Boss'],['rest','Rest'],['chest','Chest']] as const).map(([type, label]) => (
+          <span key={type} className="flex items-center gap-1">
+            <NodeIcon type={type} size={12} />
+            {label}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── CombatantPanel ───────────────────────────────────────────────────────────
+
+interface PanelProps {
+  combatant: Player | Mob
+  attackProgress: number
+  atkBarColor: 'amber' | 'orange'
+  icon: React.ReactNode
+}
+
+function CombatantPanel({ combatant, attackProgress, atkBarColor, icon }: PanelProps) {
+  const hpPct = Math.max(0, (combatant.currentHp / combatant.maxHp) * 100)
+  const atkPct = Math.min(100, attackProgress)
+  const atkFill = atkBarColor === 'amber' ? 'bg-amber-400' : 'bg-orange-500'
+
+  return (
+    <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <span className="text-amber-400">{icon}</span>
+        <h2 className="text-lg font-bold tracking-widest uppercase text-white">
+          {combatant.name}
+        </h2>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex justify-between text-xs text-gray-400 font-semibold uppercase tracking-wider">
+          <span>HP</span>
+          <span>{combatant.currentHp} / {combatant.maxHp}</span>
+        </div>
+        <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-150 ${hpColor(hpPct)}`}
+            style={{ width: `${hpPct}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex justify-between text-xs text-gray-400 font-semibold uppercase tracking-wider">
+          <span>Attack</span>
+          <span>{Math.floor(atkPct)}%</span>
+        </div>
+        <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-100 ${atkFill}`}
+            style={{ width: `${atkPct}%` }}
+          />
+        </div>
+      </div>
+
+      <p className="text-xs text-gray-500 tracking-wide">
+        {combatant.baseDamage} dmg &nbsp;·&nbsp; {combatant.attackSpeed}/s
+      </p>
+    </div>
+  )
+}
+
+// ─── ActiveSkills ─────────────────────────────────────────────────────────────
+
+interface ActiveSkillsProps {
+  shieldBashCooldown: number
+  onShieldBash: () => void
+  isCombatActive: boolean
+}
+
+function ActiveSkills({ shieldBashCooldown, onShieldBash, isCombatActive }: ActiveSkillsProps) {
+  const bashReady = shieldBashCooldown <= 0
+  const bashDisabled = !isCombatActive || !bashReady
+
+  return (
+    <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-3">
+      <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">
+        Active Skills
+      </p>
+      <div className="flex gap-3">
+        <button
+          onClick={onShieldBash}
+          disabled={bashDisabled}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
+            ${bashReady && isCombatActive
+              ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 ring-1 ring-amber-400/50'
+              : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
+            }`}
+        >
+          <Shield size={16} />
+          {bashReady ? 'Shield Bash' : `${(shieldBashCooldown / 1000).toFixed(1)}s`}
+        </button>
+
+        <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-dashed border-gray-700 text-gray-600 opacity-40 cursor-not-allowed select-none">
+          <Plus size={16} />
+          Empty Slot
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── CombatArena ─────────────────────────────────────────────────────────────
+
+function CombatArena() {
+  const {
+    player,
+    currentMob,
+    playerAttackProgress,
+    mobAttackProgress,
+    isCombatActive,
+    shieldBashCooldown,
+    useShieldBash,
+    resetRun,
+  } = useGameStore()
+
+  useEffect(() => {
+    if (!isCombatActive) return
+    const id = setInterval(() => useGameStore.getState().tickCombat(), 50)
+    return () => clearInterval(id)
+  }, [isCombatActive])
+
+  const playerLost = !isCombatActive && player.currentHp <= 0
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-full p-4 gap-6">
+      <div className="flex items-center gap-3">
+        <Swords className="text-amber-400" size={28} />
+        <h1 className="text-2xl font-bold tracking-widest uppercase text-white">
+          Battle Arena
+        </h1>
+        <Swords className="text-amber-400 scale-x-[-1]" size={28} />
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-3xl">
+        <div className="flex flex-col gap-4 flex-1">
+          <CombatantPanel
+            combatant={player}
+            attackProgress={playerAttackProgress}
+            atkBarColor="amber"
+            icon={<Swords size={20} />}
+          />
+          <ActiveSkills
+            shieldBashCooldown={shieldBashCooldown}
+            onShieldBash={useShieldBash}
+            isCombatActive={isCombatActive}
+          />
+        </div>
+
+        <div className="flex-1">
+          <CombatantPanel
+            combatant={currentMob}
+            attackProgress={mobAttackProgress}
+            atkBarColor="orange"
+            icon={<Shield size={20} />}
+          />
+        </div>
+      </div>
+
+      {playerLost && (
+        <>
+          <p className="text-red-500 text-xl font-bold tracking-widest uppercase animate-pulse">
+            💀 Defeated!
+          </p>
+          <button
+            onClick={resetRun}
+            className="border border-red-800 text-red-400 px-8 py-3 rounded-lg uppercase tracking-widest font-bold hover:bg-red-900/20 transition-colors"
+          >
+            Return to Hub
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── CombatView (root) ────────────────────────────────────────────────────────
+
+export default function CombatView() {
+  const { act1Map, isMapVisible, generateMap } = useGameStore()
+
+  // Generate map on first mount
+  useEffect(() => {
+    if (act1Map.length === 0) generateMap()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return isMapVisible ? <MapView /> : <CombatArena />
+}
