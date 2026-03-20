@@ -15,6 +15,23 @@ const BRANCH_META: Record<TalentBranch, { label: string; Icon: React.ElementType
   celerity: { label: 'Celerity', Icon: Zap,    color: 'text-blue-400',  dimColor: 'text-blue-900'   },
 }
 
+// ─── Stat color map ───────────────────────────────────────────────────────────
+
+const STAT_COLOR: Record<string, string> = {
+  hp:                   'text-green-400',
+  damage:               'text-red-400',
+  attackSpeed:          'text-blue-400',
+  damageReduction:      'text-orange-400',
+  critChance:           'text-yellow-400',
+  dodgeChance:          'text-cyan-400',
+  lifesteal:            'text-emerald-400',
+  postCombatHealPct:    'text-green-300',
+  eliteBonusMultiplier: 'text-red-300',
+  executionThreshold:   'text-purple-400',
+  undying:              'text-amber-300',
+  frenzy:               'text-orange-400',
+}
+
 // ─── TalentCard ───────────────────────────────────────────────────────────────
 
 interface TalentCardProps {
@@ -72,31 +89,21 @@ function TalentCard({ node, currentRank, availablePoints, prereqMet, onUpgrade }
     >
       <Icon size={14} className={iconColor} />
       <p className={`text-[9px] sm:text-[11px] font-bold text-center leading-tight ${nameClass}`}>{node.name}</p>
+      <p className={`text-[7px] sm:text-[8px] text-center leading-tight ${
+        isMaxRank ? 'text-amber-400/70' : (STAT_COLOR[node.effect.stat] ?? 'text-gray-500')
+      }`}>
+        {node.description}
+      </p>
 
-      {/* Rank dots */}
-      <div className="flex gap-0.5">
-        {Array.from({ length: node.maxRank }).map((_, i) => (
-          <span
-            key={i}
-            className={`text-[8px] sm:text-[10px] leading-none ${
-              i < currentRank
-                ? isMaxRank ? 'text-amber-400' : meta.color
-                : 'text-gray-700'
-            }`}
-          >
-            {i < currentRank ? '●' : '○'}
-          </span>
-        ))}
+      {/* Point investment */}
+      <div className={`text-[8px] sm:text-[9px] font-bold tabular-nums ${
+        isMaxRank ? 'text-amber-400' : canUpgrade ? meta.color : 'text-gray-600'
+      }`}>
+        {currentRank} / {node.maxRank}
+        {!isMaxRank && (
+          <span className="text-gray-600 font-normal"> · {node.costPerRank}pt</span>
+        )}
       </div>
-
-      {/* Cost / maxed */}
-      {!isMaxRank && (
-        <div className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest ${
-          canUpgrade ? meta.color : 'text-gray-700'
-        }`}>
-          {node.costPerRank} pt{node.costPerRank !== 1 ? 's' : ''}
-        </div>
-      )}
     </button>
   )
 }

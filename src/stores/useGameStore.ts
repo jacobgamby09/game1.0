@@ -32,32 +32,31 @@ export interface TalentNode {
   tier: number              // 1 = top of branch; tier N requires tier N-1 rank >= 1
   effect: {
     type: 'flat' | 'percent'
-    stat: 'hp' | 'damage' | 'attackSpeed'
+    stat: 'hp' | 'damage' | 'attackSpeed' | 'damageReduction' | 'critChance' | 'dodgeChance'
+        | 'lifesteal' | 'postCombatHealPct' | 'eliteBonusMultiplier' | 'executionThreshold'
+        | 'undying' | 'frenzy'
     valuePerRank: number
   }
 }
 
 export const TALENT_TREE: TalentNode[] = [
-  // ── Vitality (HP) ──────────────────────────────────────────────────────────
-  { id:'vit_1', branch:'vitality', tier:1, name:'Fortitude',      description:'+5 Max HP per rank',        maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'hp',          valuePerRank:5    }},
-  { id:'vit_2', branch:'vitality', tier:2, name:'Iron Flesh',     description:'+10 Max HP per rank',       maxRank:5, costPerRank:2, effect:{type:'flat',    stat:'hp',          valuePerRank:10   }},
-  { id:'vit_3', branch:'vitality', tier:3, name:'Endurance',      description:'+15 Max HP per rank',       maxRank:4, costPerRank:3, effect:{type:'flat',    stat:'hp',          valuePerRank:15   }},
-  { id:'vit_4', branch:'vitality', tier:4, name:'Undying',        description:'+4% Max HP per rank',       maxRank:3, costPerRank:4, effect:{type:'percent', stat:'hp',          valuePerRank:0.04 }},
-  { id:'vit_5', branch:'vitality', tier:5, name:"Titan's Heart",  description:'+30 Max HP per rank',       maxRank:2, costPerRank:5, effect:{type:'flat',    stat:'hp',          valuePerRank:30   }},
+  // ── Vitality ──────────────────────────────────────────────────────────────
+  { id:'vit_1', branch:'vitality', tier:1, name:'Fortitude',    description:'+5 Max HP per point',               maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'hp',                   valuePerRank:5    }},
+  { id:'vit_2', branch:'vitality', tier:2, name:'Thick Skin',   description:'+1 Damage Reduction per point',     maxRank:3, costPerRank:1, effect:{type:'flat',    stat:'damageReduction',       valuePerRank:1    }},
+  { id:'vit_3', branch:'vitality', tier:3, name:'Field Medic',  description:'Heal 5% Max HP after combat/point', maxRank:3, costPerRank:2, effect:{type:'flat',    stat:'postCombatHealPct',     valuePerRank:0.05 }},
+  { id:'vit_4', branch:'vitality', tier:4, name:'Undying',      description:'Revive once per run at 30% HP',     maxRank:1, costPerRank:3, effect:{type:'flat',    stat:'undying',               valuePerRank:1    }},
 
-  // ── Might (Damage) ─────────────────────────────────────────────────────────
-  { id:'mgt_1', branch:'might',    tier:1, name:'Brutality',      description:'+1 Damage per rank',        maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'damage',      valuePerRank:1    }},
-  { id:'mgt_2', branch:'might',    tier:2, name:'Power Strike',   description:'+2 Damage per rank',        maxRank:5, costPerRank:2, effect:{type:'flat',    stat:'damage',      valuePerRank:2    }},
-  { id:'mgt_3', branch:'might',    tier:3, name:'War Craft',      description:'+3 Damage per rank',        maxRank:4, costPerRank:3, effect:{type:'flat',    stat:'damage',      valuePerRank:3    }},
-  { id:'mgt_4', branch:'might',    tier:4, name:'Executioner',    description:'+4% Damage per rank',       maxRank:3, costPerRank:4, effect:{type:'percent', stat:'damage',      valuePerRank:0.04 }},
-  { id:'mgt_5', branch:'might',    tier:5, name:'Berserker',      description:'+5 Damage per rank',        maxRank:2, costPerRank:5, effect:{type:'flat',    stat:'damage',      valuePerRank:5    }},
+  // ── Might ─────────────────────────────────────────────────────────────────
+  { id:'mgt_1', branch:'might',    tier:1, name:'Brutality',    description:'+1 Base Damage per point',          maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'damage',                valuePerRank:1    }},
+  { id:'mgt_2', branch:'might',    tier:2, name:'Precision',    description:'+5% Crit Chance per point',         maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'critChance',            valuePerRank:0.05 }},
+  { id:'mgt_3', branch:'might',    tier:3, name:'Giant Slayer', description:'+15% dmg vs Elites & Bosses/point', maxRank:3, costPerRank:2, effect:{type:'flat',    stat:'eliteBonusMultiplier',  valuePerRank:0.15 }},
+  { id:'mgt_4', branch:'might',    tier:4, name:'Executioner',  description:'Instantly kill enemies below 15%',  maxRank:1, costPerRank:3, effect:{type:'flat',    stat:'executionThreshold',    valuePerRank:0.15 }},
 
-  // ── Celerity (Attack Speed) ────────────────────────────────────────────────
-  { id:'cel_1', branch:'celerity', tier:1, name:'Quick Hands',    description:'+0.05 Atk Speed per rank',  maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'attackSpeed', valuePerRank:0.05 }},
-  { id:'cel_2', branch:'celerity', tier:2, name:'Nimble',         description:'+0.08 Atk Speed per rank',  maxRank:5, costPerRank:2, effect:{type:'flat',    stat:'attackSpeed', valuePerRank:0.08 }},
-  { id:'cel_3', branch:'celerity', tier:3, name:'Flurry',         description:'+0.12 Atk Speed per rank',  maxRank:4, costPerRank:3, effect:{type:'flat',    stat:'attackSpeed', valuePerRank:0.12 }},
-  { id:'cel_4', branch:'celerity', tier:4, name:'Blur',           description:'+4% Atk Speed per rank',    maxRank:3, costPerRank:4, effect:{type:'percent', stat:'attackSpeed', valuePerRank:0.04 }},
-  { id:'cel_5', branch:'celerity', tier:5, name:'Tempest',        description:'+0.20 Atk Speed per rank',  maxRank:2, costPerRank:5, effect:{type:'flat',    stat:'attackSpeed', valuePerRank:0.20 }},
+  // ── Celerity ──────────────────────────────────────────────────────────────
+  { id:'cel_1', branch:'celerity', tier:1, name:'Quick Hands',  description:'+5% Attack Speed per point',        maxRank:5, costPerRank:1, effect:{type:'percent', stat:'attackSpeed',           valuePerRank:0.05 }},
+  { id:'cel_2', branch:'celerity', tier:2, name:'Agility',      description:'+3% Dodge Chance per point',        maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'dodgeChance',           valuePerRank:0.03 }},
+  { id:'cel_3', branch:'celerity', tier:3, name:'Vampirism',    description:'+1 Lifesteal per point',            maxRank:3, costPerRank:2, effect:{type:'flat',    stat:'lifesteal',             valuePerRank:1    }},
+  { id:'cel_4', branch:'celerity', tier:4, name:'Frenzy',       description:'2× Attack Speed below 30% HP',      maxRank:1, costPerRank:3, effect:{type:'flat',    stat:'frenzy',                valuePerRank:1    }},
 ]
 
 export function computeAvailablePoints(totalXp: number, talents: Record<string, number>): number {
@@ -142,7 +141,7 @@ const VOID_WARDEN_BASE: MobBase = {
 }
 
 function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob {
-  const floorMult = 1 + floor * 0.25
+  const floorMult = 1 + floor * 0.12
 
   let base: MobBase
   let tier: MobTier
@@ -317,19 +316,30 @@ export function getEffectiveStats(
 
   let flatHp = 0, flatDmg = 0, flatSpd = 0
   let pctHp  = 0, pctDmg  = 0, pctSpd  = 0
+  let flatDr = 0, flatCrit = 0, flatDodge = 0, flatLifesteal = 0
+  let flatHealPct = 0, flatEliteBonus = 0, flatExecution = 0, flatUndying = 0, flatFrenzy = 0
 
   for (const node of TALENT_TREE) {
     const rank = talents[node.id] ?? 0
     if (rank === 0) continue
     const total = node.effect.valuePerRank * rank
     if (node.effect.type === 'flat') {
-      if (node.effect.stat === 'hp')          flatHp  += total
-      else if (node.effect.stat === 'damage') flatDmg += total
-      else                                    flatSpd += total
+      if      (node.effect.stat === 'hp')                   flatHp          += total
+      else if (node.effect.stat === 'damage')               flatDmg         += total
+      else if (node.effect.stat === 'attackSpeed')          flatSpd         += total
+      else if (node.effect.stat === 'damageReduction')      flatDr          += total
+      else if (node.effect.stat === 'critChance')           flatCrit        += total
+      else if (node.effect.stat === 'dodgeChance')          flatDodge       += total
+      else if (node.effect.stat === 'lifesteal')            flatLifesteal   += total
+      else if (node.effect.stat === 'postCombatHealPct')    flatHealPct     += total
+      else if (node.effect.stat === 'eliteBonusMultiplier') flatEliteBonus  += total
+      else if (node.effect.stat === 'executionThreshold')   flatExecution   += total
+      else if (node.effect.stat === 'undying')              flatUndying     += total
+      else if (node.effect.stat === 'frenzy')               flatFrenzy      += total
     } else {
-      if (node.effect.stat === 'hp')          pctHp   += total
-      else if (node.effect.stat === 'damage') pctDmg  += total
-      else                                    pctSpd  += total
+      if      (node.effect.stat === 'hp')          pctHp  += total
+      else if (node.effect.stat === 'damage')      pctDmg += total
+      else if (node.effect.stat === 'attackSpeed') pctSpd += total
     }
   }
 
@@ -338,9 +348,18 @@ export function getEffectiveStats(
   const gearSpd = items.reduce((s, i) => s + (i.stats.attackSpeed ?? 0), 0)
 
   return {
-    maxHp:       Math.floor((player.maxHp       + flatHp  + gearHp)  * (1 + pctHp)),
-    damage:      Math.floor((player.baseDamage  + flatDmg + gearDmg) * (1 + pctDmg)),
-    attackSpeed:            (player.attackSpeed + flatSpd + gearSpd) * (1 + pctSpd),
+    maxHp:                Math.floor((player.maxHp      + flatHp  + gearHp)  * (1 + pctHp)),
+    damage:               Math.floor((player.baseDamage + flatDmg + gearDmg) * (1 + pctDmg)),
+    attackSpeed:                     (player.attackSpeed + flatSpd + gearSpd) * (1 + pctSpd),
+    damageReduction:      flatDr,
+    critChance:           flatCrit,
+    dodgeChance:          flatDodge,
+    lifesteal:            Math.floor(flatLifesteal),
+    postCombatHealPct:    flatHealPct,
+    eliteBonusMultiplier: flatEliteBonus,
+    executionThreshold:   flatExecution,
+    hasUndying:           flatUndying >= 1,
+    hasFrenzy:            flatFrenzy >= 1,
   }
 }
 
@@ -408,8 +427,12 @@ interface GameStore {
   combatReward: { xp: number; item: Item } | null
   restEvent: { healedAmount: number } | null
 
+  // Run state
+  usedUndyingThisRun: boolean
+
   // Combat actions
   startCombat: () => void
+  engageCombat: () => void
   tickCombat: () => void
   useShieldBash: () => void
   useEquippedSpell: () => void
@@ -459,6 +482,7 @@ export const useGameStore = create<GameStore>((set) => ({
         isLootPickerVisible: false,
         combatReward: null,
         restEvent: null,
+        usedUndyingThisRun: false,
       }
     }),
 
@@ -491,7 +515,7 @@ export const useGameStore = create<GameStore>((set) => ({
           mobAttackProgress: 0,
           shieldBashCooldown: 0,
           equippedSpellCooldown: 0,
-          isCombatActive: true,
+          isCombatActive: false,
         }
       }
 
@@ -522,6 +546,9 @@ export const useGameStore = create<GameStore>((set) => ({
 
       return state
     }),
+
+  // ── Run state ───────────────────────────────────────────────────────────────
+  usedUndyingThisRun: false,
 
   // ── Combat state ────────────────────────────────────────────────────────────
   player: { ...DEFAULT_PLAYER },
@@ -556,6 +583,9 @@ export const useGameStore = create<GameStore>((set) => ({
       equippedSpellCooldown: 0,
       isCombatActive: true,
     }),
+
+  // ── engageCombat ────────────────────────────────────────────────────────────
+  engageCombat: () => set({ isCombatActive: true }),
 
   // ── useShieldBash ───────────────────────────────────────────────────────────
   useShieldBash: () =>
@@ -620,6 +650,7 @@ export const useGameStore = create<GameStore>((set) => ({
         shieldBashCooldown: 0,
         equippedSpellCooldown: 0,
         isCombatActive: false,
+        usedUndyingThisRun: false,
         backpack: [],
         equipment: { ...EMPTY_EQUIPMENT },
         lootChoices: [],
@@ -669,7 +700,13 @@ export const useGameStore = create<GameStore>((set) => ({
   collectCombatReward: () =>
     set((state) => {
       if (!state.combatReward) return state
+      const eff = getEffectiveStats(state.player, state.equipment, state.talents)
+      const healAmount = Math.floor(eff.maxHp * eff.postCombatHealPct)
+      const newHp = healAmount > 0
+        ? Math.min(eff.maxHp, state.player.currentHp + healAmount)
+        : state.player.currentHp
       return {
+        player: { ...state.player, currentHp: newHp },
         backpack: [...state.backpack, state.combatReward.item],
         playerXp: state.playerXp + state.combatReward.xp,
         currentFloor: state.currentFloor + 1,
@@ -708,21 +745,58 @@ export const useGameStore = create<GameStore>((set) => ({
       const mob = { ...state.currentMob }
       const eff = getEffectiveStats(state.player, state.equipment, state.talents)
 
-      playerAttackProgress += eff.attackSpeed * (TICK_MS / 1000) * 100
+      // Frenzy: double attack speed below 30% HP
+      const effectiveAttackSpeed = eff.hasFrenzy && player.currentHp < eff.maxHp * 0.30
+        ? eff.attackSpeed * 2
+        : eff.attackSpeed
+
+      playerAttackProgress += effectiveAttackSpeed * (TICK_MS / 1000) * 100
       mobAttackProgress += mob.attackSpeed * (TICK_MS / 1000) * 100
 
       if (playerAttackProgress >= 100) {
         playerAttackProgress -= 100
-        mob.currentHp = Math.max(0, mob.currentHp - eff.damage)
+        const isCrit = eff.critChance > 0 && Math.random() < eff.critChance
+        const giantMult = eff.eliteBonusMultiplier > 0 && (mob.tier === 'elite' || mob.tier === 'boss')
+          ? 1 + eff.eliteBonusMultiplier : 1
+        const dmg = Math.floor((isCrit ? eff.damage * 2 : eff.damage) * giantMult)
+        mob.currentHp = Math.max(0, mob.currentHp - dmg)
+        if (eff.lifesteal > 0) {
+          player.currentHp = Math.min(eff.maxHp, player.currentHp + eff.lifesteal)
+        }
+      }
+
+      // Execution: instant kill below threshold
+      if (eff.executionThreshold > 0 && mob.currentHp > 0) {
+        if (mob.currentHp / mob.maxHp <= eff.executionThreshold) mob.currentHp = 0
       }
 
       if (mobAttackProgress >= 100) {
         mobAttackProgress -= 100
-        player.currentHp = Math.max(0, player.currentHp - mob.baseDamage)
+        const isDodged = eff.dodgeChance > 0 && Math.random() < eff.dodgeChance
+        if (!isDodged) {
+          const dmgTaken = Math.max(0, mob.baseDamage - eff.damageReduction)
+          player.currentHp = Math.max(0, player.currentHp - dmgTaken)
+        }
       }
 
       const shieldBashCooldown = Math.max(0, state.shieldBashCooldown - TICK_MS)
       const equippedSpellCooldown = Math.max(0, state.equippedSpellCooldown - TICK_MS)
+
+      // Undying: revive at 30% HP once per run
+      if (player.currentHp <= 0 && eff.hasUndying && !state.usedUndyingThisRun) {
+        player.currentHp = Math.floor(eff.maxHp * 0.30)
+        return {
+          player,
+          currentMob: mob,
+          playerAttackProgress,
+          mobAttackProgress,
+          shieldBashCooldown,
+          equippedSpellCooldown,
+          isCombatActive: true,
+          usedUndyingThisRun: true,
+        }
+      }
+
       const isCombatActive = mob.currentHp > 0 && player.currentHp > 0
 
       // Player wins: show victory overlay (floor advance happens in collectCombatReward)

@@ -371,6 +371,8 @@ function CombatArena() {
     useEquippedSpell,
     resetRun,
     talents,
+    combatReward,
+    engageCombat,
   } = useGameStore()
 
   const eff = getEffectiveStats(player, equipment, talents)
@@ -382,10 +384,11 @@ function CombatArena() {
     return () => clearInterval(id)
   }, [isCombatActive])
 
-  const playerLost = !isCombatActive && player.currentHp <= 0
+  const playerLost  = !isCombatActive && player.currentHp <= 0
+  const isPrepPhase = !isCombatActive && player.currentHp > 0 && combatReward === null
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-full p-4 gap-6">
+    <div className="relative flex flex-col items-center justify-center min-h-full p-4 gap-6">
       <div className="flex items-center gap-3">
         <Swords className="text-amber-400" size={28} />
         <h1 className="text-2xl font-bold tracking-widest uppercase text-white">
@@ -435,6 +438,26 @@ function CombatArena() {
             Return to Hub
           </button>
         </>
+      )}
+
+      {isPrepPhase && (
+        <div className="absolute inset-0 z-10 bg-gray-950/80 backdrop-blur-[2px]
+                        flex flex-col items-center justify-center gap-6 p-6">
+          <div className="text-center">
+            <p className="text-xs text-amber-400/50 uppercase tracking-widest mb-1">Enemy Spotted</p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-widest uppercase text-white">
+              Prepare for Battle
+            </h2>
+          </div>
+          <button
+            onClick={engageCombat}
+            className="px-10 py-4 rounded-xl border-2 border-amber-500 bg-amber-500/20
+                       text-amber-300 text-xl font-bold uppercase tracking-widest
+                       hover:bg-amber-500/30 active:bg-amber-500/40 transition-colors animate-pulse"
+          >
+            ⚔ FIGHT!
+          </button>
+        </div>
       )}
     </div>
   )
