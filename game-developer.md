@@ -9,8 +9,13 @@ We are building a web-based "Tactical Auto-Battler Roguelite".
 - **Inventory System:** Diablo/PoE inspired "Paper Doll" equipped gear layout with a unified backpack system for Core and Dynamic gear.
 
 # Current Status
-- **Completed:** Phase 1 (Setup), Phase 2 (Combat Engine & UI), Phase 3 (Branching Map & Death logic).
-- **Current Focus:** Phase 4 - Polishing the Unified Loot System, Item Stats, and the interactive Inventory UI.
+- **Completed:** Phases 1-4 (Combat, Map, Inventory, Loot logic).
+- **Current Focus:** Phase 5 - Meta-progression & The HUB. 
+
+# Phase 5 Goals
+1. Implement "Persistent vs. Dynamic" state logic (keep Core items/XP on death).
+2. Create a Currency/Skill Point system awarded after runs.
+3. Build the HUB interface with a functional Skill Tree for permanent stat upgrades.
 
 # Guidelines
 - Write clean, modular, and well-documented code.

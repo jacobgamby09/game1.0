@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap } from 'lucide-react'
+import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap, Heart } from 'lucide-react'
 import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot } from '../stores/useGameStore'
 
@@ -48,6 +48,30 @@ function NodeIcon({ type, size = 16 }: { type: MapNode['type']; size?: number })
   return null
 }
 
+// ─── PlayerStatsBar ───────────────────────────────────────────────────────────
+
+function PlayerStatsBar() {
+  const { player, equipment, playerXp } = useGameStore()
+  const eff = getEffectiveStats(player, equipment)
+  return (
+    <div className="w-full max-w-sm bg-gray-900/80 border border-gray-800 rounded-xl px-4 py-2 flex items-center gap-5 text-xs font-semibold">
+      <div className="flex items-center gap-1.5 text-green-400">
+        <Heart size={13} />
+        <span>{player.currentHp} / {eff.maxHp}</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-red-400">
+        <Swords size={13} />
+        <span>{eff.damage} dmg</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-blue-400">
+        <Zap size={13} />
+        <span>{eff.attackSpeed.toFixed(2)}/s</span>
+      </div>
+      <div className="ml-auto text-amber-400">⭐ {playerXp} XP</div>
+    </div>
+  )
+}
+
 // ─── MapView ──────────────────────────────────────────────────────────────────
 
 function MapView() {
@@ -76,6 +100,9 @@ function MapView() {
 
   return (
     <div className="flex flex-col items-center w-full min-h-full p-4 gap-4">
+      {/* Player stats HUD */}
+      <PlayerStatsBar />
+
       {/* Header */}
       <div className="flex items-center justify-between w-full max-w-sm">
         <div className="flex items-center gap-2">
@@ -457,6 +484,81 @@ function LootSelectionOverlay() {
   )
 }
 
+// ─── VictoryOverlay ───────────────────────────────────────────────────────────
+
+function VictoryOverlay() {
+  const { combatReward, collectCombatReward } = useGameStore()
+  if (!combatReward) return null
+  const { xp, item } = combatReward
+  const rc = RARITY_COLORS[item.rarity]
+  const Icon = SLOT_ICONS[item.equipSlot]
+  return (
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="flex flex-col items-center gap-6 text-center">
+        <p className="text-xs text-amber-400/60 uppercase tracking-widest">Enemy Defeated</p>
+        <h2 className="text-4xl font-bold tracking-widest uppercase text-amber-400 animate-pulse">
+          Victory!
+        </h2>
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-5 py-2">
+          <span className="text-amber-300 font-bold text-sm">+{xp} XP</span>
+        </div>
+        <div className={`bg-gray-900 border rounded-2xl p-6 w-52 flex flex-col gap-3 ${rc.border} ${rc.glow}`}>
+          <div className="flex justify-center">
+            <div className="w-16 h-16 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <Icon size={32} />
+            </div>
+          </div>
+          <div className="text-center">
+            <p className={`font-bold text-base leading-tight ${rc.text}`}>{item.name}</p>
+            <p className="text-gray-500 text-xs">{SLOT_LABELS[item.equipSlot]}</p>
+            <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${rc.text}`}>{item.rarity}</p>
+          </div>
+          <div className="flex flex-col gap-0.5 text-left text-sm font-semibold">
+            {item.stats.damage      !== undefined && <p className="text-red-400">+{item.stats.damage} Damage</p>}
+            {item.stats.hp          !== undefined && <p className="text-green-400">+{item.stats.hp} Max HP</p>}
+            {item.stats.attackSpeed !== undefined && <p className="text-blue-400">+{item.stats.attackSpeed.toFixed(1)} Atk Speed</p>}
+            {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
+          </div>
+        </div>
+        <button
+          onClick={collectCombatReward}
+          className="border border-amber-500 bg-amber-500/10 text-amber-300 px-10 py-3 rounded-lg uppercase tracking-widest font-bold hover:bg-amber-500/20 transition-colors"
+        >
+          Collect &amp; Continue
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── CampOverlay ──────────────────────────────────────────────────────────────
+
+function CampOverlay() {
+  const { restEvent, leaveCamp } = useGameStore()
+  if (!restEvent) return null
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="flex flex-col items-center gap-6 text-center">
+        <Tent className="text-green-400" size={56} />
+        <div>
+          <p className="text-xs text-green-400/50 uppercase tracking-widest mb-1">Rest Site</p>
+          <h2 className="text-2xl font-bold tracking-widest uppercase text-white">You Rested Safely</h2>
+          {restEvent.healedAmount > 0
+            ? <p className="text-green-400 font-semibold mt-2">+{restEvent.healedAmount} HP restored</p>
+            : <p className="text-gray-500 text-sm mt-2 italic">Already at full health.</p>
+          }
+        </div>
+        <button
+          onClick={leaveCamp}
+          className="border border-green-700 text-green-400 px-10 py-3 rounded-lg uppercase tracking-widest font-bold hover:bg-green-900/20 transition-colors"
+        >
+          Continue Journey
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── CombatView (root) ────────────────────────────────────────────────────────
 
 export default function CombatView() {
@@ -471,6 +573,8 @@ export default function CombatView() {
     <>
       {isMapVisible ? <MapView /> : <CombatArena />}
       <LootSelectionOverlay />
+      <VictoryOverlay />
+      <CampOverlay />
     </>
   )
 }

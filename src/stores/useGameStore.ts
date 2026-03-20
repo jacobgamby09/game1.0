@@ -230,7 +230,6 @@ const SHIELD_BASH_COOLDOWN_MS = 8000
 const SHIELD_BASH_DAMAGE = 5
 const XP_PER_KILL = 20
 const XP_PER_CHEST = 25
-const REST_HEAL = 30
 
 interface GameStore {
   // Navigation
@@ -265,11 +264,16 @@ interface GameStore {
   lootChoices: Item[]
   isLootPickerVisible: boolean
 
+  // Event state
+  combatReward: { xp: number; item: Item } | null
+  restEvent: { healedAmount: number } | null
+
   // Combat actions
   startCombat: () => void
   tickCombat: () => void
   useShieldBash: () => void
   useEquippedSpell: () => void
+  collectCombatReward: () => void
   resetRun: () => void
 
   // Inventory actions
@@ -278,6 +282,9 @@ interface GameStore {
 
   // Loot picker actions
   selectLoot: (item: Item) => void
+
+  // Rest actions
+  leaveCamp: () => void
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -305,6 +312,8 @@ export const useGameStore = create<GameStore>((set) => ({
       equipment: { ...EMPTY_EQUIPMENT },
       lootChoices: [],
       isLootPickerVisible: false,
+      combatReward: null,
+      restEvent: null,
     }),
 
   // ── chooseNode ──────────────────────────────────────────────────────────────
@@ -341,14 +350,16 @@ export const useGameStore = create<GameStore>((set) => ({
       }
 
       if (node.type === 'rest') {
+        const eff = getEffectiveStats(state.player, state.equipment)
+        const healAmount = Math.floor(eff.maxHp * 0.30)
+        const newHp = Math.min(eff.maxHp, state.player.currentHp + healAmount)
+        const actualHealed = newHp - state.player.currentHp
         return {
           currentMapNodeId: nodeId,
           currentFloor: state.currentFloor + 1,
           act1Map: markComplete(state.act1Map),
-          player: {
-            ...state.player,
-            currentHp: Math.min(state.player.maxHp, state.player.currentHp + REST_HEAL),
-          },
+          player: { ...state.player, currentHp: newHp },
+          restEvent: { healedAmount: actualHealed },
         }
       }
 
@@ -384,6 +395,10 @@ export const useGameStore = create<GameStore>((set) => ({
   // ── Loot picker state ───────────────────────────────────────────────────────
   lootChoices: [],
   isLootPickerVisible: false,
+
+  // ── Event state ─────────────────────────────────────────────────────────────
+  combatReward: null,
+  restEvent: null,
 
   // ── startCombat ─────────────────────────────────────────────────────────────
   startCombat: () =>
@@ -451,6 +466,8 @@ export const useGameStore = create<GameStore>((set) => ({
       equipment: { ...EMPTY_EQUIPMENT },
       lootChoices: [],
       isLootPickerVisible: false,
+      combatReward: null,
+      restEvent: null,
     })),
 
   // ── equipItem ───────────────────────────────────────────────────────────────
@@ -489,6 +506,22 @@ export const useGameStore = create<GameStore>((set) => ({
       isLootPickerVisible: false,
     })),
 
+  // ── collectCombatReward ─────────────────────────────────────────────────────
+  collectCombatReward: () =>
+    set((state) => {
+      if (!state.combatReward) return state
+      return {
+        backpack: [...state.backpack, state.combatReward.item],
+        playerXp: state.playerXp + state.combatReward.xp,
+        currentFloor: state.currentFloor + 1,
+        combatReward: null,
+        isMapVisible: true,
+      }
+    }),
+
+  // ── leaveCamp ───────────────────────────────────────────────────────────────
+  leaveCamp: () => set({ restEvent: null }),
+
   // ── tickCombat ──────────────────────────────────────────────────────────────
   tickCombat: () =>
     set((state) => {
@@ -517,7 +550,7 @@ export const useGameStore = create<GameStore>((set) => ({
       const equippedSpellCooldown = Math.max(0, state.equippedSpellCooldown - TICK_MS)
       const isCombatActive = mob.currentHp > 0 && player.currentHp > 0
 
-      // Player wins: return to map, award XP + loot, mark node complete
+      // Player wins: show victory overlay (floor advance happens in collectCombatReward)
       if (!isCombatActive && mob.currentHp <= 0) {
         const act1Map = state.act1Map.map((floor) =>
           floor.map((n) =>
@@ -533,11 +566,9 @@ export const useGameStore = create<GameStore>((set) => ({
           shieldBashCooldown,
           equippedSpellCooldown,
           isCombatActive: false,
-          isMapVisible: true,
-          currentFloor: state.currentFloor + 1,
-          playerXp: state.playerXp + XP_PER_KILL,
+          isMapVisible: false,
           act1Map,
-          backpack: [...state.backpack, drop],
+          combatReward: { xp: XP_PER_KILL, item: drop },
         }
       }
 
