@@ -264,8 +264,8 @@ function ItemDetails({ selectedItem, selectedFrom, onEquip, onUnequip, onClear }
 // ─── InventoryView ────────────────────────────────────────────────────────────
 
 export default function InventoryView() {
-  const { backpack, equipment, equipItem, unequipItem, player } = useGameStore()
-  const eff = getEffectiveStats(player, equipment)
+  const { backpack, equipment, equipItem, unequipItem, player, talents } = useGameStore()
+  const eff = getEffectiveStats(player, equipment, talents)
 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [selectedFrom, setSelectedFrom] = useState<'backpack' | EquipSlot | null>(null)

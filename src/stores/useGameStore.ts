@@ -18,6 +18,55 @@ export const RARITY_COLORS: Record<Rarity, { text: string; border: string; glow:
   epic:   { text: 'text-purple-400', border: 'border-purple-500', glow: 'ring-1 ring-purple-500/40' },
 }
 
+// ─── Talent System ────────────────────────────────────────────────────────────
+
+export type TalentBranch = 'vitality' | 'might' | 'celerity'
+
+export interface TalentNode {
+  id: string
+  name: string
+  description: string
+  maxRank: number
+  costPerRank: number
+  branch: TalentBranch
+  tier: number              // 1 = top of branch; tier N requires tier N-1 rank >= 1
+  effect: {
+    type: 'flat' | 'percent'
+    stat: 'hp' | 'damage' | 'attackSpeed'
+    valuePerRank: number
+  }
+}
+
+export const TALENT_TREE: TalentNode[] = [
+  // ── Vitality (HP) ──────────────────────────────────────────────────────────
+  { id:'vit_1', branch:'vitality', tier:1, name:'Fortitude',      description:'+5 Max HP per rank',        maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'hp',          valuePerRank:5    }},
+  { id:'vit_2', branch:'vitality', tier:2, name:'Iron Flesh',     description:'+10 Max HP per rank',       maxRank:5, costPerRank:2, effect:{type:'flat',    stat:'hp',          valuePerRank:10   }},
+  { id:'vit_3', branch:'vitality', tier:3, name:'Endurance',      description:'+15 Max HP per rank',       maxRank:4, costPerRank:3, effect:{type:'flat',    stat:'hp',          valuePerRank:15   }},
+  { id:'vit_4', branch:'vitality', tier:4, name:'Undying',        description:'+4% Max HP per rank',       maxRank:3, costPerRank:4, effect:{type:'percent', stat:'hp',          valuePerRank:0.04 }},
+  { id:'vit_5', branch:'vitality', tier:5, name:"Titan's Heart",  description:'+30 Max HP per rank',       maxRank:2, costPerRank:5, effect:{type:'flat',    stat:'hp',          valuePerRank:30   }},
+
+  // ── Might (Damage) ─────────────────────────────────────────────────────────
+  { id:'mgt_1', branch:'might',    tier:1, name:'Brutality',      description:'+1 Damage per rank',        maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'damage',      valuePerRank:1    }},
+  { id:'mgt_2', branch:'might',    tier:2, name:'Power Strike',   description:'+2 Damage per rank',        maxRank:5, costPerRank:2, effect:{type:'flat',    stat:'damage',      valuePerRank:2    }},
+  { id:'mgt_3', branch:'might',    tier:3, name:'War Craft',      description:'+3 Damage per rank',        maxRank:4, costPerRank:3, effect:{type:'flat',    stat:'damage',      valuePerRank:3    }},
+  { id:'mgt_4', branch:'might',    tier:4, name:'Executioner',    description:'+4% Damage per rank',       maxRank:3, costPerRank:4, effect:{type:'percent', stat:'damage',      valuePerRank:0.04 }},
+  { id:'mgt_5', branch:'might',    tier:5, name:'Berserker',      description:'+5 Damage per rank',        maxRank:2, costPerRank:5, effect:{type:'flat',    stat:'damage',      valuePerRank:5    }},
+
+  // ── Celerity (Attack Speed) ────────────────────────────────────────────────
+  { id:'cel_1', branch:'celerity', tier:1, name:'Quick Hands',    description:'+0.05 Atk Speed per rank',  maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'attackSpeed', valuePerRank:0.05 }},
+  { id:'cel_2', branch:'celerity', tier:2, name:'Nimble',         description:'+0.08 Atk Speed per rank',  maxRank:5, costPerRank:2, effect:{type:'flat',    stat:'attackSpeed', valuePerRank:0.08 }},
+  { id:'cel_3', branch:'celerity', tier:3, name:'Flurry',         description:'+0.12 Atk Speed per rank',  maxRank:4, costPerRank:3, effect:{type:'flat',    stat:'attackSpeed', valuePerRank:0.12 }},
+  { id:'cel_4', branch:'celerity', tier:4, name:'Blur',           description:'+4% Atk Speed per rank',    maxRank:3, costPerRank:4, effect:{type:'percent', stat:'attackSpeed', valuePerRank:0.04 }},
+  { id:'cel_5', branch:'celerity', tier:5, name:'Tempest',        description:'+0.20 Atk Speed per rank',  maxRank:2, costPerRank:5, effect:{type:'flat',    stat:'attackSpeed', valuePerRank:0.20 }},
+]
+
+export function computeAvailablePoints(totalXp: number, talents: Record<string, number>): number {
+  const spent = TALENT_TREE.reduce((s, n) => s + (talents[n.id] ?? 0) * n.costPerRank, 0)
+  return Math.floor(totalXp / 100) - spent
+}
+
+// ─── Item / Player types ──────────────────────────────────────────────────────
+
 export interface ItemAbility {
   name: string
   description: string
@@ -213,13 +262,56 @@ function buildMap(): MapNode[][] {
 
 export function getEffectiveStats(
   player: Player,
-  equipment: Record<EquipSlot, Item | null>
+  equipment: Record<EquipSlot, Item | null>,
+  talents: Record<string, number> = {}
 ) {
   const items = Object.values(equipment).filter(Boolean) as Item[]
+
+  let flatHp = 0, flatDmg = 0, flatSpd = 0
+  let pctHp  = 0, pctDmg  = 0, pctSpd  = 0
+
+  for (const node of TALENT_TREE) {
+    const rank = talents[node.id] ?? 0
+    if (rank === 0) continue
+    const total = node.effect.valuePerRank * rank
+    if (node.effect.type === 'flat') {
+      if (node.effect.stat === 'hp')          flatHp  += total
+      else if (node.effect.stat === 'damage') flatDmg += total
+      else                                    flatSpd += total
+    } else {
+      if (node.effect.stat === 'hp')          pctHp   += total
+      else if (node.effect.stat === 'damage') pctDmg  += total
+      else                                    pctSpd  += total
+    }
+  }
+
+  const gearHp  = items.reduce((s, i) => s + (i.stats.hp          ?? 0), 0)
+  const gearDmg = items.reduce((s, i) => s + (i.stats.damage      ?? 0), 0)
+  const gearSpd = items.reduce((s, i) => s + (i.stats.attackSpeed ?? 0), 0)
+
   return {
-    maxHp:       player.maxHp       + items.reduce((s, i) => s + (i.stats.hp          ?? 0), 0),
-    damage:      player.baseDamage  + items.reduce((s, i) => s + (i.stats.damage      ?? 0), 0),
-    attackSpeed: player.attackSpeed + items.reduce((s, i) => s + (i.stats.attackSpeed ?? 0), 0),
+    maxHp:       Math.floor((player.maxHp       + flatHp  + gearHp)  * (1 + pctHp)),
+    damage:      Math.floor((player.baseDamage  + flatDmg + gearDmg) * (1 + pctDmg)),
+    attackSpeed:            (player.attackSpeed + flatSpd + gearSpd) * (1 + pctSpd),
+  }
+}
+
+// ─── Mob-death patch helper ───────────────────────────────────────────────────
+// Returns the state fields that should be set whenever a mob's HP hits 0.
+// Calling it in one place ensures useShieldBash, useEquippedSpell, and
+// tickCombat all produce the same victory transition.
+
+function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null }) {
+  const act1Map = state.act1Map.map((floor) =>
+    floor.map((n) =>
+      n.id === state.currentMapNodeId ? { ...n, isCompleted: true } : n
+    )
+  )
+  return {
+    act1Map,
+    isCombatActive: false as const,
+    isMapVisible:   false as const,
+    combatReward: { xp: XP_PER_KILL, item: randomDrop() },
   }
 }
 
@@ -285,11 +377,16 @@ interface GameStore {
 
   // Rest actions
   leaveCamp: () => void
+
+  // Meta-progression (persistent across runs)
+  totalXp: number
+  talents: Record<string, number>
+  upgradeTalent: (nodeId: string) => void
 }
 
 export const useGameStore = create<GameStore>((set) => ({
   // ── Navigation ──────────────────────────────────────────────────────────────
-  activeView: 'battle',
+  activeView: 'hub',
   setActiveView: (view) => set({ activeView: view }),
 
   // ── Map state ───────────────────────────────────────────────────────────────
@@ -301,19 +398,20 @@ export const useGameStore = create<GameStore>((set) => ({
 
   // ── generateMap ─────────────────────────────────────────────────────────────
   generateMap: () =>
-    set({
-      act1Map: buildMap(),
-      currentFloor: 1,
-      currentMapNodeId: null,
-      isMapVisible: true,
-      playerXp: 0,
-      player: { ...DEFAULT_PLAYER },
-      backpack: [],
-      equipment: { ...EMPTY_EQUIPMENT },
-      lootChoices: [],
-      isLootPickerVisible: false,
-      combatReward: null,
-      restEvent: null,
+    set((state) => {
+      const effMaxHp = getEffectiveStats({ ...DEFAULT_PLAYER }, { ...EMPTY_EQUIPMENT }, state.talents).maxHp
+      return {
+        act1Map: buildMap(),
+        currentFloor: 1,
+        currentMapNodeId: null,
+        isMapVisible: true,
+        activeView: 'battle' as const,
+        player: { ...DEFAULT_PLAYER, currentHp: effMaxHp },
+        lootChoices: [],
+        isLootPickerVisible: false,
+        combatReward: null,
+        restEvent: null,
+      }
     }),
 
   // ── chooseNode ──────────────────────────────────────────────────────────────
@@ -350,7 +448,7 @@ export const useGameStore = create<GameStore>((set) => ({
       }
 
       if (node.type === 'rest') {
-        const eff = getEffectiveStats(state.player, state.equipment)
+        const eff = getEffectiveStats(state.player, state.equipment, state.talents)
         const healAmount = Math.floor(eff.maxHp * 0.30)
         const newHp = Math.min(eff.maxHp, state.player.currentHp + healAmount)
         const actualHealed = newHp - state.player.currentHp
@@ -419,11 +517,15 @@ export const useGameStore = create<GameStore>((set) => ({
       const mob = { ...state.currentMob }
       mob.currentHp = Math.max(0, mob.currentHp - SHIELD_BASH_DAMAGE)
 
+      if (mob.currentHp <= 0) {
+        return { ...mobDeathPatch(state), currentMob: mob, mobAttackProgress: 0, shieldBashCooldown: SHIELD_BASH_COOLDOWN_MS }
+      }
+
       return {
         currentMob: mob,
         mobAttackProgress: 0,
         shieldBashCooldown: SHIELD_BASH_COOLDOWN_MS,
-        isCombatActive: mob.currentHp > 0 && state.player.currentHp > 0,
+        isCombatActive: true,
       }
     }),
 
@@ -440,35 +542,44 @@ export const useGameStore = create<GameStore>((set) => ({
         mob.currentHp = Math.max(0, mob.currentHp - ability.value)
       }
 
+      if (mob.currentHp <= 0) {
+        return { ...mobDeathPatch(state), currentMob: mob, equippedSpellCooldown: ability.cooldown }
+      }
+
       return {
         currentMob: mob,
         equippedSpellCooldown: ability.cooldown,
-        isCombatActive: mob.currentHp > 0 && state.player.currentHp > 0,
+        isCombatActive: true,
       }
     }),
 
   // ── resetRun ────────────────────────────────────────────────────────────────
   resetRun: () =>
-    set((state) => ({
-      act1Map: buildMap(),
-      currentFloor: 1,
-      currentMapNodeId: null,
-      isMapVisible: true,
-      player: { ...state.player, currentHp: state.player.maxHp },
-      currentMob: { ...ORC_GRUNT },
-      playerAttackProgress: 0,
-      mobAttackProgress: 0,
-      shieldBashCooldown: 0,
-      equippedSpellCooldown: 0,
-      isCombatActive: false,
-      activeView: 'battle',
-      backpack: [],
-      equipment: { ...EMPTY_EQUIPMENT },
-      lootChoices: [],
-      isLootPickerVisible: false,
-      combatReward: null,
-      restEvent: null,
-    })),
+    set((state) => {
+      const effMaxHp = getEffectiveStats({ ...DEFAULT_PLAYER }, { ...EMPTY_EQUIPMENT }, state.talents).maxHp
+      return {
+        totalXp: state.totalXp + state.playerXp,
+        playerXp: 0,
+        act1Map: [],
+        currentFloor: 1,
+        currentMapNodeId: null,
+        isMapVisible: false,
+        activeView: 'hub' as const,
+        player: { ...DEFAULT_PLAYER, currentHp: effMaxHp },
+        currentMob: { ...ORC_GRUNT },
+        playerAttackProgress: 0,
+        mobAttackProgress: 0,
+        shieldBashCooldown: 0,
+        equippedSpellCooldown: 0,
+        isCombatActive: false,
+        backpack: [],
+        equipment: { ...EMPTY_EQUIPMENT },
+        lootChoices: [],
+        isLootPickerVisible: false,
+        combatReward: null,
+        restEvent: null,
+      }
+    }),
 
   // ── equipItem ───────────────────────────────────────────────────────────────
   // Moves item from backpack to its equipment slot. Swaps if slot is occupied.
@@ -490,7 +601,7 @@ export const useGameStore = create<GameStore>((set) => ({
       const item = state.equipment[slotKey as EquipSlot]
       if (!item) return state
       const newEquipment = { ...state.equipment, [slotKey]: null }
-      const newMaxHp = getEffectiveStats(state.player, newEquipment).maxHp
+      const newMaxHp = getEffectiveStats(state.player, newEquipment, state.talents).maxHp
       return {
         equipment: newEquipment,
         backpack: [...state.backpack, item],
@@ -522,6 +633,22 @@ export const useGameStore = create<GameStore>((set) => ({
   // ── leaveCamp ───────────────────────────────────────────────────────────────
   leaveCamp: () => set({ restEvent: null }),
 
+  // ── Meta-progression ────────────────────────────────────────────────────────
+  totalXp: 0,
+  talents: {},
+
+  upgradeTalent: (nodeId) =>
+    set((state) => {
+      const node = TALENT_TREE.find(n => n.id === nodeId)
+      if (!node) return state
+      const currentRank = state.talents[nodeId] ?? 0
+      if (currentRank >= node.maxRank) return state
+      const prereq = TALENT_TREE.find(n => n.branch === node.branch && n.tier === node.tier - 1)
+      if (prereq && (state.talents[prereq.id] ?? 0) < 1) return state
+      if (computeAvailablePoints(state.totalXp, state.talents) < node.costPerRank) return state
+      return { talents: { ...state.talents, [nodeId]: currentRank + 1 } }
+    }),
+
   // ── tickCombat ──────────────────────────────────────────────────────────────
   tickCombat: () =>
     set((state) => {
@@ -531,7 +658,7 @@ export const useGameStore = create<GameStore>((set) => ({
       let mobAttackProgress = state.mobAttackProgress
       const player = { ...state.player }
       const mob = { ...state.currentMob }
-      const eff = getEffectiveStats(state.player, state.equipment)
+      const eff = getEffectiveStats(state.player, state.equipment, state.talents)
 
       playerAttackProgress += eff.attackSpeed * (TICK_MS / 1000) * 100
       mobAttackProgress += mob.attackSpeed * (TICK_MS / 1000) * 100
@@ -552,12 +679,6 @@ export const useGameStore = create<GameStore>((set) => ({
 
       // Player wins: show victory overlay (floor advance happens in collectCombatReward)
       if (!isCombatActive && mob.currentHp <= 0) {
-        const act1Map = state.act1Map.map((floor) =>
-          floor.map((n) =>
-            n.id === state.currentMapNodeId ? { ...n, isCompleted: true } : n
-          )
-        )
-        const drop = randomDrop()
         return {
           player,
           currentMob: mob,
@@ -565,10 +686,7 @@ export const useGameStore = create<GameStore>((set) => ({
           mobAttackProgress,
           shieldBashCooldown,
           equippedSpellCooldown,
-          isCombatActive: false,
-          isMapVisible: false,
-          act1Map,
-          combatReward: { xp: XP_PER_KILL, item: drop },
+          ...mobDeathPatch(state),
         }
       }
 
