@@ -426,7 +426,7 @@ function LootCard({ item, onSelect }: { item: Item; onSelect: () => void }) {
   return (
     <div
       onClick={onSelect}
-      className={`bg-gray-900 border rounded-2xl p-6 w-full max-w-xs sm:w-56 flex flex-col gap-4
+      className={`bg-gray-900 border rounded-2xl p-6 w-full sm:w-56 flex flex-col gap-4
                   hover:bg-gray-800/80 transition-all duration-200 cursor-pointer group
                   ${rc.border} ${rc.glow}`}
     >
@@ -469,17 +469,26 @@ function LootSelectionOverlay() {
   if (!isLootPickerVisible) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="flex flex-col items-center gap-8">
-        <div className="text-center">
-          <p className="text-xs text-amber-400/60 uppercase tracking-widest mb-1">Treasure Found</p>
-          <h2 className="text-3xl font-bold tracking-widest uppercase text-white">Choose Your Reward</h2>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4 items-center sm:flex-wrap sm:justify-center">
-          {lootChoices.map((item) => (
-            <LootCard key={item.id} item={item} onSelect={() => selectLoot(item)} />
-          ))}
-        </div>
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-6 py-8">
+      <div className="text-center px-4">
+        <p className="text-xs text-amber-400/60 uppercase tracking-widest mb-1">Treasure Found</p>
+        <h2 className="text-3xl font-bold tracking-widest uppercase text-white">Choose Your Reward</h2>
+      </div>
+
+      {/* Mobile: horizontal snap carousel */}
+      <div className="sm:hidden w-full flex overflow-x-auto snap-x snap-mandatory gap-4 px-8">
+        {lootChoices.map((item) => (
+          <div key={item.id} className="snap-center shrink-0 w-[75vw] max-w-xs">
+            <LootCard item={item} onSelect={() => selectLoot(item)} />
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: flex row */}
+      <div className="hidden sm:flex gap-6 flex-wrap justify-center px-4">
+        {lootChoices.map((item) => (
+          <LootCard key={item.id} item={item} onSelect={() => selectLoot(item)} />
+        ))}
       </div>
     </div>
   )

@@ -191,7 +191,7 @@ function ItemDetails({ selectedItem, selectedFrom, onEquip, onUnequip, onClear }
   const isEmpty = selectedItem === null
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 md:w-64 flex flex-col gap-3">
+    <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 sm:w-64 flex flex-col gap-3">
       <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">Item Details</p>
 
       {isEmpty ? (
@@ -286,9 +286,9 @@ export default function InventoryView() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 p-4 w-full max-w-5xl mx-auto min-h-full md:items-start">
+    <div className="flex flex-col sm:flex-row gap-4 p-4 w-full max-w-5xl mx-auto min-h-full sm:items-start">
       {/* Section 1: Paper Doll + Stats */}
-      <div className="flex flex-col gap-3 w-full md:w-auto">
+      <div className="flex flex-col gap-3 w-full sm:w-auto">
         <PaperDoll
           equipment={equipment}
           selectedItem={selectedItem}

@@ -153,16 +153,16 @@ export default function HubView() {
   const availablePoints = computeAvailablePoints(totalXp, talents)
 
   return (
-    <div className="flex flex-col items-center gap-4 sm:gap-5 p-3 sm:p-5 max-w-lg mx-auto min-h-full">
+    <div className="flex flex-col h-full gap-3 sm:gap-4 p-3 sm:p-5 max-w-lg mx-auto w-full">
 
       {/* Header */}
-      <div className="text-center pt-1">
+      <div className="text-center shrink-0">
         <p className="text-[10px] text-amber-400/40 uppercase tracking-widest mb-0.5">Base Camp</p>
         <h1 className="text-3xl font-bold tracking-widest uppercase text-white">The HUB</h1>
       </div>
 
       {/* XP + Points bar */}
-      <div className="w-full bg-gray-900 border border-gray-700 rounded-xl px-5 py-3 flex items-center justify-center gap-5">
+      <div className="w-full shrink-0 bg-gray-900 border border-gray-700 rounded-xl px-4 sm:px-5 py-3 flex items-center justify-center gap-4 sm:gap-5">
         <div className="text-center">
           <p className="text-[10px] text-amber-400/50 uppercase tracking-widest">Total XP</p>
           <p className="text-amber-300 text-lg font-bold">{totalXp}</p>
@@ -184,7 +184,7 @@ export default function HubView() {
       </div>
 
       {/* 3-column talent tree */}
-      <div className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4">
+      <div className="flex-1 min-h-0 overflow-y-auto w-full bg-gray-900 border border-gray-700 rounded-xl p-3 sm:p-4">
         <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest text-center mb-4">
           Talent Tree
         </p>
@@ -207,7 +207,7 @@ export default function HubView() {
       {/* Embark */}
       <button
         onClick={generateMap}
-        className="w-full max-w-xs py-4 rounded-xl border-2 border-amber-500 bg-amber-500/10
+        className="w-full shrink-0 py-4 rounded-xl border-2 border-amber-500 bg-amber-500/10
                    text-amber-300 text-base font-bold uppercase tracking-widest
                    hover:bg-amber-500/20 active:bg-amber-500/30 transition-colors"
       >

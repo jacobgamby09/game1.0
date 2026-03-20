@@ -14,7 +14,7 @@ export default function App() {
   const activeView = useGameStore((s) => s.activeView)
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-gray-950 text-white overflow-hidden">
       <main className="flex-1 overflow-y-auto pt-[env(safe-area-inset-top,0px)]">
         {views[activeView]}
       </main>
