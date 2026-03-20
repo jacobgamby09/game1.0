@@ -286,9 +286,9 @@ export default function InventoryView() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 p-4 w-full max-w-5xl mx-auto min-h-full items-start">
+    <div className="flex flex-col md:flex-row gap-4 p-4 w-full max-w-5xl mx-auto min-h-full md:items-start">
       {/* Section 1: Paper Doll + Stats */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 w-full md:w-auto">
         <PaperDoll
           equipment={equipment}
           selectedItem={selectedItem}

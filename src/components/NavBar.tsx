@@ -11,14 +11,14 @@ export default function NavBar() {
   const { activeView, setActiveView } = useGameStore()
 
   return (
-    <nav className="bg-gray-900 border-t border-gray-800 flex items-stretch h-16 shrink-0">
+    <nav className="bg-gray-900 border-t border-gray-800 flex items-stretch shrink-0 pb-[env(safe-area-inset-bottom,0px)]">
       {tabs.map(({ view, label, Icon }) => {
         const isActive = activeView === view
         return (
           <button
             key={view}
             onClick={() => setActiveView(view)}
-            className={`flex flex-col items-center justify-center flex-1 gap-1 text-xs font-semibold tracking-widest uppercase transition-colors
+            className={`flex flex-col items-center justify-center flex-1 min-h-[64px] gap-1 text-xs font-semibold tracking-widest uppercase transition-colors
               ${isActive
                 ? 'text-amber-400 border-t-2 border-amber-400 -mt-px'
                 : 'text-gray-500 hover:text-gray-300 border-t-2 border-transparent -mt-px'

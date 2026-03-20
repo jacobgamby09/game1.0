@@ -296,7 +296,7 @@ function ActiveSkills({ shieldBashCooldown, onShieldBash, isCombatActive, spellI
       <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">
         Active Skills
       </p>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={onShieldBash}
           disabled={bashDisabled}
@@ -426,7 +426,7 @@ function LootCard({ item, onSelect }: { item: Item; onSelect: () => void }) {
   return (
     <div
       onClick={onSelect}
-      className={`bg-gray-900 border rounded-2xl p-6 w-56 flex flex-col gap-4
+      className={`bg-gray-900 border rounded-2xl p-6 w-full max-w-xs sm:w-56 flex flex-col gap-4
                   hover:bg-gray-800/80 transition-all duration-200 cursor-pointer group
                   ${rc.border} ${rc.glow}`}
     >
@@ -475,7 +475,7 @@ function LootSelectionOverlay() {
           <p className="text-xs text-amber-400/60 uppercase tracking-widest mb-1">Treasure Found</p>
           <h2 className="text-3xl font-bold tracking-widest uppercase text-white">Choose Your Reward</h2>
         </div>
-        <div className="flex gap-6 flex-wrap justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 items-center sm:flex-wrap sm:justify-center">
           {lootChoices.map((item) => (
             <LootCard key={item.id} item={item} onSelect={() => selectLoot(item)} />
           ))}

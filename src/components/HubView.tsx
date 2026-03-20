@@ -67,18 +67,18 @@ function TalentCard({ node, currentRank, availablePoints, prereqMet, onUpgrade }
       onClick={canUpgrade ? onUpgrade : undefined}
       disabled={!canUpgrade}
       title={node.description}
-      className={`w-full rounded-lg border p-2.5 flex flex-col items-center gap-1.5 transition-all duration-150
+      className={`w-full rounded-lg border p-1.5 sm:p-2.5 flex flex-col items-center gap-1 sm:gap-1.5 transition-all duration-150
         ${borderClass} ${bgClass} ${canUpgrade ? 'cursor-pointer' : 'cursor-default'}`}
     >
-      <Icon size={18} className={iconColor} />
-      <p className={`text-[11px] font-bold text-center leading-tight ${nameClass}`}>{node.name}</p>
+      <Icon size={14} className={iconColor} />
+      <p className={`text-[9px] sm:text-[11px] font-bold text-center leading-tight ${nameClass}`}>{node.name}</p>
 
       {/* Rank dots */}
       <div className="flex gap-0.5">
         {Array.from({ length: node.maxRank }).map((_, i) => (
           <span
             key={i}
-            className={`text-[10px] leading-none ${
+            className={`text-[8px] sm:text-[10px] leading-none ${
               i < currentRank
                 ? isMaxRank ? 'text-amber-400' : meta.color
                 : 'text-gray-700'
@@ -91,7 +91,7 @@ function TalentCard({ node, currentRank, availablePoints, prereqMet, onUpgrade }
 
       {/* Cost / maxed */}
       {!isMaxRank && (
-        <div className={`text-[9px] font-bold uppercase tracking-widest ${
+        <div className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest ${
           canUpgrade ? meta.color : 'text-gray-700'
         }`}>
           {node.costPerRank} pt{node.costPerRank !== 1 ? 's' : ''}
@@ -153,7 +153,7 @@ export default function HubView() {
   const availablePoints = computeAvailablePoints(totalXp, talents)
 
   return (
-    <div className="flex flex-col items-center gap-5 p-5 max-w-lg mx-auto min-h-full">
+    <div className="flex flex-col items-center gap-4 sm:gap-5 p-3 sm:p-5 max-w-lg mx-auto min-h-full">
 
       {/* Header */}
       <div className="text-center pt-1">
@@ -188,7 +188,7 @@ export default function HubView() {
         <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest text-center mb-4">
           Talent Tree
         </p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
           {(['vitality', 'might', 'celerity'] as TalentBranch[]).map(branch => (
             <BranchColumn
               key={branch}
