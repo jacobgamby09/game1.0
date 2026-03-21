@@ -141,7 +141,7 @@ const VOID_WARDEN_BASE: MobBase = {
 }
 
 function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob {
-  const floorMult = 1 + floor * 0.12
+  const floorMult = 1 + floor * 0.10
 
   let base: MobBase
   let tier: MobTier
@@ -253,15 +253,16 @@ const MID_FLOOR_TYPES: MapNode['type'][] = ['mob', 'mob', 'rest', 'chest']
 
 function buildMap(): MapNode[][] {
   const floors: MapNode[][] = []
+  const eliteFloor2 = Math.floor(Math.random() * 4) + 15 // 15, 16, 17, or 18
 
-  for (let f = 1; f <= 11; f++) {
+  for (let f = 1; f <= 20; f++) {
     let types: MapNode['type'][]
 
     if (f === 1) {
       types = ['mob']
-    } else if (f === 5 || f === 8) {
+    } else if (f === 10 || f === eliteFloor2) {
       types = ['elite']
-    } else if (f === 11) {
+    } else if (f === 20) {
       types = ['boss']
     } else {
       const count = Math.random() < 0.5 ? 2 : 3
@@ -281,7 +282,7 @@ function buildMap(): MapNode[][] {
     )
   }
 
-  for (let fi = 0; fi < 10; fi++) {
+  for (let fi = 0; fi < 19; fi++) {
     const current = floors[fi]
     const next = floors[fi + 1]
 

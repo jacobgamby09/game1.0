@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap, Heart } from 'lucide-react'
 import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, MobTier } from '../stores/useGameStore'
@@ -28,7 +28,7 @@ function nodeX(nodesOnFloor: number, index: number): number {
 }
 
 function nodeY(floor: number): number {
-  return (11 - floor) * FLOOR_H + FLOOR_H / 2
+  return (20 - floor) * FLOOR_H + FLOOR_H / 2
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -79,7 +79,15 @@ function MapView() {
 
   const allNodes = act1Map.flat()
   const prevNode = allNodes.find((n) => n.id === currentMapNodeId) ?? null
-  const totalH = 11 * FLOOR_H
+  const totalH = 20 * FLOOR_H
+
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!scrollRef.current) return
+    const y = nodeY(currentFloor)
+    const viewH = scrollRef.current.offsetHeight
+    scrollRef.current.scrollTop = y - viewH / 2
+  }, [currentFloor])
 
   // A node is selectable if it's on the current floor and connected from the prev node
   function isAvailable(node: MapNode): boolean {
@@ -96,10 +104,10 @@ function MapView() {
     return '#374151' // gray-700 locked
   }
 
-  const actComplete = currentFloor > 11
+  const actComplete = currentFloor > 20
 
   return (
-    <div className="flex flex-col items-center w-full min-h-full p-4 gap-4">
+    <div className="flex flex-col items-center w-full h-full p-4 gap-3">
       {/* Player stats HUD */}
       <PlayerStatsBar />
 
@@ -113,7 +121,7 @@ function MapView() {
         </div>
         <div className="flex items-center gap-3 text-xs font-semibold text-gray-400">
           <span className="text-amber-400">⭐ {playerXp} XP</span>
-          <span>Floor {Math.min(currentFloor, 11)} / 11</span>
+          <span>Floor {Math.min(currentFloor, 20)} / 20</span>
         </div>
       </div>
 
@@ -123,9 +131,13 @@ function MapView() {
         </p>
       )}
 
-      {/* Map container */}
+      {/* Scrollable map area */}
       <div
-        className="relative bg-gray-950 border border-gray-800 rounded-xl overflow-hidden"
+        ref={scrollRef}
+        className="flex-1 min-h-0 w-full max-w-xs mx-auto overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+      <div
+        className="relative mx-auto bg-gray-950 border border-gray-800 rounded-xl"
         style={{ width: CONTAINER_W, height: totalH }}
       >
         {/* SVG connection lines */}
@@ -202,6 +214,7 @@ function MapView() {
             )
           })
         )}
+      </div>
       </div>
 
       {/* Legend */}
