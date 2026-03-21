@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap, Heart, Coins, ShoppingCart } from 'lucide-react'
 import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, MobTier, DamageIndicator } from '../stores/useGameStore'
+import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
 // ─── Slot icon maps (shared by LootCard) ──────────────────────────────────────
 
@@ -262,13 +263,15 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
         <span
           key={d.id}
           className={`animate-float-up absolute select-none font-extrabold tabular-nums z-10
-            ${d.isCrit
+            ${d.isSkill
+              ? 'text-lg text-blue-300 drop-shadow-[0_0_6px_rgb(147_197_253)] top-0'
+              : d.isCrit
               ? 'text-2xl text-yellow-300 drop-shadow-[0_0_8px_rgb(253_224_71)] -top-3'
               : 'text-base text-red-400 top-0'
             }`}
           style={{ left: `${(Math.floor(d.id) * 37 % 50) + 20}%` }}
         >
-          {d.isCrit ? `⚡${d.value}` : `-${d.value}`}
+          {d.isSkill ? `✦${d.value}` : d.isCrit ? `⚡${d.value}` : `-${d.value}`}
         </span>
       ))}
 
@@ -536,9 +539,10 @@ function CombatArena() {
 
 // ─── LootCard ─────────────────────────────────────────────────────────────────
 
-function LootCard({ item, onSelect }: { item: Item; onSelect: () => void }) {
+function LootCard({ item, onSelect, equipment }: { item: Item; onSelect: () => void; equipment: Record<EquipSlot, Item | null> }) {
   const Icon = SLOT_ICONS[item.equipSlot]
   const rc = RARITY_COLORS[item.rarity]
+  const diff = getStatDiff(item, equipment[item.equipSlot])
   return (
     <div
       onClick={onSelect}
@@ -563,9 +567,12 @@ function LootCard({ item, onSelect }: { item: Item; onSelect: () => void }) {
       <p className="text-gray-400 text-sm italic text-center leading-snug">{item.description}</p>
 
       <div className="flex flex-col gap-1">
-        {item.stats.damage      !== undefined && <p className="text-red-400 text-sm font-semibold">+{item.stats.damage} Damage</p>}
-        {item.stats.hp          !== undefined && <p className="text-green-400 text-sm font-semibold">+{item.stats.hp} Max HP</p>}
-        {item.stats.attackSpeed !== undefined && <p className="text-blue-400 text-sm font-semibold">+{item.stats.attackSpeed.toFixed(1)} Atk Speed</p>}
+        {!equipment[item.equipSlot] && (
+          <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
+        )}
+        {item.stats.damage      !== undefined && <p className="text-red-400 text-sm font-semibold">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
+        {item.stats.hp          !== undefined && <p className="text-green-400 text-sm font-semibold">+{item.stats.hp} Max HP<DiffBadge diff={diff.hp} /></p>}
+        {item.stats.attackSpeed !== undefined && <p className="text-blue-400 text-sm font-semibold">+{item.stats.attackSpeed.toFixed(1)} Atk Speed<DiffBadgeF diff={diff.attackSpeed} /></p>}
         {item.ability && <p className="text-orange-400 text-sm font-semibold">✦ {item.ability.name}: {item.ability.description}</p>}
       </div>
 
@@ -581,7 +588,7 @@ function LootCard({ item, onSelect }: { item: Item; onSelect: () => void }) {
 // ─── LootSelectionOverlay ─────────────────────────────────────────────────────
 
 function LootSelectionOverlay() {
-  const { lootChoices, isLootPickerVisible, selectLoot } = useGameStore()
+  const { lootChoices, isLootPickerVisible, selectLoot, equipment } = useGameStore()
   if (!isLootPickerVisible) return null
 
   return (
@@ -595,7 +602,7 @@ function LootSelectionOverlay() {
       <div className="sm:hidden w-full flex overflow-x-auto snap-x snap-mandatory gap-4 px-8">
         {lootChoices.map((item) => (
           <div key={item.id} className="snap-center shrink-0 w-[75vw] max-w-xs">
-            <LootCard item={item} onSelect={() => selectLoot(item)} />
+            <LootCard item={item} onSelect={() => selectLoot(item)} equipment={equipment} />
           </div>
         ))}
       </div>
@@ -603,7 +610,7 @@ function LootSelectionOverlay() {
       {/* Desktop: flex row */}
       <div className="hidden sm:flex gap-6 flex-wrap justify-center px-4">
         {lootChoices.map((item) => (
-          <LootCard key={item.id} item={item} onSelect={() => selectLoot(item)} />
+          <LootCard key={item.id} item={item} onSelect={() => selectLoot(item)} equipment={equipment} />
         ))}
       </div>
     </div>
@@ -613,11 +620,12 @@ function LootSelectionOverlay() {
 // ─── VictoryOverlay ───────────────────────────────────────────────────────────
 
 function VictoryOverlay() {
-  const { combatReward, collectCombatReward } = useGameStore()
+  const { combatReward, collectCombatReward, equipment } = useGameStore()
   if (!combatReward) return null
   const { xp, gold, item } = combatReward
   const rc = RARITY_COLORS[item.rarity]
   const Icon = SLOT_ICONS[item.equipSlot]
+  const diff = getStatDiff(item, equipment[item.equipSlot])
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="flex flex-col items-center gap-6 text-center">
@@ -646,9 +654,12 @@ function VictoryOverlay() {
             <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${rc.text}`}>{item.rarity}</p>
           </div>
           <div className="flex flex-col gap-0.5 text-left text-sm font-semibold">
-            {item.stats.damage      !== undefined && <p className="text-red-400">+{item.stats.damage} Damage</p>}
-            {item.stats.hp          !== undefined && <p className="text-green-400">+{item.stats.hp} Max HP</p>}
-            {item.stats.attackSpeed !== undefined && <p className="text-blue-400">+{item.stats.attackSpeed.toFixed(1)} Atk Speed</p>}
+            {!equipment[item.equipSlot] && (
+              <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
+            )}
+            {item.stats.damage      !== undefined && <p className="text-red-400">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
+            {item.stats.hp          !== undefined && <p className="text-green-400">+{item.stats.hp} Max HP<DiffBadge diff={diff.hp} /></p>}
+            {item.stats.attackSpeed !== undefined && <p className="text-blue-400">+{item.stats.attackSpeed.toFixed(1)} Atk Speed<DiffBadgeF diff={diff.attackSpeed} /></p>}
             {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
           </div>
         </div>
@@ -694,7 +705,7 @@ function CampOverlay() {
 // ─── MarketOverlay ────────────────────────────────────────────────────────────
 
 function MarketOverlay() {
-  const { marketItems, player, buyItem, rerollMarket, leaveMarket } = useGameStore()
+  const { marketItems, player, equipment, buyItem, rerollMarket, leaveMarket } = useGameStore()
   if (!marketItems) return null
 
   const canReroll = player.gold >= 15
@@ -719,6 +730,7 @@ function MarketOverlay() {
           const canAfford = player.gold >= price
           const rc = RARITY_COLORS[item.rarity]
           const Icon = SLOT_ICONS[item.equipSlot]
+          const diff = getStatDiff(item, equipment[item.equipSlot])
           return (
             <div key={item.id} className={`bg-gray-900 border rounded-xl p-3 flex flex-col gap-2 ${rc.border} ${rc.glow}`}>
               <div className="flex items-center gap-2">
@@ -730,9 +742,12 @@ function MarketOverlay() {
               </div>
               <p className="text-gray-400 text-xs italic leading-snug flex-1">{item.description}</p>
               <div className="flex flex-col gap-0.5 text-xs font-semibold">
-                {item.stats.damage      !== undefined && <p className="text-red-400">+{item.stats.damage} Damage</p>}
-                {item.stats.hp          !== undefined && <p className="text-green-400">+{item.stats.hp} HP</p>}
-                {item.stats.attackSpeed !== undefined && <p className="text-blue-400">+{item.stats.attackSpeed.toFixed(1)} Atk Spd</p>}
+                {!equipment[item.equipSlot] && (
+                  <p className="text-amber-400 text-[9px] font-bold uppercase tracking-wide">Slot: Empty</p>
+                )}
+                {item.stats.damage      !== undefined && <p className="text-red-400">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
+                {item.stats.hp          !== undefined && <p className="text-green-400">+{item.stats.hp} HP<DiffBadge diff={diff.hp} /></p>}
+                {item.stats.attackSpeed !== undefined && <p className="text-blue-400">+{item.stats.attackSpeed.toFixed(1)} Atk Spd<DiffBadgeF diff={diff.attackSpeed} /></p>}
                 {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
               </div>
               <button

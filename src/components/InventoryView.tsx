@@ -4,6 +4,7 @@ import {
 } from 'lucide-react'
 import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
 import type { Item, EquipSlot } from '../stores/useGameStore'
+import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
 // ─── Slot icon map ────────────────────────────────────────────────────────────
 
@@ -182,12 +183,13 @@ function BackpackGrid({ backpack, selectedItem, onSelect }: BackpackGridProps) {
 interface ItemDetailsProps {
   selectedItem: Item | null
   selectedFrom: 'backpack' | EquipSlot | null
+  equipment: Record<EquipSlot, Item | null>
   onEquip: (item: Item) => void
   onUnequip: (slotKey: string) => void
   onClear: () => void
 }
 
-function ItemDetails({ selectedItem, selectedFrom, onEquip, onUnequip, onClear }: ItemDetailsProps) {
+function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip, onClear }: ItemDetailsProps) {
   const isEmpty = selectedItem === null
 
   return (
@@ -220,14 +222,32 @@ function ItemDetails({ selectedItem, selectedFrom, onEquip, onUnequip, onClear }
 
           {/* Stats */}
           <div className="flex flex-col gap-1">
+            {selectedFrom === 'backpack' && !equipment[selectedItem.equipSlot] && (
+              <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
+            )}
             {selectedItem.stats.damage !== undefined && (
-              <p className="text-red-400 text-sm font-semibold">+{selectedItem.stats.damage} Damage</p>
+              <p className="text-red-400 text-sm font-semibold">
+                +{selectedItem.stats.damage} Damage
+                {selectedFrom === 'backpack' && (
+                  <DiffBadge diff={getStatDiff(selectedItem, equipment[selectedItem.equipSlot]).damage} />
+                )}
+              </p>
             )}
             {selectedItem.stats.hp !== undefined && (
-              <p className="text-green-400 text-sm font-semibold">+{selectedItem.stats.hp} Max HP</p>
+              <p className="text-green-400 text-sm font-semibold">
+                +{selectedItem.stats.hp} Max HP
+                {selectedFrom === 'backpack' && (
+                  <DiffBadge diff={getStatDiff(selectedItem, equipment[selectedItem.equipSlot]).hp} />
+                )}
+              </p>
             )}
             {selectedItem.stats.attackSpeed !== undefined && (
-              <p className="text-blue-400 text-sm font-semibold">+{selectedItem.stats.attackSpeed.toFixed(1)} Atk Speed</p>
+              <p className="text-blue-400 text-sm font-semibold">
+                +{selectedItem.stats.attackSpeed.toFixed(1)} Atk Speed
+                {selectedFrom === 'backpack' && (
+                  <DiffBadgeF diff={getStatDiff(selectedItem, equipment[selectedItem.equipSlot]).attackSpeed} />
+                )}
+              </p>
             )}
           </div>
 
@@ -313,6 +333,7 @@ export default function InventoryView() {
       <ItemDetails
         selectedItem={selectedItem}
         selectedFrom={selectedFrom}
+        equipment={equipment}
         onEquip={equipItem}
         onUnequip={unequipItem}
         onClear={clearSelection}

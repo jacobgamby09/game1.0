@@ -71,6 +71,7 @@ export interface DamageIndicator {
   id: number
   value: number
   isCrit: boolean
+  isSkill: boolean      // true for Shield Bash / spell damage
   target: 'player' | 'enemy'
   createdAt: number
 }
@@ -436,6 +437,30 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
   }
 }
 
+// ─── Killing blow helper ──────────────────────────────────────────────────────
+// Sets isKillingBlowActive, schedules the 800ms victory resolution, and returns
+// the immediate state patch. Called from tickCombat, useShieldBash, useEquippedSpell.
+
+function triggerEnemyDeath(
+  state: Parameters<typeof mobDeathPatch>[0],
+  mob: Mob,
+  extraPatch: object = {}
+): object {
+  const snapshot = { ...state, currentMob: mob }
+  setTimeout(() => {
+    useGameStore.setState((s) => {
+      if (!s.isKillingBlowActive) return s
+      return { ...mobDeathPatch(snapshot), isKillingBlowActive: false }
+    })
+  }, 800)
+  return {
+    currentMob: mob,
+    isCombatActive: false,
+    isKillingBlowActive: true,
+    ...extraPatch,
+  }
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 const TICK_MS = 50
@@ -690,11 +715,22 @@ export const useGameStore = create<GameStore>((set) => ({
     set((state) => {
       if (!state.isCombatActive || state.shieldBashCooldown > 0) return state
 
+      const now = Date.now()
       const mob = { ...state.currentMob }
       mob.currentHp = Math.max(0, mob.currentHp - SHIELD_BASH_DAMAGE)
 
+      const damageIndicators = [
+        ...state.damageIndicators,
+        { id: now + Math.random(), value: SHIELD_BASH_DAMAGE, isCrit: false, isSkill: true, target: 'enemy' as const, createdAt: now },
+      ]
+
       if (mob.currentHp <= 0) {
-        return { ...mobDeathPatch(state), currentMob: mob, mobAttackProgress: 0, shieldBashCooldown: SHIELD_BASH_COOLDOWN_MS }
+        return {
+          damageIndicators,
+          mobAttackProgress: 0,
+          shieldBashCooldown: SHIELD_BASH_COOLDOWN_MS,
+          ...triggerEnemyDeath(state, mob),
+        }
       }
 
       return {
@@ -702,6 +738,7 @@ export const useGameStore = create<GameStore>((set) => ({
         mobAttackProgress: 0,
         shieldBashCooldown: SHIELD_BASH_COOLDOWN_MS,
         isCombatActive: true,
+        damageIndicators,
       }
     }),
 
@@ -713,19 +750,27 @@ export const useGameStore = create<GameStore>((set) => ({
 
       const { ability } = spell
       const mob = { ...state.currentMob }
+      const now = Date.now()
+      const damageIndicators = [...state.damageIndicators]
 
       if (ability.effectType === 'damageEnemy') {
         mob.currentHp = Math.max(0, mob.currentHp - ability.value)
+        damageIndicators.push({ id: now + Math.random(), value: ability.value, isCrit: false, isSkill: true, target: 'enemy', createdAt: now })
       }
 
       if (mob.currentHp <= 0) {
-        return { ...mobDeathPatch(state), currentMob: mob, equippedSpellCooldown: ability.cooldown }
+        return {
+          damageIndicators,
+          equippedSpellCooldown: ability.cooldown,
+          ...triggerEnemyDeath(state, mob),
+        }
       }
 
       return {
         currentMob: mob,
         equippedSpellCooldown: ability.cooldown,
         isCombatActive: true,
+        damageIndicators,
       }
     }),
 
@@ -898,7 +943,7 @@ export const useGameStore = create<GameStore>((set) => ({
         if (eff.lifesteal > 0) {
           player.currentHp = Math.min(eff.maxHp, player.currentHp + eff.lifesteal)
         }
-        damageIndicators.push({ id: now + Math.random(), value: dmg, isCrit, target: 'enemy', createdAt: now })
+        damageIndicators.push({ id: now + Math.random(), value: dmg, isCrit, isSkill: false, target: 'enemy', createdAt: now })
       }
 
       // Execution: instant kill below threshold
@@ -916,7 +961,7 @@ export const useGameStore = create<GameStore>((set) => ({
           const dmgTaken = Math.max(0, mob.baseDamage - eff.damageReduction)
           player.currentHp = Math.max(0, player.currentHp - dmgTaken)
           if (dmgTaken > 0) {
-            damageIndicators.push({ id: now + Math.random() + 1, value: dmgTaken, isCrit: false, target: 'player', createdAt: now })
+            damageIndicators.push({ id: now + Math.random() + 1, value: dmgTaken, isCrit: false, isSkill: false, target: 'player', createdAt: now })
           }
         } else {
           newEventText = '✦ Dodged!'
@@ -946,23 +991,14 @@ export const useGameStore = create<GameStore>((set) => ({
 
       // Player wins — killing blow: pause 800ms before showing reward
       if (!isCombatActive && mob.currentHp <= 0) {
-        const snapshot = { ...state, currentMob: mob }
-        setTimeout(() => {
-          useGameStore.setState((s) => {
-            if (!s.isKillingBlowActive) return s
-            return { ...mobDeathPatch(snapshot), isKillingBlowActive: false }
-          })
-        }, 800)
         return {
           player,
-          currentMob: mob,
           playerAttackProgress,
           mobAttackProgress,
           shieldBashCooldown,
           equippedSpellCooldown,
-          isCombatActive: false,
-          isKillingBlowActive: true,
           damageIndicators,
+          ...triggerEnemyDeath(state, mob),
         }
       }
 
