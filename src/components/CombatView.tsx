@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap, Heart } from 'lucide-react'
 import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, MobTier } from '../stores/useGameStore'
@@ -281,7 +281,7 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier }: 
         </div>
         <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-150 ${hpColor(hpPct)}`}
+            className={`h-full rounded-full transition-all duration-300 ${hpColor(hpPct)}`}
             style={{ width: `${hpPct}%` }}
           />
         </div>
@@ -386,7 +386,17 @@ function CombatArena() {
     talents,
     combatReward,
     engageCombat,
+    combatEventKey,
+    combatEventText,
   } = useGameStore()
+
+  const [displayText, setDisplayText] = useState<string | null>(null)
+  useEffect(() => {
+    if (!combatEventText) return
+    setDisplayText(combatEventText)
+    const t = setTimeout(() => setDisplayText(null), 1500)
+    return () => clearTimeout(t)
+  }, [combatEventKey])
 
   const eff = getEffectiveStats(player, equipment, talents)
   const displayPlayer = { ...player, maxHp: eff.maxHp, baseDamage: eff.damage, attackSpeed: eff.attackSpeed }
@@ -408,6 +418,20 @@ function CombatArena() {
           Battle Arena
         </h1>
         <Swords className="text-amber-400 scale-x-[-1]" size={28} />
+      </div>
+
+      {/* Combat event label */}
+      <div className="h-7 flex items-center justify-center">
+        {displayText && (
+          <span className={`text-sm font-bold tracking-widest uppercase ${
+            displayText.includes('Critical') ? 'text-yellow-400' :
+            displayText.includes('Dodged')   ? 'text-cyan-400'   :
+            displayText.includes('Executed') ? 'text-purple-400' :
+            'text-amber-300'
+          }`}>
+            {displayText}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-3xl">

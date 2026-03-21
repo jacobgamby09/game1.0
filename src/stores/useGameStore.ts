@@ -118,12 +118,12 @@ const DEFAULT_PLAYER: Player = {
   maxHp: 100,
   currentHp: 100,
   baseDamage: 12,
-  attackSpeed: 1.2,
+  attackSpeed: 0.75,
 }
 
 const DEFAULT_MOB: Mob = {
   name: 'Orc Warrior', maxHp: 40, currentHp: 40,
-  baseDamage: 7, attackSpeed: 1.5, tier: 'normal',
+  baseDamage: 7, attackSpeed: 0.90, tier: 'normal',
 }
 
 // ─── Bestiary ─────────────────────────────────────────────────────────────────
@@ -131,13 +131,13 @@ const DEFAULT_MOB: Mob = {
 type MobBase = Omit<Mob, 'tier' | 'currentHp'>
 
 const BESTIARY: MobBase[] = [
-  { name: 'Goblin Rogue',  maxHp: 20,  baseDamage: 3,  attackSpeed: 0.8 },
-  { name: 'Undead Brute',  maxHp: 60,  baseDamage: 12, attackSpeed: 2.5 },
-  { name: 'Orc Warrior',   maxHp: 40,  baseDamage: 7,  attackSpeed: 1.5 },
+  { name: 'Goblin Rogue',  maxHp: 20,  baseDamage: 3,  attackSpeed: 0.50 },
+  { name: 'Undead Brute',  maxHp: 45,  baseDamage: 9,  attackSpeed: 1.50 },
+  { name: 'Orc Warrior',   maxHp: 40,  baseDamage: 7,  attackSpeed: 0.90 },
 ]
 
 const VOID_WARDEN_BASE: MobBase = {
-  name: 'The Void Warden', maxHp: 200, baseDamage: 15, attackSpeed: 1.8,
+  name: 'The Void Warden', maxHp: 200, baseDamage: 15, attackSpeed: 1.10,
 }
 
 function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob {
@@ -427,6 +427,8 @@ interface GameStore {
   // Event state
   combatReward: { xp: number; item: Item } | null
   restEvent: { healedAmount: number } | null
+  combatEventKey: number
+  combatEventText: string | null
 
   // Run state
   usedUndyingThisRun: boolean
@@ -573,6 +575,8 @@ export const useGameStore = create<GameStore>((set) => ({
   // ── Event state ─────────────────────────────────────────────────────────────
   combatReward: null,
   restEvent: null,
+  combatEventKey: 0,
+  combatEventText: null,
 
   // ── startCombat ─────────────────────────────────────────────────────────────
   startCombat: () =>
@@ -586,7 +590,7 @@ export const useGameStore = create<GameStore>((set) => ({
     }),
 
   // ── engageCombat ────────────────────────────────────────────────────────────
-  engageCombat: () => set({ isCombatActive: true }),
+  engageCombat: () => set({ isCombatActive: true, combatEventKey: 0, combatEventText: null }),
 
   // ── useShieldBash ───────────────────────────────────────────────────────────
   useShieldBash: () =>
@@ -754,6 +758,8 @@ export const useGameStore = create<GameStore>((set) => ({
       playerAttackProgress += effectiveAttackSpeed * (TICK_MS / 1000) * 100
       mobAttackProgress += mob.attackSpeed * (TICK_MS / 1000) * 100
 
+      let newEventText: string | null = null
+
       if (playerAttackProgress >= 100) {
         playerAttackProgress -= 100
         const isCrit = eff.critChance > 0 && Math.random() < eff.critChance
@@ -761,6 +767,7 @@ export const useGameStore = create<GameStore>((set) => ({
           ? 1 + eff.eliteBonusMultiplier : 1
         const dmg = Math.floor((isCrit ? eff.damage * 2 : eff.damage) * giantMult)
         mob.currentHp = Math.max(0, mob.currentHp - dmg)
+        if (isCrit) newEventText = '⚡ Critical Hit!'
         if (eff.lifesteal > 0) {
           player.currentHp = Math.min(eff.maxHp, player.currentHp + eff.lifesteal)
         }
@@ -768,7 +775,10 @@ export const useGameStore = create<GameStore>((set) => ({
 
       // Execution: instant kill below threshold
       if (eff.executionThreshold > 0 && mob.currentHp > 0) {
-        if (mob.currentHp / mob.maxHp <= eff.executionThreshold) mob.currentHp = 0
+        if (mob.currentHp / mob.maxHp <= eff.executionThreshold) {
+          mob.currentHp = 0
+          newEventText = '💀 Executed!'
+        }
       }
 
       if (mobAttackProgress >= 100) {
@@ -777,6 +787,8 @@ export const useGameStore = create<GameStore>((set) => ({
         if (!isDodged) {
           const dmgTaken = Math.max(0, mob.baseDamage - eff.damageReduction)
           player.currentHp = Math.max(0, player.currentHp - dmgTaken)
+        } else {
+          newEventText = '✦ Dodged!'
         }
       }
 
@@ -813,6 +825,10 @@ export const useGameStore = create<GameStore>((set) => ({
         }
       }
 
+      const eventUpdate = newEventText
+        ? { combatEventKey: state.combatEventKey + 1, combatEventText: newEventText }
+        : {}
+
       return {
         player,
         currentMob: mob,
@@ -821,6 +837,7 @@ export const useGameStore = create<GameStore>((set) => ({
         shieldBashCooldown,
         equippedSpellCooldown,
         isCombatActive,
+        ...eventUpdate,
       }
     }),
 }))
