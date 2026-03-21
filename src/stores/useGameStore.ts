@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -549,9 +550,12 @@ interface GameStore {
   totalXp: number
   talents: Record<string, number>
   upgradeTalent: (nodeId: string) => void
+  hardResetGame: () => void
 }
 
-export const useGameStore = create<GameStore>((set) => ({
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set) => ({
   // ── Navigation ──────────────────────────────────────────────────────────────
   activeView: 'hub',
   setActiveView: (view) => set({ activeView: view }),
@@ -1018,4 +1022,18 @@ export const useGameStore = create<GameStore>((set) => ({
         ...eventUpdate,
       }
     }),
-}))
+
+  hardResetGame: () => {
+    localStorage.removeItem('tactical-roguelite-storage')
+    window.location.reload()
+  },
+    }),
+    {
+      name: 'tactical-roguelite-storage',
+      partialize: (state) => ({
+        totalXp: state.totalXp,
+        talents:  state.talents,
+      }),
+    }
+  )
+)

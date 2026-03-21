@@ -156,16 +156,27 @@ function BranchColumn({ branch, talents, availablePoints, upgradeTalent }: Branc
 // ─── HubView ──────────────────────────────────────────────────────────────────
 
 export default function HubView() {
-  const { totalXp, talents, upgradeTalent, generateMap } = useGameStore()
+  const { totalXp, talents, upgradeTalent, generateMap, hardResetGame } = useGameStore()
   const availablePoints = computeAvailablePoints(totalXp, talents)
 
   return (
     <div className="flex flex-col h-full gap-3 sm:gap-4 p-3 sm:p-5 max-w-lg mx-auto w-full">
 
       {/* Header */}
-      <div className="text-center shrink-0">
+      <div className="relative text-center shrink-0">
         <p className="text-[10px] text-amber-400/40 uppercase tracking-widest mb-0.5">Base Camp</p>
         <h1 className="text-3xl font-bold tracking-widest uppercase text-white">The HUB</h1>
+        <button
+          onClick={() => {
+            if (window.confirm('WARNING: This will permanently delete your save file, including all XP and Talents. Are you sure?')) {
+              hardResetGame()
+            }
+          }}
+          title="Wipe Save (Hard Reset)"
+          className="absolute top-0 right-0 text-[10px] text-red-900 hover:text-red-500 uppercase tracking-widest transition-colors"
+        >
+          Wipe Save
+        </button>
       </div>
 
       {/* XP + Points bar */}
