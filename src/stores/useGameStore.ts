@@ -10,12 +10,13 @@ export type EquipSlot =
   | 'amulet' | 'ring1' | 'ring2'
   | 'spell'
 
-export type Rarity = 'common' | 'rare' | 'epic'
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic'
 
 export const RARITY_COLORS: Record<Rarity, { text: string; border: string; glow: string }> = {
-  common: { text: 'text-gray-300',   border: 'border-gray-500',   glow: '' },
-  rare:   { text: 'text-blue-400',   border: 'border-blue-500',   glow: 'ring-1 ring-blue-500/40' },
-  epic:   { text: 'text-purple-400', border: 'border-purple-500', glow: 'ring-1 ring-purple-500/40' },
+  common:   { text: 'text-gray-300',   border: 'border-gray-500',   glow: '' },
+  uncommon: { text: 'text-teal-400',   border: 'border-teal-500',   glow: 'ring-1 ring-teal-500/40' },
+  rare:     { text: 'text-blue-400',   border: 'border-blue-500',   glow: 'ring-1 ring-blue-500/40' },
+  epic:     { text: 'text-purple-400', border: 'border-purple-500', glow: 'ring-1 ring-purple-500/40' },
 }
 
 // ─── Talent System ────────────────────────────────────────────────────────────
@@ -64,6 +65,16 @@ export function computeAvailablePoints(totalXp: number, talents: Record<string, 
   return Math.floor(totalXp / 100) - spent
 }
 
+// ─── Damage Indicator ─────────────────────────────────────────────────────────
+
+export interface DamageIndicator {
+  id: number
+  value: number
+  isCrit: boolean
+  target: 'player' | 'enemy'
+  createdAt: number
+}
+
 // ─── Item / Player types ──────────────────────────────────────────────────────
 
 export interface ItemAbility {
@@ -90,6 +101,7 @@ export interface Player {
   currentHp: number
   baseDamage: number
   attackSpeed: number // attacks per second
+  gold: number        // per-run; resets on new run / death
 }
 
 export type MobTier = 'normal' | 'elite' | 'boss'
@@ -105,8 +117,8 @@ export interface Mob {
 
 export interface MapNode {
   id: string            // "{floor}-{index}", e.g. "3-1"
-  floor: number         // 1–11
-  type: 'mob' | 'elite' | 'boss' | 'rest' | 'chest'
+  floor: number         // 1–20
+  type: 'mob' | 'elite' | 'boss' | 'rest' | 'chest' | 'market'
   connectedTo: string[] // IDs of nodes on floor+1 this leads to
   isCompleted: boolean
 }
@@ -119,6 +131,7 @@ const DEFAULT_PLAYER: Player = {
   currentHp: 100,
   baseDamage: 12,
   attackSpeed: 0.75,
+  gold: 0,
 }
 
 const DEFAULT_MOB: Mob = {
@@ -198,6 +211,15 @@ const COMMON_POOL: ItemBase[] = [
   { name: 'Flame Scroll',   equipSlot: 'spell',    rarity: 'common', description: 'A tattered scroll pulsing with heat.',           stats: { damage: 1 }, ability: { name: 'Fireball', description: 'Deals 25 damage.', cooldown: 12000, effectType: 'damageEnemy', value: 25 } },
 ]
 
+const UNCOMMON_POOL: ItemBase[] = [
+  { name: 'Hunting Knife',     equipSlot: 'mainHand', rarity: 'uncommon', description: 'Light and quick; preferred by scouts.',       stats: { damage: 4, attackSpeed: 0.1 } },
+  { name: 'Reinforced Shield', equipSlot: 'offHand',  rarity: 'uncommon', description: 'Iron-banded wood, heavier than it looks.',    stats: { hp: 12, damage: 2 } },
+  { name: 'Iron Cap',          equipSlot: 'head',     rarity: 'uncommon', description: 'Simple protection for common soldiers.',      stats: { hp: 8, damage: 2 } },
+  { name: 'Scale Hauberk',     equipSlot: 'chest',    rarity: 'uncommon', description: 'Overlapping scales of tempered steel.',       stats: { hp: 18 } },
+  { name: "Strider's Boots",   equipSlot: 'legs',     rarity: 'uncommon', description: 'Swift-soled boots for the long march.',       stats: { hp: 10, attackSpeed: 0.1 } },
+  { name: 'Bronze Amulet',     equipSlot: 'amulet',   rarity: 'uncommon', description: "A soldier's lucky charm, worn smooth.",       stats: { hp: 8, attackSpeed: 0.15 } },
+]
+
 const RARE_POOL: ItemBase[] = [
   { name: 'Steel Longsword', equipSlot: 'mainHand', rarity: 'rare', description: 'A well-balanced blade forged in the city smithy.',    stats: { damage: 8,  attackSpeed: 0.15 } },
   { name: 'Guardian Ward',   equipSlot: 'offHand',  rarity: 'rare', description: 'A warded buckler imbued with defensive sigils.',      stats: { hp: 15,     attackSpeed: 0.1 } },
@@ -224,8 +246,34 @@ function newItemId(): string {
 
 function getWeightedRandomItem(): Item {
   const roll = Math.random()
-  const pool = roll < 0.70 ? COMMON_POOL : roll < 0.95 ? RARE_POOL : EPIC_POOL
+  const pool = roll < 0.55 ? COMMON_POOL
+             : roll < 0.80 ? UNCOMMON_POOL
+             : roll < 0.95 ? RARE_POOL
+             : EPIC_POOL
   return { ...pool[Math.floor(Math.random() * pool.length)], id: newItemId() }
+}
+
+function itemPrice(rarity: Rarity): number {
+  const [lo, hi] = rarity === 'common'   ? [20,  30]
+                 : rarity === 'uncommon' ? [45,  65]
+                 : rarity === 'rare'     ? [100, 140]
+                 :                         [220, 280]
+  return Math.floor(Math.random() * (hi - lo + 1)) + lo
+}
+
+function generateMarketItems(): { item: Item; price: number }[] {
+  const result: { item: Item; price: number }[] = []
+  const usedNames = new Set<string>()
+  let attempts = 0
+  while (result.length < 4 && attempts < 50) {
+    const item = getWeightedRandomItem()
+    if (!usedNames.has(item.name)) {
+      result.push({ item, price: itemPrice(item.rarity) })
+      usedNames.add(item.name)
+    }
+    attempts++
+  }
+  return result
 }
 
 function randomDrop(): Item {
@@ -250,6 +298,7 @@ function randomThreeDrops(): Item[] {
 // ─── Map generation helpers ───────────────────────────────────────────────────
 
 const MID_FLOOR_TYPES: MapNode['type'][] = ['mob', 'mob', 'rest', 'chest']
+const MARKET_FLOORS = new Set([5, 12, 17])
 
 function buildMap(): MapNode[][] {
   const floors: MapNode[][] = []
@@ -260,6 +309,8 @@ function buildMap(): MapNode[][] {
 
     if (f === 1) {
       types = ['mob']
+    } else if (MARKET_FLOORS.has(f)) {
+      types = ['market']
     } else if (f === 10 || f === eliteFloor2) {
       types = ['elite']
     } else if (f === 20) {
@@ -369,17 +420,19 @@ export function getEffectiveStats(
 // Calling it in one place ensures useShieldBash, useEquippedSpell, and
 // tickCombat all produce the same victory transition.
 
-function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null }) {
+function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob; currentFloor: number }) {
   const act1Map = state.act1Map.map((floor) =>
     floor.map((n) =>
       n.id === state.currentMapNodeId ? { ...n, isCompleted: true } : n
     )
   )
+  const goldBase = Math.floor(Math.random() * 6) + 5  // 5–10
+  const goldAmount = (goldBase + state.currentFloor * 2) * (state.currentMob.tier === 'elite' ? 2 : 1)
   return {
     act1Map,
     isCombatActive: false as const,
     isMapVisible:   false as const,
-    combatReward: { xp: XP_PER_KILL, item: randomDrop() },
+    combatReward: { xp: XP_PER_KILL, gold: goldAmount, item: randomDrop() },
   }
 }
 
@@ -425,10 +478,17 @@ interface GameStore {
   isLootPickerVisible: boolean
 
   // Event state
-  combatReward: { xp: number; item: Item } | null
+  combatReward: { xp: number; gold: number; item: Item } | null
   restEvent: { healedAmount: number } | null
   combatEventKey: number
   combatEventText: string | null
+
+  // Market state
+  marketItems: { item: Item; price: number }[] | null
+
+  // Feedback state
+  damageIndicators: DamageIndicator[]
+  isKillingBlowActive: boolean
 
   // Run state
   usedUndyingThisRun: boolean
@@ -451,6 +511,14 @@ interface GameStore {
 
   // Rest actions
   leaveCamp: () => void
+
+  // Market actions
+  buyItem: (item: Item, price: number) => void
+  rerollMarket: () => void
+  leaveMarket: () => void
+
+  // Feedback actions
+  addDamageIndicator: (indicator: DamageIndicator) => void
 
   // Meta-progression (persistent across runs)
   totalXp: number
@@ -485,6 +553,9 @@ export const useGameStore = create<GameStore>((set) => ({
         isLootPickerVisible: false,
         combatReward: null,
         restEvent: null,
+        marketItems: null,
+        damageIndicators: [],
+        isKillingBlowActive: false,
         usedUndyingThisRun: false,
       }
     }),
@@ -547,6 +618,15 @@ export const useGameStore = create<GameStore>((set) => ({
         }
       }
 
+      if (node.type === 'market') {
+        return {
+          currentMapNodeId: nodeId,
+          currentFloor: state.currentFloor + 1,
+          act1Map: markComplete(state.act1Map),
+          marketItems: generateMarketItems(),
+        }
+      }
+
       return state
     }),
 
@@ -578,6 +658,13 @@ export const useGameStore = create<GameStore>((set) => ({
   combatEventKey: 0,
   combatEventText: null,
 
+  // ── Market state ────────────────────────────────────────────────────────────
+  marketItems: null,
+
+  // ── Feedback state ──────────────────────────────────────────────────────────
+  damageIndicators: [],
+  isKillingBlowActive: false,
+
   // ── startCombat ─────────────────────────────────────────────────────────────
   startCombat: () =>
     set({
@@ -590,7 +677,13 @@ export const useGameStore = create<GameStore>((set) => ({
     }),
 
   // ── engageCombat ────────────────────────────────────────────────────────────
-  engageCombat: () => set({ isCombatActive: true, combatEventKey: 0, combatEventText: null }),
+  engageCombat: () => set({
+    isCombatActive: true,
+    combatEventKey: 0,
+    combatEventText: null,
+    damageIndicators: [],
+    isKillingBlowActive: false,
+  }),
 
   // ── useShieldBash ───────────────────────────────────────────────────────────
   useShieldBash: () =>
@@ -662,6 +755,9 @@ export const useGameStore = create<GameStore>((set) => ({
         isLootPickerVisible: false,
         combatReward: null,
         restEvent: null,
+        marketItems: null,
+        damageIndicators: [],
+        isKillingBlowActive: false,
       }
     }),
 
@@ -711,7 +807,7 @@ export const useGameStore = create<GameStore>((set) => ({
         ? Math.min(eff.maxHp, state.player.currentHp + healAmount)
         : state.player.currentHp
       return {
-        player: { ...state.player, currentHp: newHp },
+        player: { ...state.player, currentHp: newHp, gold: state.player.gold + state.combatReward.gold },
         backpack: [...state.backpack, state.combatReward.item],
         playerXp: state.playerXp + state.combatReward.xp,
         currentFloor: state.currentFloor + 1,
@@ -722,6 +818,34 @@ export const useGameStore = create<GameStore>((set) => ({
 
   // ── leaveCamp ───────────────────────────────────────────────────────────────
   leaveCamp: () => set({ restEvent: null }),
+
+  // ── buyItem ─────────────────────────────────────────────────────────────────
+  buyItem: (item, price) =>
+    set((state) => {
+      if (!state.marketItems || state.player.gold < price) return state
+      return {
+        player: { ...state.player, gold: state.player.gold - price },
+        backpack: [...state.backpack, item],
+        marketItems: state.marketItems.filter((e) => e.item.id !== item.id),
+      }
+    }),
+
+  // ── rerollMarket ────────────────────────────────────────────────────────────
+  rerollMarket: () =>
+    set((state) => {
+      if (!state.marketItems || state.player.gold < 15) return state
+      return {
+        player: { ...state.player, gold: state.player.gold - 15 },
+        marketItems: generateMarketItems(),
+      }
+    }),
+
+  // ── leaveMarket ─────────────────────────────────────────────────────────────
+  leaveMarket: () => set({ marketItems: null }),
+
+  // ── addDamageIndicator ──────────────────────────────────────────────────────
+  addDamageIndicator: (indicator) =>
+    set((state) => ({ damageIndicators: [...state.damageIndicators, indicator] })),
 
   // ── Meta-progression ────────────────────────────────────────────────────────
   totalXp: 0,
@@ -743,6 +867,9 @@ export const useGameStore = create<GameStore>((set) => ({
   tickCombat: () =>
     set((state) => {
       if (!state.isCombatActive) return state
+
+      const now = Date.now()
+      const damageIndicators = state.damageIndicators.filter(d => now - d.createdAt < 1400)
 
       let playerAttackProgress = state.playerAttackProgress
       let mobAttackProgress = state.mobAttackProgress
@@ -771,6 +898,7 @@ export const useGameStore = create<GameStore>((set) => ({
         if (eff.lifesteal > 0) {
           player.currentHp = Math.min(eff.maxHp, player.currentHp + eff.lifesteal)
         }
+        damageIndicators.push({ id: now + Math.random(), value: dmg, isCrit, target: 'enemy', createdAt: now })
       }
 
       // Execution: instant kill below threshold
@@ -787,6 +915,9 @@ export const useGameStore = create<GameStore>((set) => ({
         if (!isDodged) {
           const dmgTaken = Math.max(0, mob.baseDamage - eff.damageReduction)
           player.currentHp = Math.max(0, player.currentHp - dmgTaken)
+          if (dmgTaken > 0) {
+            damageIndicators.push({ id: now + Math.random() + 1, value: dmgTaken, isCrit: false, target: 'player', createdAt: now })
+          }
         } else {
           newEventText = '✦ Dodged!'
         }
@@ -807,13 +938,21 @@ export const useGameStore = create<GameStore>((set) => ({
           equippedSpellCooldown,
           isCombatActive: true,
           usedUndyingThisRun: true,
+          damageIndicators,
         }
       }
 
       const isCombatActive = mob.currentHp > 0 && player.currentHp > 0
 
-      // Player wins: show victory overlay (floor advance happens in collectCombatReward)
+      // Player wins — killing blow: pause 800ms before showing reward
       if (!isCombatActive && mob.currentHp <= 0) {
+        const snapshot = { ...state, currentMob: mob }
+        setTimeout(() => {
+          useGameStore.setState((s) => {
+            if (!s.isKillingBlowActive) return s
+            return { ...mobDeathPatch(snapshot), isKillingBlowActive: false }
+          })
+        }, 800)
         return {
           player,
           currentMob: mob,
@@ -821,7 +960,9 @@ export const useGameStore = create<GameStore>((set) => ({
           mobAttackProgress,
           shieldBashCooldown,
           equippedSpellCooldown,
-          ...mobDeathPatch(state),
+          isCombatActive: false,
+          isKillingBlowActive: true,
+          damageIndicators,
         }
       }
 
@@ -837,6 +978,7 @@ export const useGameStore = create<GameStore>((set) => ({
         shieldBashCooldown,
         equippedSpellCooldown,
         isCombatActive,
+        damageIndicators,
         ...eventUpdate,
       }
     }),

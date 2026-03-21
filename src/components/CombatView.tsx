@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap, Heart } from 'lucide-react'
+import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap, Heart, Coins, ShoppingCart } from 'lucide-react'
 import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
-import type { Player, Mob, MapNode, Item, EquipSlot, MobTier } from '../stores/useGameStore'
+import type { Player, Mob, MapNode, Item, EquipSlot, MobTier, DamageIndicator } from '../stores/useGameStore'
 
 // ─── Slot icon maps (shared by LootCard) ──────────────────────────────────────
 
@@ -40,11 +40,12 @@ function hpColor(pct: number): string {
 }
 
 function NodeIcon({ type, size = 16 }: { type: MapNode['type']; size?: number }) {
-  if (type === 'mob')   return <Swords size={size} />
-  if (type === 'elite') return <Skull size={size} />
-  if (type === 'boss')  return <Skull size={size} />
-  if (type === 'rest')  return <Tent size={size} />
-  if (type === 'chest') return <Archive size={size} />
+  if (type === 'mob')    return <Swords size={size} />
+  if (type === 'elite')  return <Skull size={size} />
+  if (type === 'boss')   return <Skull size={size} />
+  if (type === 'rest')   return <Tent size={size} />
+  if (type === 'chest')  return <Archive size={size} />
+  if (type === 'market') return <ShoppingCart size={size} />
   return null
 }
 
@@ -67,7 +68,13 @@ function PlayerStatsBar() {
         <Zap size={13} />
         <span>{eff.attackSpeed.toFixed(2)}/s</span>
       </div>
-      <div className="ml-auto text-amber-400">⭐ {playerXp} XP</div>
+      <div className="ml-auto flex items-center gap-3">
+        <span className="text-amber-400">⭐ {playerXp} XP</span>
+        <span className="flex items-center gap-1 text-yellow-400">
+          <Coins size={12} />
+          {player.gold}g
+        </span>
+      </div>
     </div>
   )
 }
@@ -219,7 +226,7 @@ function MapView() {
 
       {/* Legend */}
       <div className="flex flex-wrap justify-center gap-3 text-xs text-gray-500 max-w-sm">
-        {([['mob','Mob'],['elite','Elite'],['boss','Boss'],['rest','Rest'],['chest','Chest']] as const).map(([type, label]) => (
+        {([['mob','Mob'],['elite','Elite'],['boss','Boss'],['rest','Rest'],['chest','Chest'],['market','Market']] as const).map(([type, label]) => (
           <span key={type} className="flex items-center gap-1">
             <NodeIcon type={type} size={12} />
             {label}
@@ -238,15 +245,37 @@ interface PanelProps {
   atkBarColor: 'amber' | 'orange'
   icon: React.ReactNode
   tier?: MobTier
+  damageIndicators?: DamageIndicator[]
+  isKillingBlow?: boolean
 }
 
-function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier }: PanelProps) {
+function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, damageIndicators, isKillingBlow }: PanelProps) {
   const hpPct = Math.max(0, (combatant.currentHp / combatant.maxHp) * 100)
   const atkPct = Math.min(100, attackProgress)
   const atkFill = atkBarColor === 'amber' ? 'bg-amber-400' : 'bg-orange-500'
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
+    <div className="relative bg-gray-900 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
+
+      {/* Floating damage numbers */}
+      {damageIndicators?.map((d) => (
+        <span
+          key={d.id}
+          className={`animate-float-up absolute select-none font-extrabold tabular-nums z-10
+            ${d.isCrit
+              ? 'text-2xl text-yellow-300 drop-shadow-[0_0_8px_rgb(253_224_71)] -top-3'
+              : 'text-base text-red-400 top-0'
+            }`}
+          style={{ left: `${(Math.floor(d.id) * 37 % 50) + 20}%` }}
+        >
+          {d.isCrit ? `⚡${d.value}` : `-${d.value}`}
+        </span>
+      ))}
+
+      {/* Killing blow flash overlay */}
+      {isKillingBlow && (
+        <div className="animate-killing-blow absolute inset-0 rounded-xl bg-red-500/20 pointer-events-none z-20" />
+      )}
       <div className="flex flex-col gap-1">
         {tier === 'elite' && (
           <span className="self-start text-[10px] font-bold tracking-widest uppercase
@@ -388,6 +417,8 @@ function CombatArena() {
     engageCombat,
     combatEventKey,
     combatEventText,
+    damageIndicators,
+    isKillingBlowActive,
   } = useGameStore()
 
   const [displayText, setDisplayText] = useState<string | null>(null)
@@ -408,7 +439,7 @@ function CombatArena() {
   }, [isCombatActive])
 
   const playerLost  = !isCombatActive && player.currentHp <= 0
-  const isPrepPhase = !isCombatActive && player.currentHp > 0 && combatReward === null
+  const isPrepPhase = !isCombatActive && player.currentHp > 0 && combatReward === null && !isKillingBlowActive
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-full p-4 gap-6">
@@ -441,6 +472,7 @@ function CombatArena() {
             attackProgress={playerAttackProgress}
             atkBarColor="amber"
             icon={<Swords size={20} />}
+            damageIndicators={damageIndicators.filter(d => d.target === 'player')}
           />
           <ActiveSkills
             shieldBashCooldown={shieldBashCooldown}
@@ -459,6 +491,8 @@ function CombatArena() {
             atkBarColor="orange"
             icon={<Shield size={20} />}
             tier={currentMob.tier}
+            damageIndicators={damageIndicators.filter(d => d.target === 'enemy')}
+            isKillingBlow={isKillingBlowActive}
           />
         </div>
       </div>
@@ -581,7 +615,7 @@ function LootSelectionOverlay() {
 function VictoryOverlay() {
   const { combatReward, collectCombatReward } = useGameStore()
   if (!combatReward) return null
-  const { xp, item } = combatReward
+  const { xp, gold, item } = combatReward
   const rc = RARITY_COLORS[item.rarity]
   const Icon = SLOT_ICONS[item.equipSlot]
   return (
@@ -591,8 +625,14 @@ function VictoryOverlay() {
         <h2 className="text-4xl font-bold tracking-widest uppercase text-amber-400 animate-pulse">
           Victory!
         </h2>
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-5 py-2">
-          <span className="text-amber-300 font-bold text-sm">+{xp} XP</span>
+        <div className="flex items-center gap-3">
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-5 py-2">
+            <span className="text-amber-300 font-bold text-sm">+{xp} XP</span>
+          </div>
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-5 py-2 flex items-center gap-1.5">
+            <Coins size={14} className="text-yellow-400" />
+            <span className="text-yellow-300 font-bold text-sm">+{gold}g</span>
+          </div>
         </div>
         <div className={`bg-gray-900 border rounded-2xl p-6 w-52 flex flex-col gap-3 ${rc.border} ${rc.glow}`}>
           <div className="flex justify-center">
@@ -651,6 +691,92 @@ function CampOverlay() {
   )
 }
 
+// ─── MarketOverlay ────────────────────────────────────────────────────────────
+
+function MarketOverlay() {
+  const { marketItems, player, buyItem, rerollMarket, leaveMarket } = useGameStore()
+  if (!marketItems) return null
+
+  const canReroll = player.gold >= 15
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-4 gap-5 overflow-y-auto">
+      {/* Header */}
+      <div className="text-center shrink-0">
+        <p className="text-xs text-amber-400/60 uppercase tracking-widest mb-1">Merchant</p>
+        <h2 className="text-3xl font-bold tracking-widest uppercase text-white">The Market</h2>
+      </div>
+
+      {/* Gold display */}
+      <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-5 py-2 shrink-0">
+        <Coins size={18} className="text-yellow-400" />
+        <span className="text-yellow-300 font-bold text-lg">{player.gold} Gold</span>
+      </div>
+
+      {/* Item grid — 2 cols on mobile, 4 on sm+ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-3xl">
+        {marketItems.map(({ item, price }) => {
+          const canAfford = player.gold >= price
+          const rc = RARITY_COLORS[item.rarity]
+          const Icon = SLOT_ICONS[item.equipSlot]
+          return (
+            <div key={item.id} className={`bg-gray-900 border rounded-xl p-3 flex flex-col gap-2 ${rc.border} ${rc.glow}`}>
+              <div className="flex items-center gap-2">
+                <Icon size={18} className="text-amber-400 shrink-0" />
+                <div>
+                  <p className={`font-bold text-sm leading-tight ${rc.text}`}>{item.name}</p>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest ${rc.text}`}>{item.rarity}</p>
+                </div>
+              </div>
+              <p className="text-gray-400 text-xs italic leading-snug flex-1">{item.description}</p>
+              <div className="flex flex-col gap-0.5 text-xs font-semibold">
+                {item.stats.damage      !== undefined && <p className="text-red-400">+{item.stats.damage} Damage</p>}
+                {item.stats.hp          !== undefined && <p className="text-green-400">+{item.stats.hp} HP</p>}
+                {item.stats.attackSpeed !== undefined && <p className="text-blue-400">+{item.stats.attackSpeed.toFixed(1)} Atk Spd</p>}
+                {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
+              </div>
+              <button
+                onClick={() => buyItem(item, price)}
+                disabled={!canAfford}
+                className={`mt-auto w-full py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1
+                  ${canAfford
+                    ? 'border border-yellow-500 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20'
+                    : 'border border-gray-700 bg-gray-800 text-gray-600 cursor-not-allowed opacity-60'
+                  }`}
+              >
+                <Coins size={11} />
+                {price}g
+              </button>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Bottom actions */}
+      <div className="flex gap-3 w-full max-w-xs shrink-0">
+        <button
+          onClick={leaveMarket}
+          className="flex-1 py-3 rounded-xl border border-gray-600 text-gray-300 text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
+        >
+          Leave Shop
+        </button>
+        <button
+          onClick={rerollMarket}
+          disabled={!canReroll}
+          className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1.5
+            ${canReroll
+              ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+              : 'border border-gray-700 bg-gray-800 text-gray-600 cursor-not-allowed opacity-60'
+            }`}
+        >
+          <Coins size={13} />
+          Reroll (15g)
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── CombatView (root) ────────────────────────────────────────────────────────
 
 export default function CombatView() {
@@ -667,6 +793,7 @@ export default function CombatView() {
       <LootSelectionOverlay />
       <VictoryOverlay />
       <CampOverlay />
+      <MarketOverlay />
     </>
   )
 }
