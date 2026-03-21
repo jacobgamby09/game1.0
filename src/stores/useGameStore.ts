@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { pickItemForFloor } from '../utils/itemLibrary'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -93,7 +94,15 @@ export interface Item {
   equipSlot: EquipSlot
   rarity: Rarity
   description: string
-  stats: { hp?: number; damage?: number; attackSpeed?: number }
+  stats: {
+    hp?:              number
+    damage?:          number
+    attackSpeed?:     number
+    critChance?:      number
+    dodgeChance?:     number
+    lifesteal?:       number
+    damageReduction?: number
+  }
   ability?: ItemAbility
 }
 
@@ -194,66 +203,7 @@ const EMPTY_EQUIPMENT: Record<EquipSlot, Item | null> = {
   spell: null,
 }
 
-// ─── Loot ─────────────────────────────────────────────────────────────────────
-
-type ItemBase = Omit<Item, 'id'>
-
-const COMMON_POOL: ItemBase[] = [
-  { name: 'Rusty Sword',    equipSlot: 'mainHand', rarity: 'common', description: 'A chipped blade found near the entrance.',       stats: { damage: 5 } },
-  { name: 'Worn Buckler',   equipSlot: 'offHand',  rarity: 'common', description: 'A dented buckler, still blocks a punch.',        stats: { hp: 6 } },
-  { name: 'Iron Shield',    equipSlot: 'offHand',  rarity: 'common', description: 'Reliable protection against basic threats.',     stats: { hp: 10 } },
-  { name: 'Leather Helm',   equipSlot: 'head',     rarity: 'common', description: 'Cracked but still better than nothing.',         stats: { hp: 5 } },
-  { name: 'Cloth Coif',     equipSlot: 'head',     rarity: 'common', description: 'Light fabric hood, surprisingly nimble.',        stats: { attackSpeed: 0.1 } },
-  { name: 'Chain Mail',     equipSlot: 'chest',    rarity: 'common', description: 'Heavy rings of iron laced together.',            stats: { hp: 15 } },
-  { name: 'Torn Greaves',   equipSlot: 'legs',     rarity: 'common', description: 'Worn leather guards for the legs.',              stats: { hp: 8 } },
-  { name: 'Copper Amulet',  equipSlot: 'amulet',   rarity: 'common', description: 'Faint magic lingers on the metal.',              stats: { attackSpeed: 0.1 } },
-  { name: 'Iron Band',      equipSlot: 'ring1',    rarity: 'common', description: 'A plain ring of cold iron.',                     stats: { damage: 2 } },
-  { name: 'Silver Ring',    equipSlot: 'ring2',    rarity: 'common', description: 'Engraved with a small rune.',                    stats: { hp: 5 } },
-  { name: 'Apprentice Ring',equipSlot: 'ring2',    rarity: 'common', description: 'A student\'s first attempt at enchantment.',     stats: { attackSpeed: 0.1 } },
-  { name: 'Flame Scroll',   equipSlot: 'spell',    rarity: 'common', description: 'A tattered scroll pulsing with heat.',           stats: { damage: 1 }, ability: { name: 'Fireball', description: 'Deals 25 damage.', cooldown: 12000, effectType: 'damageEnemy', value: 25 } },
-]
-
-const UNCOMMON_POOL: ItemBase[] = [
-  { name: 'Hunting Knife',     equipSlot: 'mainHand', rarity: 'uncommon', description: 'Light and quick; preferred by scouts.',       stats: { damage: 4, attackSpeed: 0.1 } },
-  { name: 'Reinforced Shield', equipSlot: 'offHand',  rarity: 'uncommon', description: 'Iron-banded wood, heavier than it looks.',    stats: { hp: 12, damage: 2 } },
-  { name: 'Iron Cap',          equipSlot: 'head',     rarity: 'uncommon', description: 'Simple protection for common soldiers.',      stats: { hp: 8, damage: 2 } },
-  { name: 'Scale Hauberk',     equipSlot: 'chest',    rarity: 'uncommon', description: 'Overlapping scales of tempered steel.',       stats: { hp: 18 } },
-  { name: "Strider's Boots",   equipSlot: 'legs',     rarity: 'uncommon', description: 'Swift-soled boots for the long march.',       stats: { hp: 10, attackSpeed: 0.1 } },
-  { name: 'Bronze Amulet',     equipSlot: 'amulet',   rarity: 'uncommon', description: "A soldier's lucky charm, worn smooth.",       stats: { hp: 8, attackSpeed: 0.15 } },
-]
-
-const RARE_POOL: ItemBase[] = [
-  { name: 'Steel Longsword', equipSlot: 'mainHand', rarity: 'rare', description: 'A well-balanced blade forged in the city smithy.',    stats: { damage: 8,  attackSpeed: 0.15 } },
-  { name: 'Guardian Ward',   equipSlot: 'offHand',  rarity: 'rare', description: 'A warded buckler imbued with defensive sigils.',      stats: { hp: 15,     attackSpeed: 0.1 } },
-  { name: "Soldier's Helm",  equipSlot: 'head',     rarity: 'rare', description: 'Forged for the front lines, dented but proud.',       stats: { hp: 12,     damage: 4 } },
-  { name: 'Battle Plate',    equipSlot: 'chest',    rarity: 'rare', description: 'Thick iron plates riveted over a chain base.',        stats: { hp: 20,     damage: 5 } },
-  { name: 'Iron Wargreaves', equipSlot: 'legs',     rarity: 'rare', description: 'Heavy sabatons that stomp with authority.',           stats: { hp: 12,     attackSpeed: 0.1 } },
-  { name: 'Jade Amulet',     equipSlot: 'amulet',   rarity: 'rare', description: 'Cool jade carved into a serpent devouring its tail.', stats: { hp: 10,     attackSpeed: 0.2 } },
-  { name: 'Serpent Ring',    equipSlot: 'ring1',    rarity: 'rare', description: 'A coiled serpent whose fangs bite the wearer\'s foe.',stats: { damage: 4,  hp: 8 } },
-  { name: 'Frost Tome',      equipSlot: 'spell',    rarity: 'rare', description: 'Pages inscribed in permafrost runes.',                stats: { damage: 3,  attackSpeed: 0.1 }, ability: { name: 'Ice Lance', description: 'Deals 30 damage.', cooldown: 10000, effectType: 'damageEnemy', value: 30 } },
-]
-
-const EPIC_POOL: ItemBase[] = [
-  { name: 'Doom Blade',        equipSlot: 'mainHand', rarity: 'epic', description: 'A cursed edge that hungers for more.',                    stats: { damage: 15, hp: 10,     attackSpeed: 0.2 } },
-  { name: 'Dragon Scale Helm', equipSlot: 'head',     rarity: 'epic', description: 'Scales pried from a slain wyvern, still warm.',           stats: { hp: 20,     damage: 6,   attackSpeed: 0.15 } },
-  { name: "Titan's Plate",     equipSlot: 'chest',    rarity: 'epic', description: 'Armor worn by a giant — resized, barely.',                 stats: { hp: 30,     damage: 8,   attackSpeed: 0.1 } },
-  { name: 'Abyssal Greaves',   equipSlot: 'legs',     rarity: 'epic', description: 'Forged in the deep dark; they move before you do.',        stats: { hp: 18,     damage: 5,   attackSpeed: 0.15 } },
-  { name: 'Void Ring',         equipSlot: 'ring2',    rarity: 'epic', description: 'Stares back at you when you look into its gem.',           stats: { damage: 8,  hp: 15,     attackSpeed: 0.2 } },
-  { name: 'Thunder Codex',     equipSlot: 'spell',    rarity: 'epic', description: 'Lightning trapped between two pages — barely contained.', stats: { damage: 5,  hp: 10,     attackSpeed: 0.2 }, ability: { name: 'Lightning Strike', description: 'Deals 50 damage.', cooldown: 15000, effectType: 'damageEnemy', value: 50 } },
-]
-
-function newItemId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2)
-}
-
-function getWeightedRandomItem(): Item {
-  const roll = Math.random()
-  const pool = roll < 0.55 ? COMMON_POOL
-             : roll < 0.80 ? UNCOMMON_POOL
-             : roll < 0.95 ? RARE_POOL
-             : EPIC_POOL
-  return { ...pool[Math.floor(Math.random() * pool.length)], id: newItemId() }
-}
+// ─── Loot helpers ─────────────────────────────────────────────────────────────
 
 function itemPrice(rarity: Rarity): number {
   const [lo, hi] = rarity === 'common'   ? [20,  30]
@@ -263,12 +213,12 @@ function itemPrice(rarity: Rarity): number {
   return Math.floor(Math.random() * (hi - lo + 1)) + lo
 }
 
-function generateMarketItems(): { item: Item; price: number }[] {
+function generateMarketItems(floor: number): { item: Item; price: number }[] {
   const result: { item: Item; price: number }[] = []
   const usedNames = new Set<string>()
   let attempts = 0
   while (result.length < 4 && attempts < 50) {
-    const item = getWeightedRandomItem()
+    const item = pickItemForFloor(floor)
     if (!usedNames.has(item.name)) {
       result.push({ item, price: itemPrice(item.rarity) })
       usedNames.add(item.name)
@@ -278,16 +228,16 @@ function generateMarketItems(): { item: Item; price: number }[] {
   return result
 }
 
-function randomDrop(): Item {
-  return getWeightedRandomItem()
+function randomDrop(floor: number): Item {
+  return pickItemForFloor(floor)
 }
 
-function randomThreeDrops(): Item[] {
+function randomThreeDrops(floor: number): Item[] {
   const result: Item[] = []
   const usedNames = new Set<string>()
   let attempts = 0
   while (result.length < 3 && attempts < 50) {
-    const item = getWeightedRandomItem()
+    const item = pickItemForFloor(floor)
     if (!usedNames.has(item.name)) {
       result.push(item)
       usedNames.add(item.name)
@@ -397,18 +347,22 @@ export function getEffectiveStats(
     }
   }
 
-  const gearHp  = items.reduce((s, i) => s + (i.stats.hp          ?? 0), 0)
-  const gearDmg = items.reduce((s, i) => s + (i.stats.damage      ?? 0), 0)
-  const gearSpd = items.reduce((s, i) => s + (i.stats.attackSpeed ?? 0), 0)
+  const gearHp          = items.reduce((s, i) => s + (i.stats.hp              ?? 0), 0)
+  const gearDmg         = items.reduce((s, i) => s + (i.stats.damage          ?? 0), 0)
+  const gearSpd         = items.reduce((s, i) => s + (i.stats.attackSpeed     ?? 0), 0)
+  const gearCrit        = items.reduce((s, i) => s + (i.stats.critChance      ?? 0), 0)
+  const gearDodge       = items.reduce((s, i) => s + (i.stats.dodgeChance     ?? 0), 0)
+  const gearLifesteal   = items.reduce((s, i) => s + (i.stats.lifesteal       ?? 0), 0)
+  const gearDr          = items.reduce((s, i) => s + (i.stats.damageReduction ?? 0), 0)
 
   return {
     maxHp:                Math.floor((player.maxHp      + flatHp  + gearHp)  * (1 + pctHp)),
     damage:               Math.floor((player.baseDamage + flatDmg + gearDmg) * (1 + pctDmg)),
     attackSpeed:                     (player.attackSpeed + flatSpd + gearSpd) * (1 + pctSpd),
-    damageReduction:      flatDr,
-    critChance:           flatCrit,
-    dodgeChance:          flatDodge,
-    lifesteal:            Math.floor(flatLifesteal),
+    damageReduction:      flatDr + gearDr,
+    critChance:           flatCrit + gearCrit,
+    dodgeChance:          flatDodge + gearDodge,
+    lifesteal:            Math.floor(flatLifesteal + gearLifesteal),
     postCombatHealPct:    flatHealPct,
     eliteBonusMultiplier: flatEliteBonus,
     executionThreshold:   flatExecution,
@@ -434,7 +388,7 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
     act1Map,
     isCombatActive: false as const,
     isMapVisible:   false as const,
-    combatReward: { xp: XP_PER_KILL, gold: goldAmount, item: randomDrop() },
+    combatReward: { xp: XP_PER_KILL, gold: goldAmount, item: randomDrop(state.currentFloor) },
   }
 }
 
@@ -642,7 +596,7 @@ export const useGameStore = create<GameStore>()(
           currentFloor: state.currentFloor + 1,
           act1Map: markComplete(state.act1Map),
           playerXp: state.playerXp + XP_PER_CHEST,
-          lootChoices: randomThreeDrops(),
+          lootChoices: randomThreeDrops(state.currentFloor),
           isLootPickerVisible: true,
         }
       }
@@ -652,7 +606,7 @@ export const useGameStore = create<GameStore>()(
           currentMapNodeId: nodeId,
           currentFloor: state.currentFloor + 1,
           act1Map: markComplete(state.act1Map),
-          marketItems: generateMarketItems(),
+          marketItems: generateMarketItems(state.currentFloor),
         }
       }
 

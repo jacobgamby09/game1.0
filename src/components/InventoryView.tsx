@@ -225,30 +225,36 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
             {selectedFrom === 'backpack' && !equipment[selectedItem.equipSlot] && (
               <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
             )}
-            {selectedItem.stats.damage !== undefined && (
-              <p className="text-red-400 text-sm font-semibold">
-                +{selectedItem.stats.damage} Damage
-                {selectedFrom === 'backpack' && (
-                  <DiffBadge diff={getStatDiff(selectedItem, equipment[selectedItem.equipSlot]).damage} />
-                )}
-              </p>
-            )}
-            {selectedItem.stats.hp !== undefined && (
-              <p className="text-green-400 text-sm font-semibold">
-                +{selectedItem.stats.hp} Max HP
-                {selectedFrom === 'backpack' && (
-                  <DiffBadge diff={getStatDiff(selectedItem, equipment[selectedItem.equipSlot]).hp} />
-                )}
-              </p>
-            )}
-            {selectedItem.stats.attackSpeed !== undefined && (
-              <p className="text-blue-400 text-sm font-semibold">
-                +{selectedItem.stats.attackSpeed.toFixed(1)} Atk Speed
-                {selectedFrom === 'backpack' && (
-                  <DiffBadgeF diff={getStatDiff(selectedItem, equipment[selectedItem.equipSlot]).attackSpeed} />
-                )}
-              </p>
-            )}
+            {(() => {
+              const d = selectedFrom === 'backpack'
+                ? getStatDiff(selectedItem, equipment[selectedItem.equipSlot])
+                : null
+              return (
+                <>
+                  {selectedItem.stats.damage !== undefined && (
+                    <p className="text-red-400 text-sm font-semibold">+{selectedItem.stats.damage} Damage{d && <DiffBadge diff={d.damage} />}</p>
+                  )}
+                  {selectedItem.stats.hp !== undefined && (
+                    <p className="text-green-400 text-sm font-semibold">+{selectedItem.stats.hp} Max HP{d && <DiffBadge diff={d.hp} />}</p>
+                  )}
+                  {selectedItem.stats.attackSpeed !== undefined && (
+                    <p className="text-blue-400 text-sm font-semibold">{selectedItem.stats.attackSpeed >= 0 ? '+' : ''}{selectedItem.stats.attackSpeed.toFixed(2)} Atk Speed{d && <DiffBadgeF diff={d.attackSpeed} decimals={2} />}</p>
+                  )}
+                  {selectedItem.stats.critChance !== undefined && (
+                    <p className="text-yellow-400 text-sm font-semibold">+{selectedItem.stats.critChance}% Crit{d && <DiffBadge diff={d.critChance} />}</p>
+                  )}
+                  {selectedItem.stats.dodgeChance !== undefined && (
+                    <p className="text-cyan-400 text-sm font-semibold">+{selectedItem.stats.dodgeChance}% Dodge{d && <DiffBadge diff={d.dodgeChance} />}</p>
+                  )}
+                  {selectedItem.stats.lifesteal !== undefined && (
+                    <p className="text-emerald-400 text-sm font-semibold">+{selectedItem.stats.lifesteal} Lifesteal{d && <DiffBadge diff={d.lifesteal} />}</p>
+                  )}
+                  {selectedItem.stats.damageReduction !== undefined && (
+                    <p className="text-orange-400 text-sm font-semibold">+{selectedItem.stats.damageReduction} DR{d && <DiffBadge diff={d.damageReduction} />}</p>
+                  )}
+                </>
+              )
+            })()}
           </div>
 
           {/* Action button */}
@@ -319,6 +325,10 @@ export default function InventoryView() {
           <p className="text-green-400 text-sm font-semibold">❤ {eff.maxHp} Max HP</p>
           <p className="text-red-400 text-sm font-semibold">⚔ {eff.damage} Damage</p>
           <p className="text-blue-400 text-sm font-semibold">⚡ {eff.attackSpeed.toFixed(2)} Atk Speed</p>
+          {eff.critChance      > 0 && <p className="text-yellow-400 text-sm font-semibold">🎯 {eff.critChance}% Crit</p>}
+          {eff.dodgeChance     > 0 && <p className="text-cyan-400 text-sm font-semibold">💨 {eff.dodgeChance}% Dodge</p>}
+          {eff.lifesteal       > 0 && <p className="text-emerald-400 text-sm font-semibold">🩸 {eff.lifesteal} Lifesteal</p>}
+          {eff.damageReduction > 0 && <p className="text-orange-400 text-sm font-semibold">🛡 {eff.damageReduction} DR</p>}
         </div>
       </div>
 

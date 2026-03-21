@@ -570,9 +570,13 @@ function LootCard({ item, onSelect, equipment }: { item: Item; onSelect: () => v
         {!equipment[item.equipSlot] && (
           <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
         )}
-        {item.stats.damage      !== undefined && <p className="text-red-400 text-sm font-semibold">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
-        {item.stats.hp          !== undefined && <p className="text-green-400 text-sm font-semibold">+{item.stats.hp} Max HP<DiffBadge diff={diff.hp} /></p>}
-        {item.stats.attackSpeed !== undefined && <p className="text-blue-400 text-sm font-semibold">+{item.stats.attackSpeed.toFixed(1)} Atk Speed<DiffBadgeF diff={diff.attackSpeed} /></p>}
+        {item.stats.damage          !== undefined && <p className="text-red-400 text-sm font-semibold">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
+        {item.stats.hp              !== undefined && <p className="text-green-400 text-sm font-semibold">+{item.stats.hp} Max HP<DiffBadge diff={diff.hp} /></p>}
+        {item.stats.attackSpeed     !== undefined && <p className="text-blue-400 text-sm font-semibold">{item.stats.attackSpeed >= 0 ? '+' : ''}{item.stats.attackSpeed.toFixed(2)} Atk Speed<DiffBadgeF diff={diff.attackSpeed} decimals={2} /></p>}
+        {item.stats.critChance      !== undefined && <p className="text-yellow-400 text-sm font-semibold">+{item.stats.critChance}% Crit<DiffBadge diff={diff.critChance} /></p>}
+        {item.stats.dodgeChance     !== undefined && <p className="text-cyan-400 text-sm font-semibold">+{item.stats.dodgeChance}% Dodge<DiffBadge diff={diff.dodgeChance} /></p>}
+        {item.stats.lifesteal       !== undefined && <p className="text-emerald-400 text-sm font-semibold">+{item.stats.lifesteal} Lifesteal<DiffBadge diff={diff.lifesteal} /></p>}
+        {item.stats.damageReduction !== undefined && <p className="text-orange-400 text-sm font-semibold">+{item.stats.damageReduction} DR<DiffBadge diff={diff.damageReduction} /></p>}
         {item.ability && <p className="text-orange-400 text-sm font-semibold">✦ {item.ability.name}: {item.ability.description}</p>}
       </div>
 
@@ -657,9 +661,13 @@ function VictoryOverlay() {
             {!equipment[item.equipSlot] && (
               <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
             )}
-            {item.stats.damage      !== undefined && <p className="text-red-400">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
-            {item.stats.hp          !== undefined && <p className="text-green-400">+{item.stats.hp} Max HP<DiffBadge diff={diff.hp} /></p>}
-            {item.stats.attackSpeed !== undefined && <p className="text-blue-400">+{item.stats.attackSpeed.toFixed(1)} Atk Speed<DiffBadgeF diff={diff.attackSpeed} /></p>}
+            {item.stats.damage          !== undefined && <p className="text-red-400">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
+            {item.stats.hp              !== undefined && <p className="text-green-400">+{item.stats.hp} Max HP<DiffBadge diff={diff.hp} /></p>}
+            {item.stats.attackSpeed     !== undefined && <p className="text-blue-400">{item.stats.attackSpeed >= 0 ? '+' : ''}{item.stats.attackSpeed.toFixed(2)} Atk Speed<DiffBadgeF diff={diff.attackSpeed} decimals={2} /></p>}
+            {item.stats.critChance      !== undefined && <p className="text-yellow-400">+{item.stats.critChance}% Crit<DiffBadge diff={diff.critChance} /></p>}
+            {item.stats.dodgeChance     !== undefined && <p className="text-cyan-400">+{item.stats.dodgeChance}% Dodge<DiffBadge diff={diff.dodgeChance} /></p>}
+            {item.stats.lifesteal       !== undefined && <p className="text-emerald-400">+{item.stats.lifesteal} Lifesteal<DiffBadge diff={diff.lifesteal} /></p>}
+            {item.stats.damageReduction !== undefined && <p className="text-orange-400">+{item.stats.damageReduction} DR<DiffBadge diff={diff.damageReduction} /></p>}
             {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
           </div>
         </div>
@@ -745,9 +753,13 @@ function MarketOverlay() {
                 {!equipment[item.equipSlot] && (
                   <p className="text-amber-400 text-[9px] font-bold uppercase tracking-wide">Slot: Empty</p>
                 )}
-                {item.stats.damage      !== undefined && <p className="text-red-400">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
-                {item.stats.hp          !== undefined && <p className="text-green-400">+{item.stats.hp} HP<DiffBadge diff={diff.hp} /></p>}
-                {item.stats.attackSpeed !== undefined && <p className="text-blue-400">+{item.stats.attackSpeed.toFixed(1)} Atk Spd<DiffBadgeF diff={diff.attackSpeed} /></p>}
+                {item.stats.damage          !== undefined && <p className="text-red-400">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
+                {item.stats.hp              !== undefined && <p className="text-green-400">+{item.stats.hp} HP<DiffBadge diff={diff.hp} /></p>}
+                {item.stats.attackSpeed     !== undefined && <p className="text-blue-400">{item.stats.attackSpeed >= 0 ? '+' : ''}{item.stats.attackSpeed.toFixed(2)} Spd<DiffBadgeF diff={diff.attackSpeed} decimals={2} /></p>}
+                {item.stats.critChance      !== undefined && <p className="text-yellow-400">+{item.stats.critChance}% Crit<DiffBadge diff={diff.critChance} /></p>}
+                {item.stats.dodgeChance     !== undefined && <p className="text-cyan-400">+{item.stats.dodgeChance}% Dodge<DiffBadge diff={diff.dodgeChance} /></p>}
+                {item.stats.lifesteal       !== undefined && <p className="text-emerald-400">+{item.stats.lifesteal} LS<DiffBadge diff={diff.lifesteal} /></p>}
+                {item.stats.damageReduction !== undefined && <p className="text-orange-400">+{item.stats.damageReduction} DR<DiffBadge diff={diff.damageReduction} /></p>}
                 {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
               </div>
               <button
