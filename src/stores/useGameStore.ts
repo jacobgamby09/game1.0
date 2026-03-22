@@ -141,13 +141,13 @@ const DEFAULT_PLAYER: Player = {
   maxHp: 100,
   currentHp: 100,
   baseDamage: 12,
-  attackSpeed: 0.75,
+  attackSpeed: 0.45,
   gold: 0,
 }
 
 const DEFAULT_MOB: Mob = {
   name: 'Orc Warrior', maxHp: 40, currentHp: 40,
-  baseDamage: 7, attackSpeed: 0.90, tier: 'normal',
+  baseDamage: 7, attackSpeed: 0.55, tier: 'normal',
 }
 
 // ─── Bestiary ─────────────────────────────────────────────────────────────────
@@ -155,13 +155,13 @@ const DEFAULT_MOB: Mob = {
 type MobBase = Omit<Mob, 'tier' | 'currentHp'>
 
 const BESTIARY: MobBase[] = [
-  { name: 'Goblin Rogue',  maxHp: 20,  baseDamage: 3,  attackSpeed: 0.50 },
-  { name: 'Undead Brute',  maxHp: 45,  baseDamage: 9,  attackSpeed: 1.50 },
-  { name: 'Orc Warrior',   maxHp: 40,  baseDamage: 7,  attackSpeed: 0.90 },
+  { name: 'Goblin Rogue',  maxHp: 20,  baseDamage: 3,  attackSpeed: 0.30 },
+  { name: 'Undead Brute',  maxHp: 45,  baseDamage: 9,  attackSpeed: 0.90 },
+  { name: 'Orc Warrior',   maxHp: 40,  baseDamage: 7,  attackSpeed: 0.55 },
 ]
 
 const VOID_WARDEN_BASE: MobBase = {
-  name: 'The Void Warden', maxHp: 200, baseDamage: 15, attackSpeed: 1.10,
+  name: 'The Void Warden', maxHp: 200, baseDamage: 15, attackSpeed: 0.65,
 }
 
 function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob {
@@ -249,7 +249,7 @@ function randomThreeDrops(floor: number): Item[] {
 
 // ─── Map generation helpers ───────────────────────────────────────────────────
 
-const MID_FLOOR_TYPES: MapNode['type'][] = ['mob', 'mob', 'rest', 'chest']
+const MID_FLOOR_TYPES: MapNode['type'][] = ['mob', 'mob', 'mob', 'mob', 'mob', 'mob', 'mob', 'rest', 'rest', 'chest']
 const MARKET_FLOORS = new Set([5, 12, 17])
 
 function buildMap(): MapNode[][] {
@@ -350,10 +350,13 @@ export function getEffectiveStats(
   const gearHp          = items.reduce((s, i) => s + (i.stats.hp              ?? 0), 0)
   const gearDmg         = items.reduce((s, i) => s + (i.stats.damage          ?? 0), 0)
   const gearSpd         = items.reduce((s, i) => s + (i.stats.attackSpeed     ?? 0), 0)
-  const gearCrit        = items.reduce((s, i) => s + (i.stats.critChance      ?? 0), 0)
-  const gearDodge       = items.reduce((s, i) => s + (i.stats.dodgeChance     ?? 0), 0)
+  const gearCritRaw     = items.reduce((s, i) => s + (i.stats.critChance      ?? 0), 0)
+  const gearDodgeRaw    = items.reduce((s, i) => s + (i.stats.dodgeChance     ?? 0), 0)
   const gearLifesteal   = items.reduce((s, i) => s + (i.stats.lifesteal       ?? 0), 0)
   const gearDr          = items.reduce((s, i) => s + (i.stats.damageReduction ?? 0), 0)
+  // Safety: if values were accidentally stored as integers (e.g. 10 instead of 0.10), normalise
+  const gearCrit        = gearCritRaw  > 1 ? gearCritRaw  / 100 : gearCritRaw
+  const gearDodge       = gearDodgeRaw > 1 ? gearDodgeRaw / 100 : gearDodgeRaw
 
   return {
     maxHp:                Math.floor((player.maxHp      + flatHp  + gearHp)  * (1 + pctHp)),
@@ -420,7 +423,6 @@ function triggerEnemyDeath(
 
 const TICK_MS = 50
 const SHIELD_BASH_COOLDOWN_MS = 8000
-const SHIELD_BASH_DAMAGE = 5
 const XP_PER_KILL = 20
 const XP_PER_CHEST = 25
 
@@ -674,12 +676,14 @@ export const useGameStore = create<GameStore>()(
       if (!state.isCombatActive || state.shieldBashCooldown > 0) return state
 
       const now = Date.now()
+      const eff = getEffectiveStats(state.player, state.equipment, state.talents)
+      const dmg = Math.floor(eff.damage * 1.5)
       const mob = { ...state.currentMob }
-      mob.currentHp = Math.max(0, mob.currentHp - SHIELD_BASH_DAMAGE)
+      mob.currentHp = Math.max(0, mob.currentHp - dmg)
 
       const damageIndicators = [
         ...state.damageIndicators,
-        { id: now + Math.random(), value: SHIELD_BASH_DAMAGE, isCrit: false, isSkill: true, target: 'enemy' as const, createdAt: now },
+        { id: now + Math.random(), value: dmg, isCrit: false, isSkill: true, target: 'enemy' as const, createdAt: now },
       ]
 
       if (mob.currentHp <= 0) {

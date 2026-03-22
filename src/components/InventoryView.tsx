@@ -241,10 +241,10 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
                     <p className="text-blue-400 text-sm font-semibold">{selectedItem.stats.attackSpeed >= 0 ? '+' : ''}{selectedItem.stats.attackSpeed.toFixed(2)} Atk Speed{d && <DiffBadgeF diff={d.attackSpeed} decimals={2} />}</p>
                   )}
                   {selectedItem.stats.critChance !== undefined && (
-                    <p className="text-yellow-400 text-sm font-semibold">+{selectedItem.stats.critChance}% Crit{d && <DiffBadge diff={d.critChance} />}</p>
+                    <p className="text-yellow-400 text-sm font-semibold">+{(selectedItem.stats.critChance * 100).toFixed(0)}% Crit{d && <DiffBadge diff={Math.round(d.critChance * 100)} />}</p>
                   )}
                   {selectedItem.stats.dodgeChance !== undefined && (
-                    <p className="text-cyan-400 text-sm font-semibold">+{selectedItem.stats.dodgeChance}% Dodge{d && <DiffBadge diff={d.dodgeChance} />}</p>
+                    <p className="text-cyan-400 text-sm font-semibold">+{(selectedItem.stats.dodgeChance * 100).toFixed(0)}% Dodge{d && <DiffBadge diff={Math.round(d.dodgeChance * 100)} />}</p>
                   )}
                   {selectedItem.stats.lifesteal !== undefined && (
                     <p className="text-emerald-400 text-sm font-semibold">+{selectedItem.stats.lifesteal} Lifesteal{d && <DiffBadge diff={d.lifesteal} />}</p>
@@ -325,8 +325,8 @@ export default function InventoryView() {
           <p className="text-green-400 text-sm font-semibold">❤ {eff.maxHp} Max HP</p>
           <p className="text-red-400 text-sm font-semibold">⚔ {eff.damage} Damage</p>
           <p className="text-blue-400 text-sm font-semibold">⚡ {eff.attackSpeed.toFixed(2)} Atk Speed</p>
-          {eff.critChance      > 0 && <p className="text-yellow-400 text-sm font-semibold">🎯 {eff.critChance}% Crit</p>}
-          {eff.dodgeChance     > 0 && <p className="text-cyan-400 text-sm font-semibold">💨 {eff.dodgeChance}% Dodge</p>}
+          {eff.critChance      > 0 && <p className="text-yellow-400 text-sm font-semibold">🎯 {(eff.critChance * 100).toFixed(0)}% Crit</p>}
+          {eff.dodgeChance     > 0 && <p className="text-cyan-400 text-sm font-semibold">💨 {(eff.dodgeChance * 100).toFixed(0)}% Dodge</p>}
           {eff.lifesteal       > 0 && <p className="text-emerald-400 text-sm font-semibold">🩸 {eff.lifesteal} Lifesteal</p>}
           {eff.damageReduction > 0 && <p className="text-orange-400 text-sm font-semibold">🛡 {eff.damageReduction} DR</p>}
         </div>
