@@ -865,7 +865,7 @@ export const useGameStore = create<GameStore>()(
       const currentRank = state.talents[nodeId] ?? 0
       if (currentRank >= node.maxRank) return state
       const prereq = TALENT_TREE.find(n => n.branch === node.branch && n.tier === node.tier - 1)
-      if (prereq && (state.talents[prereq.id] ?? 0) < 1) return state
+      if (prereq && (state.talents[prereq.id] ?? 0) < prereq.maxRank) return state
       if (computeAvailablePoints(state.totalXp, state.talents) < node.costPerRank) return state
       return { talents: { ...state.talents, [nodeId]: currentRank + 1 } }
     }),

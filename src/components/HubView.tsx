@@ -85,7 +85,7 @@ function TalentCard({ node, currentRank, availablePoints, prereqMet, onUpgrade }
       disabled={!canUpgrade}
       title={node.description}
       className={`w-full rounded-lg border p-1.5 sm:p-2.5 flex flex-col items-center gap-1 sm:gap-1.5 transition-all duration-150
-        ${borderClass} ${bgClass} ${canUpgrade ? 'cursor-pointer' : 'cursor-default'}`}
+        ${borderClass} ${bgClass} ${canUpgrade ? 'cursor-pointer' : 'cursor-default'} ${!prereqMet ? 'opacity-50 grayscale' : ''}`}
     >
       <Icon size={14} className={iconColor} />
       <p className={`text-[9px] sm:text-[11px] font-bold text-center leading-tight ${nameClass}`}>{node.name}</p>
@@ -101,7 +101,7 @@ function TalentCard({ node, currentRank, availablePoints, prereqMet, onUpgrade }
       }`}>
         {currentRank} / {node.maxRank}
         {!isMaxRank && (
-          <span className="text-gray-600 font-normal"> · {node.costPerRank}pt</span>
+          <span className={`font-normal ${prereqMet && !canAfford ? 'text-red-500' : 'text-gray-600'}`}> · {node.costPerRank}pt</span>
         )}
       </div>
     </button>
@@ -132,7 +132,7 @@ function BranchColumn({ branch, talents, availablePoints, upgradeTalent }: Branc
 
       {nodes.map((node, i) => {
         const prereqNode = TALENT_TREE.find(n => n.branch === branch && n.tier === node.tier - 1)
-        const prereqMet  = !prereqNode || (talents[prereqNode.id] ?? 0) >= 1
+        const prereqMet  = !prereqNode || (talents[prereqNode.id] ?? 0) >= prereqNode.maxRank
 
         return (
           <div key={node.id} className="flex flex-col items-center">
