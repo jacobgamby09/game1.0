@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Gem, Circle, Zap, Heart, Coins, ShoppingCart } from 'lucide-react'
-import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
+import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart } from 'lucide-react'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, MobTier, DamageIndicator } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
@@ -9,7 +9,7 @@ import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 const SLOT_ICONS: Record<EquipSlot, React.ElementType> = {
   head: Crown, chest: Shirt, legs: Layers,
   mainHand: Swords, offHand: Shield,
-  amulet: Gem, ring1: Circle, ring2: Circle, spell: Zap,
+  amulet: Award, ring1: Circle, ring2: Circle, spell: Zap,
 }
 
 const SLOT_LABELS: Record<EquipSlot, string> = {
@@ -342,16 +342,16 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
 // ─── ActiveSkills ─────────────────────────────────────────────────────────────
 
 interface ActiveSkillsProps {
-  shieldBashCooldown: number
-  onShieldBash: () => void
+  powerStrikeCooldown: number
+  onPowerStrike: () => void
   isCombatActive: boolean
   spellItem: Item | null
   equippedSpellCooldown: number
   onUseSpell: () => void
 }
 
-function ActiveSkills({ shieldBashCooldown, onShieldBash, isCombatActive, spellItem, equippedSpellCooldown, onUseSpell }: ActiveSkillsProps) {
-  const bashReady = shieldBashCooldown <= 0
+function ActiveSkills({ powerStrikeCooldown, onPowerStrike, isCombatActive, spellItem, equippedSpellCooldown, onUseSpell }: ActiveSkillsProps) {
+  const bashReady = powerStrikeCooldown <= 0
   const bashDisabled = !isCombatActive || !bashReady
 
   const spellReady = equippedSpellCooldown <= 0
@@ -364,7 +364,7 @@ function ActiveSkills({ shieldBashCooldown, onShieldBash, isCombatActive, spellI
       </p>
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={onShieldBash}
+          onClick={onPowerStrike}
           disabled={bashDisabled}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
             ${bashReady && isCombatActive
@@ -372,8 +372,8 @@ function ActiveSkills({ shieldBashCooldown, onShieldBash, isCombatActive, spellI
               : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
             }`}
         >
-          <Shield size={16} />
-          {bashReady ? 'Shield Bash' : `${(shieldBashCooldown / 1000).toFixed(1)}s`}
+          <Swords size={16} />
+          {bashReady ? 'Power Strike' : `${(powerStrikeCooldown / 1000).toFixed(1)}s`}
         </button>
 
         {spellItem?.ability ? (
@@ -410,9 +410,9 @@ function CombatArena() {
     playerAttackProgress,
     mobAttackProgress,
     isCombatActive,
-    shieldBashCooldown,
+    powerStrikeCooldown,
     equippedSpellCooldown,
-    useShieldBash,
+    usePowerStrike,
     useEquippedSpell,
     resetRun,
     talents,
@@ -478,8 +478,8 @@ function CombatArena() {
             damageIndicators={damageIndicators.filter(d => d.target === 'player')}
           />
           <ActiveSkills
-            shieldBashCooldown={shieldBashCooldown}
-            onShieldBash={useShieldBash}
+            powerStrikeCooldown={powerStrikeCooldown}
+            onPowerStrike={usePowerStrike}
             isCombatActive={isCombatActive}
             spellItem={equipment.spell}
             equippedSpellCooldown={equippedSpellCooldown}
@@ -577,6 +577,13 @@ function LootCard({ item, onSelect, equipment }: { item: Item; onSelect: () => v
         {item.stats.dodgeChance     !== undefined && <p className="text-cyan-400 text-sm font-semibold">+{(item.stats.dodgeChance * 100).toFixed(0)}% Dodge<DiffBadge diff={Math.round(diff.dodgeChance * 100)} /></p>}
         {item.stats.lifesteal       !== undefined && <p className="text-emerald-400 text-sm font-semibold">+{item.stats.lifesteal} Lifesteal<DiffBadge diff={diff.lifesteal} /></p>}
         {item.stats.damageReduction !== undefined && <p className="text-orange-400 text-sm font-semibold">+{item.stats.damageReduction} DR<DiffBadge diff={diff.damageReduction} /></p>}
+        {item.stats.hp              === undefined && (equipment[item.equipSlot]?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50 text-sm font-semibold">Max HP <DiffBadge diff={diff.hp} /></p>}
+        {item.stats.damage          === undefined && (equipment[item.equipSlot]?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50 text-sm font-semibold">Damage <DiffBadge diff={diff.damage} /></p>}
+        {item.stats.attackSpeed     === undefined && (equipment[item.equipSlot]?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50 text-sm font-semibold">Atk Speed <DiffBadgeF diff={diff.attackSpeed} decimals={2} /></p>}
+        {item.stats.critChance      === undefined && (equipment[item.equipSlot]?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50 text-sm font-semibold">Crit <DiffBadge diff={Math.round(diff.critChance * 100)} /></p>}
+        {item.stats.dodgeChance     === undefined && (equipment[item.equipSlot]?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50 text-sm font-semibold">Dodge <DiffBadge diff={Math.round(diff.dodgeChance * 100)} /></p>}
+        {item.stats.lifesteal       === undefined && (equipment[item.equipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50 text-sm font-semibold">Lifesteal <DiffBadge diff={diff.lifesteal} /></p>}
+        {item.stats.damageReduction === undefined && (equipment[item.equipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50 text-sm font-semibold">DR <DiffBadge diff={diff.damageReduction} /></p>}
         {item.ability && <p className="text-orange-400 text-sm font-semibold">✦ {item.ability.name}: {item.ability.description}</p>}
       </div>
 
@@ -668,6 +675,13 @@ function VictoryOverlay() {
             {item.stats.dodgeChance     !== undefined && <p className="text-cyan-400">+{(item.stats.dodgeChance * 100).toFixed(0)}% Dodge<DiffBadge diff={Math.round(diff.dodgeChance * 100)} /></p>}
             {item.stats.lifesteal       !== undefined && <p className="text-emerald-400">+{item.stats.lifesteal} Lifesteal<DiffBadge diff={diff.lifesteal} /></p>}
             {item.stats.damageReduction !== undefined && <p className="text-orange-400">+{item.stats.damageReduction} DR<DiffBadge diff={diff.damageReduction} /></p>}
+            {item.stats.hp              === undefined && (equipment[item.equipSlot]?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50">Max HP <DiffBadge diff={diff.hp} /></p>}
+            {item.stats.damage          === undefined && (equipment[item.equipSlot]?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50">Damage <DiffBadge diff={diff.damage} /></p>}
+            {item.stats.attackSpeed     === undefined && (equipment[item.equipSlot]?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50">Atk Speed <DiffBadgeF diff={diff.attackSpeed} decimals={2} /></p>}
+            {item.stats.critChance      === undefined && (equipment[item.equipSlot]?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50">Crit <DiffBadge diff={Math.round(diff.critChance * 100)} /></p>}
+            {item.stats.dodgeChance     === undefined && (equipment[item.equipSlot]?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50">Dodge <DiffBadge diff={Math.round(diff.dodgeChance * 100)} /></p>}
+            {item.stats.lifesteal       === undefined && (equipment[item.equipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50">Lifesteal <DiffBadge diff={diff.lifesteal} /></p>}
+            {item.stats.damageReduction === undefined && (equipment[item.equipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50">DR <DiffBadge diff={diff.damageReduction} /></p>}
             {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
           </div>
         </div>
@@ -713,7 +727,8 @@ function CampOverlay() {
 // ─── MarketOverlay ────────────────────────────────────────────────────────────
 
 function MarketOverlay() {
-  const { marketItems, player, equipment, buyItem, rerollMarket, leaveMarket } = useGameStore()
+  const { marketItems, player, equipment, backpack, buyItem, rerollMarket, leaveMarket, sellAllBackpack } = useGameStore()
+  const backpackSellTotal = backpack.reduce((sum, i) => sum + getItemSellValue(i.rarity), 0)
   if (!marketItems) return null
 
   const canReroll = player.gold >= 15
@@ -760,6 +775,13 @@ function MarketOverlay() {
                 {item.stats.dodgeChance     !== undefined && <p className="text-cyan-400">+{(item.stats.dodgeChance * 100).toFixed(0)}% Dodge<DiffBadge diff={Math.round(diff.dodgeChance * 100)} /></p>}
                 {item.stats.lifesteal       !== undefined && <p className="text-emerald-400">+{item.stats.lifesteal} LS<DiffBadge diff={diff.lifesteal} /></p>}
                 {item.stats.damageReduction !== undefined && <p className="text-orange-400">+{item.stats.damageReduction} DR<DiffBadge diff={diff.damageReduction} /></p>}
+                {item.stats.hp              === undefined && (equipment[item.equipSlot]?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50">HP <DiffBadge diff={diff.hp} /></p>}
+                {item.stats.damage          === undefined && (equipment[item.equipSlot]?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50">Damage <DiffBadge diff={diff.damage} /></p>}
+                {item.stats.attackSpeed     === undefined && (equipment[item.equipSlot]?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50">Spd <DiffBadgeF diff={diff.attackSpeed} decimals={2} /></p>}
+                {item.stats.critChance      === undefined && (equipment[item.equipSlot]?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50">Crit <DiffBadge diff={Math.round(diff.critChance * 100)} /></p>}
+                {item.stats.dodgeChance     === undefined && (equipment[item.equipSlot]?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50">Dodge <DiffBadge diff={Math.round(diff.dodgeChance * 100)} /></p>}
+                {item.stats.lifesteal       === undefined && (equipment[item.equipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50">LS <DiffBadge diff={diff.lifesteal} /></p>}
+                {item.stats.damageReduction === undefined && (equipment[item.equipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50">DR <DiffBadge diff={diff.damageReduction} /></p>}
                 {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
               </div>
               <button
@@ -778,6 +800,17 @@ function MarketOverlay() {
           )
         })}
       </div>
+
+      {/* Sell All backpack */}
+      {backpack.length > 0 && (
+        <button
+          onClick={sellAllBackpack}
+          className="w-full max-w-xs py-3 rounded-xl border border-yellow-600 bg-yellow-600/10 text-yellow-300 text-sm font-bold uppercase tracking-widest hover:bg-yellow-600/20 transition-colors flex items-center justify-center gap-2 shrink-0"
+        >
+          <Coins size={14} />
+          Sell All Backpack ({backpackSellTotal}g)
+        </button>
+      )}
 
       {/* Bottom actions */}
       <div className="flex gap-3 w-full max-w-xs shrink-0">

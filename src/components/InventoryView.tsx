@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import {
-  Crown, Shirt, Layers, Swords, Shield, Gem, Circle, Zap,
+  Crown, Shirt, Layers, Swords, Shield, Award, Circle, Zap, Coins,
 } from 'lucide-react'
-import { useGameStore, getEffectiveStats, RARITY_COLORS } from '../stores/useGameStore'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS } from '../stores/useGameStore'
 import type { Item, EquipSlot } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
@@ -14,7 +14,7 @@ const SLOT_ICONS: Record<EquipSlot, React.ElementType> = {
   legs:     Layers,
   mainHand: Swords,
   offHand:  Shield,
-  amulet:   Gem,
+  amulet:   Award,
   ring1:    Circle,
   ring2:    Circle,
   spell:    Zap,
@@ -186,10 +186,12 @@ interface ItemDetailsProps {
   equipment: Record<EquipSlot, Item | null>
   onEquip: (item: Item) => void
   onUnequip: (slotKey: string) => void
+  onSell: () => void
+  sellValue: number
   onClear: () => void
 }
 
-function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip, onClear }: ItemDetailsProps) {
+function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip, onSell, sellValue, onClear }: ItemDetailsProps) {
   const isEmpty = selectedItem === null
 
   return (
@@ -252,6 +254,13 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
                   {selectedItem.stats.damageReduction !== undefined && (
                     <p className="text-orange-400 text-sm font-semibold">+{selectedItem.stats.damageReduction} DR{d && <DiffBadge diff={d.damageReduction} />}</p>
                   )}
+                  {selectedItem.stats.hp              === undefined && (equipment[selectedItem.equipSlot]?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50 text-sm font-semibold">Max HP {d && <DiffBadge diff={d.hp} />}</p>}
+                  {selectedItem.stats.damage          === undefined && (equipment[selectedItem.equipSlot]?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50 text-sm font-semibold">Damage {d && <DiffBadge diff={d.damage} />}</p>}
+                  {selectedItem.stats.attackSpeed     === undefined && (equipment[selectedItem.equipSlot]?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50 text-sm font-semibold">Atk Speed {d && <DiffBadgeF diff={d.attackSpeed} decimals={2} />}</p>}
+                  {selectedItem.stats.critChance      === undefined && (equipment[selectedItem.equipSlot]?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50 text-sm font-semibold">Crit {d && <DiffBadge diff={Math.round(d.critChance * 100)} />}</p>}
+                  {selectedItem.stats.dodgeChance     === undefined && (equipment[selectedItem.equipSlot]?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50 text-sm font-semibold">Dodge {d && <DiffBadge diff={Math.round(d.dodgeChance * 100)} />}</p>}
+                  {selectedItem.stats.lifesteal       === undefined && (equipment[selectedItem.equipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50 text-sm font-semibold">Lifesteal {d && <DiffBadge diff={d.lifesteal} />}</p>}
+                  {selectedItem.stats.damageReduction === undefined && (equipment[selectedItem.equipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50 text-sm font-semibold">DR {d && <DiffBadge diff={d.damageReduction} />}</p>}
                 </>
               )
             })()}
@@ -260,12 +269,21 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
           {/* Action button */}
           <div className="mt-auto pt-2 flex flex-col gap-2">
             {selectedFrom === 'backpack' ? (
-              <button
-                onClick={() => { onEquip(selectedItem); onClear() }}
-                className="w-full border border-amber-500 text-amber-400 py-2 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-amber-500/10 transition-colors"
-              >
-                Equip
-              </button>
+              <>
+                <button
+                  onClick={() => { onEquip(selectedItem); onClear() }}
+                  className="w-full border border-amber-500 text-amber-400 py-2 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-amber-500/10 transition-colors"
+                >
+                  Equip
+                </button>
+                <button
+                  onClick={() => { onSell(); onClear() }}
+                  className="w-full border border-yellow-700 text-yellow-500 py-2 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-yellow-900/20 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Coins size={13} />
+                  Sell for {sellValue}g
+                </button>
+              </>
             ) : (
               <button
                 onClick={() => { onUnequip(selectedFrom!); onClear() }}
@@ -290,11 +308,13 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
 // ─── InventoryView ────────────────────────────────────────────────────────────
 
 export default function InventoryView() {
-  const { backpack, equipment, equipItem, unequipItem, player, talents } = useGameStore()
+  const { backpack, equipment, equipItem, unequipItem, sellItem, player, talents } = useGameStore()
   const eff = getEffectiveStats(player, equipment, talents)
 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [selectedFrom, setSelectedFrom] = useState<'backpack' | EquipSlot | null>(null)
+
+  const sellValue = selectedItem ? getItemSellValue(selectedItem.rarity) : 0
 
   function handleSelectFromBackpack(item: Item) {
     setSelectedItem(item)
@@ -346,6 +366,8 @@ export default function InventoryView() {
         equipment={equipment}
         onEquip={equipItem}
         onUnequip={unequipItem}
+        onSell={() => { sellItem(selectedItem!.id); clearSelection() }}
+        sellValue={sellValue}
         onClear={clearSelection}
       />
     </div>

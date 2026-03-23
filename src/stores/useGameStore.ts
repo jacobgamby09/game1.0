@@ -62,6 +62,11 @@ export const TALENT_TREE: TalentNode[] = [
   { id:'cel_4', branch:'celerity', tier:4, name:'Frenzy',       description:'2× Attack Speed below 30% HP',      maxRank:1, costPerRank:3, effect:{type:'flat',    stat:'frenzy',                valuePerRank:1    }},
 ]
 
+export function getItemSellValue(rarity: Rarity): number {
+  const VALUES: Record<Rarity, number> = { common: 5, uncommon: 12, rare: 25, epic: 55 }
+  return VALUES[rarity]
+}
+
 export function computeAvailablePoints(totalXp: number, talents: Record<string, number>): number {
   const spent = TALENT_TREE.reduce((s, n) => s + (talents[n.id] ?? 0) * n.costPerRank, 0)
   return Math.floor(totalXp / 100) - spent
@@ -376,7 +381,7 @@ export function getEffectiveStats(
 
 // ─── Mob-death patch helper ───────────────────────────────────────────────────
 // Returns the state fields that should be set whenever a mob's HP hits 0.
-// Calling it in one place ensures useShieldBash, useEquippedSpell, and
+// Calling it in one place ensures usePowerStrike, useEquippedSpell, and
 // tickCombat all produce the same victory transition.
 
 function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob; currentFloor: number }) {
@@ -397,7 +402,7 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
 
 // ─── Killing blow helper ──────────────────────────────────────────────────────
 // Sets isKillingBlowActive, schedules the 800ms victory resolution, and returns
-// the immediate state patch. Called from tickCombat, useShieldBash, useEquippedSpell.
+// the immediate state patch. Called from tickCombat, usePowerStrike, useEquippedSpell.
 
 function triggerEnemyDeath(
   state: Parameters<typeof mobDeathPatch>[0],
@@ -422,7 +427,7 @@ function triggerEnemyDeath(
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 const TICK_MS = 50
-const SHIELD_BASH_COOLDOWN_MS = 8000
+const POWER_STRIKE_COOLDOWN_MS = 5600
 const XP_PER_KILL = 20
 const XP_PER_CHEST = 25
 
@@ -448,7 +453,7 @@ interface GameStore {
   isCombatActive: boolean
 
   // Skills state
-  shieldBashCooldown: number
+  powerStrikeCooldown: number
   equippedSpellCooldown: number
 
   // Inventory state
@@ -479,7 +484,7 @@ interface GameStore {
   startCombat: () => void
   engageCombat: () => void
   tickCombat: () => void
-  useShieldBash: () => void
+  usePowerStrike: () => void
   useEquippedSpell: () => void
   collectCombatReward: () => void
   resetRun: () => void
@@ -487,6 +492,8 @@ interface GameStore {
   // Inventory actions
   equipItem: (item: Item) => void
   unequipItem: (slotKey: string) => void
+  sellItem: (itemId: string) => void
+  sellAllBackpack: () => void
 
   // Loot picker actions
   selectLoot: (item: Item) => void
@@ -572,7 +579,7 @@ export const useGameStore = create<GameStore>()(
           currentMob: spawnMob(node.floor, node.type),
           playerAttackProgress: 0,
           mobAttackProgress: 0,
-          shieldBashCooldown: 0,
+          powerStrikeCooldown: 0,
           equippedSpellCooldown: 0,
           isCombatActive: false,
         }
@@ -626,7 +633,7 @@ export const useGameStore = create<GameStore>()(
   isCombatActive: false,
 
   // ── Skills state ────────────────────────────────────────────────────────────
-  shieldBashCooldown: 0,
+  powerStrikeCooldown: 0,
   equippedSpellCooldown: 0,
 
   // ── Inventory state ─────────────────────────────────────────────────────────
@@ -656,7 +663,7 @@ export const useGameStore = create<GameStore>()(
       currentMob: { ...DEFAULT_MOB },
       playerAttackProgress: 0,
       mobAttackProgress: 0,
-      shieldBashCooldown: 0,
+      powerStrikeCooldown: 0,
       equippedSpellCooldown: 0,
       isCombatActive: true,
     }),
@@ -670,10 +677,10 @@ export const useGameStore = create<GameStore>()(
     isKillingBlowActive: false,
   }),
 
-  // ── useShieldBash ───────────────────────────────────────────────────────────
-  useShieldBash: () =>
+  // ── usePowerStrike ───────────────────────────────────────────────────────────
+  usePowerStrike: () =>
     set((state) => {
-      if (!state.isCombatActive || state.shieldBashCooldown > 0) return state
+      if (!state.isCombatActive || state.powerStrikeCooldown > 0) return state
 
       const now = Date.now()
       const eff = getEffectiveStats(state.player, state.equipment, state.talents)
@@ -690,7 +697,7 @@ export const useGameStore = create<GameStore>()(
         return {
           damageIndicators,
           mobAttackProgress: 0,
-          shieldBashCooldown: SHIELD_BASH_COOLDOWN_MS,
+          powerStrikeCooldown: POWER_STRIKE_COOLDOWN_MS,
           ...triggerEnemyDeath(state, mob),
         }
       }
@@ -698,7 +705,7 @@ export const useGameStore = create<GameStore>()(
       return {
         currentMob: mob,
         mobAttackProgress: 0,
-        shieldBashCooldown: SHIELD_BASH_COOLDOWN_MS,
+        powerStrikeCooldown: POWER_STRIKE_COOLDOWN_MS,
         isCombatActive: true,
         damageIndicators,
       }
@@ -752,7 +759,7 @@ export const useGameStore = create<GameStore>()(
         currentMob: { ...DEFAULT_MOB },
         playerAttackProgress: 0,
         mobAttackProgress: 0,
-        shieldBashCooldown: 0,
+        powerStrikeCooldown: 0,
         equippedSpellCooldown: 0,
         isCombatActive: false,
         usedUndyingThisRun: false,
@@ -772,12 +779,27 @@ export const useGameStore = create<GameStore>()(
   // Moves item from backpack to its equipment slot. Swaps if slot is occupied.
   equipItem: (item) =>
     set((state) => {
-      const existing = state.equipment[item.equipSlot]
+      let targetSlot: EquipSlot = item.equipSlot
+
+      // Smart dual-wield: weapons prefer mainHand, overflow to offHand
+      if (item.equipSlot === 'mainHand') {
+        if      (!state.equipment.mainHand) targetSlot = 'mainHand'
+        else if (!state.equipment.offHand)  targetSlot = 'offHand'
+        else                                targetSlot = 'mainHand' // swap mainHand
+      }
+      // Smart ring: fill ring1 first, then ring2, then swap ring1
+      else if (item.equipSlot === 'ring1' || item.equipSlot === 'ring2') {
+        if      (!state.equipment.ring1) targetSlot = 'ring1'
+        else if (!state.equipment.ring2) targetSlot = 'ring2'
+        else                             targetSlot = 'ring1'
+      }
+
+      const existing    = state.equipment[targetSlot]
       const newBackpack = state.backpack.filter((i) => i.id !== item.id)
       if (existing) newBackpack.push(existing)
       return {
-        backpack: newBackpack,
-        equipment: { ...state.equipment, [item.equipSlot]: item },
+        backpack:  newBackpack,
+        equipment: { ...state.equipment, [targetSlot]: item },
       }
     }),
 
@@ -793,6 +815,27 @@ export const useGameStore = create<GameStore>()(
         equipment: newEquipment,
         backpack: [...state.backpack, item],
         player: { ...state.player, currentHp: Math.min(state.player.currentHp, newMaxHp) },
+      }
+    }),
+
+  // ── sellItem ────────────────────────────────────────────────────────────────
+  sellItem: (itemId) =>
+    set((state) => {
+      const item = state.backpack.find((i) => i.id === itemId)
+      if (!item) return state
+      return {
+        backpack: state.backpack.filter((i) => i.id !== itemId),
+        player: { ...state.player, gold: state.player.gold + getItemSellValue(item.rarity) },
+      }
+    }),
+
+  // ── sellAllBackpack ──────────────────────────────────────────────────────────
+  sellAllBackpack: () =>
+    set((state) => {
+      const total = state.backpack.reduce((sum, i) => sum + getItemSellValue(i.rarity), 0)
+      return {
+        backpack: [],
+        player: { ...state.player, gold: state.player.gold + total },
       }
     }),
 
@@ -930,7 +973,7 @@ export const useGameStore = create<GameStore>()(
         }
       }
 
-      const shieldBashCooldown = Math.max(0, state.shieldBashCooldown - TICK_MS)
+      const powerStrikeCooldown = Math.max(0, state.powerStrikeCooldown - TICK_MS)
       const equippedSpellCooldown = Math.max(0, state.equippedSpellCooldown - TICK_MS)
 
       // Undying: revive at 30% HP once per run
@@ -941,7 +984,7 @@ export const useGameStore = create<GameStore>()(
           currentMob: mob,
           playerAttackProgress,
           mobAttackProgress,
-          shieldBashCooldown,
+          powerStrikeCooldown,
           equippedSpellCooldown,
           isCombatActive: true,
           usedUndyingThisRun: true,
@@ -957,7 +1000,7 @@ export const useGameStore = create<GameStore>()(
           player,
           playerAttackProgress,
           mobAttackProgress,
-          shieldBashCooldown,
+          powerStrikeCooldown,
           equippedSpellCooldown,
           damageIndicators,
           ...triggerEnemyDeath(state, mob),
@@ -973,7 +1016,7 @@ export const useGameStore = create<GameStore>()(
         currentMob: mob,
         playerAttackProgress,
         mobAttackProgress,
-        shieldBashCooldown,
+        powerStrikeCooldown,
         equippedSpellCooldown,
         isCombatActive,
         damageIndicators,
