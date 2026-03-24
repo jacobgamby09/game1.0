@@ -12,6 +12,8 @@ export type EquipSlot =
   | 'amulet' | 'ring1' | 'ring2'
   | 'spell'
 
+export type ItemSlot = EquipSlot | 'potion'
+
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic'
 
 export const RARITY_COLORS: Record<Rarity, { text: string; border: string; glow: string }> = {
@@ -93,10 +95,24 @@ export interface ItemAbility {
   value: number
 }
 
+export interface ConsumableEffect {
+  type: 'heal' | 'freezeEnemy' | 'berserk' | 'lifestealBuff' | 'midas'
+  value?: number        // heal fraction (0.3), lifesteal amount
+  durationMS?: number   // for timed buffs
+  charges?: number      // for charge-based buffs
+}
+
+export interface ActiveBuff {
+  type: 'freezeEnemy' | 'berserk' | 'lifestealBuff' | 'midas'
+  expiresAt?: number    // Date.now() + durationMS
+  charges?: number
+  value?: number
+}
+
 export interface Item {
   id: string
   name: string
-  equipSlot: EquipSlot
+  equipSlot: ItemSlot
   rarity: Rarity
   description: string
   stats: {
@@ -109,6 +125,7 @@ export interface Item {
     damageReduction?: number
   }
   ability?: ItemAbility
+  consumableEffect?: ConsumableEffect
 }
 
 export interface Player {
@@ -148,11 +165,6 @@ const DEFAULT_PLAYER: Player = {
   baseDamage: 12,
   attackSpeed: 0.45,
   gold: 0,
-}
-
-const DEFAULT_MOB: Mob = {
-  name: 'Orc Warrior', maxHp: 40, currentHp: 40,
-  baseDamage: 7, attackSpeed: 0.55, tier: 'normal',
 }
 
 // ─── Bestiary ─────────────────────────────────────────────────────────────────
@@ -384,19 +396,23 @@ export function getEffectiveStats(
 // Calling it in one place ensures usePowerStrike, useEquippedSpell, and
 // tickCombat all produce the same victory transition.
 
-function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob; currentFloor: number }) {
+function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob | null; currentFloor: number; activeBuffs: ActiveBuff[] }) {
   const act1Map = state.act1Map.map((floor) =>
     floor.map((n) =>
       n.id === state.currentMapNodeId ? { ...n, isCompleted: true } : n
     )
   )
   const goldBase = Math.floor(Math.random() * 6) + 5  // 5–10
-  const goldAmount = (goldBase + state.currentFloor * 2) * (state.currentMob.tier === 'elite' ? 2 : 1)
+  const hasMidas = state.activeBuffs.some(b => b.type === 'midas')
+  const goldAmount = (goldBase + state.currentFloor * 2)
+    * (state.currentMob?.tier === 'elite' ? 2 : 1)
+    * (hasMidas ? 3 : 1)
   return {
     act1Map,
     isCombatActive: false as const,
     isMapVisible:   false as const,
     combatReward: { xp: XP_PER_KILL, gold: goldAmount, item: randomDrop(state.currentFloor) },
+    activeBuffs: [] as ActiveBuff[],
   }
 }
 
@@ -430,6 +446,8 @@ const TICK_MS = 50
 const POWER_STRIKE_COOLDOWN_MS = 5600
 const XP_PER_KILL = 20
 const XP_PER_CHEST = 25
+export const MAX_POTION_STACK = 1
+export const MAX_POTION_SLOTS = 1
 
 interface GameStore {
   // Navigation
@@ -447,7 +465,7 @@ interface GameStore {
 
   // Combat state
   player: Player
-  currentMob: Mob
+  currentMob: Mob | null
   playerAttackProgress: number
   mobAttackProgress: number
   isCombatActive: boolean
@@ -459,6 +477,10 @@ interface GameStore {
   // Inventory state
   backpack: Item[]
   equipment: Record<EquipSlot, Item | null>
+
+  // Potion state
+  potionBelt: { item: Item; count: number }[]
+  activeBuffs: ActiveBuff[]
 
   // Loot picker state
   lootChoices: Item[]
@@ -494,6 +516,8 @@ interface GameStore {
   unequipItem: (slotKey: string) => void
   sellItem: (itemId: string) => void
   sellAllBackpack: () => void
+  equipPotion: (item: Item) => void
+  usePotion: (index: number) => void
 
   // Loot picker actions
   selectLoot: (item: Item) => void
@@ -627,7 +651,7 @@ export const useGameStore = create<GameStore>()(
 
   // ── Combat state ────────────────────────────────────────────────────────────
   player: { ...DEFAULT_PLAYER },
-  currentMob: { ...DEFAULT_MOB },
+  currentMob: null,
   playerAttackProgress: 0,
   mobAttackProgress: 0,
   isCombatActive: false,
@@ -639,6 +663,8 @@ export const useGameStore = create<GameStore>()(
   // ── Inventory state ─────────────────────────────────────────────────────────
   backpack: [],
   equipment: { ...EMPTY_EQUIPMENT },
+  potionBelt: [],
+  activeBuffs: [],
 
   // ── Loot picker state ───────────────────────────────────────────────────────
   lootChoices: [],
@@ -660,12 +686,13 @@ export const useGameStore = create<GameStore>()(
   // ── startCombat ─────────────────────────────────────────────────────────────
   startCombat: () =>
     set({
-      currentMob: { ...DEFAULT_MOB },
+      currentMob: null,
       playerAttackProgress: 0,
       mobAttackProgress: 0,
       powerStrikeCooldown: 0,
       equippedSpellCooldown: 0,
       isCombatActive: true,
+      activeBuffs: [],
     }),
 
   // ── engageCombat ────────────────────────────────────────────────────────────
@@ -681,6 +708,7 @@ export const useGameStore = create<GameStore>()(
   usePowerStrike: () =>
     set((state) => {
       if (!state.isCombatActive || state.powerStrikeCooldown > 0) return state
+      if (!state.currentMob) return state
 
       const now = Date.now()
       const eff = getEffectiveStats(state.player, state.equipment, state.talents)
@@ -716,6 +744,7 @@ export const useGameStore = create<GameStore>()(
     set((state) => {
       const spell = state.equipment.spell
       if (!state.isCombatActive || !spell?.ability || state.equippedSpellCooldown > 0) return state
+      if (!state.currentMob) return state
 
       const { ability } = spell
       const mob = { ...state.currentMob }
@@ -756,7 +785,7 @@ export const useGameStore = create<GameStore>()(
         isMapVisible: false,
         activeView: 'hub' as const,
         player: { ...DEFAULT_PLAYER, currentHp: effMaxHp },
-        currentMob: { ...DEFAULT_MOB },
+        currentMob: null,
         playerAttackProgress: 0,
         mobAttackProgress: 0,
         powerStrikeCooldown: 0,
@@ -772,6 +801,8 @@ export const useGameStore = create<GameStore>()(
         marketItems: null,
         damageIndicators: [],
         isKillingBlowActive: false,
+        potionBelt: [],
+        activeBuffs: [],
       }
     }),
 
@@ -779,7 +810,8 @@ export const useGameStore = create<GameStore>()(
   // Moves item from backpack to its equipment slot. Swaps if slot is occupied.
   equipItem: (item) =>
     set((state) => {
-      let targetSlot: EquipSlot = item.equipSlot
+      if (item.equipSlot === 'potion') return state   // potions use equipPotion
+      let targetSlot: EquipSlot = item.equipSlot as EquipSlot
 
       // Smart dual-wield: weapons prefer mainHand, overflow to offHand
       if (item.equipSlot === 'mainHand') {
@@ -836,6 +868,59 @@ export const useGameStore = create<GameStore>()(
       return {
         backpack: [],
         player: { ...state.player, gold: state.player.gold + total },
+      }
+    }),
+
+  // ── equipPotion ─────────────────────────────────────────────────────────────
+  equipPotion: (item) =>
+    set((state) => {
+      if (item.equipSlot !== 'potion') return state
+      const existingIdx = state.potionBelt.findIndex(s => s.item.name === item.name)
+      if (existingIdx >= 0) {
+        if (state.potionBelt[existingIdx].count < MAX_POTION_STACK) {
+          return {
+            potionBelt: state.potionBelt.map((s, i) =>
+              i === existingIdx ? { ...s, count: s.count + 1 } : s
+            ),
+            backpack: state.backpack.filter(b => b.id !== item.id),
+          }
+        }
+        return state // can't stack, stays in backpack
+      }
+      if (state.potionBelt.length >= MAX_POTION_SLOTS) return state // belt full
+      return {
+        potionBelt: [...state.potionBelt, { item, count: 1 }],
+        backpack: state.backpack.filter(b => b.id !== item.id),
+      }
+    }),
+
+  // ── usePotion ───────────────────────────────────────────────────────────────
+  usePotion: (index) =>
+    set((state) => {
+      const slot = state.potionBelt[index]
+      if (!slot) return state
+      const newBelt = state.potionBelt
+        .map((s, i) => i === index ? { ...s, count: s.count - 1 } : s)
+        .filter(s => s.count > 0)
+      const effect = slot.item.consumableEffect
+      if (!effect) return { potionBelt: newBelt }
+
+      if (effect.type === 'heal') {
+        const eff = getEffectiveStats(state.player, state.equipment, state.talents)
+        const healAmt = Math.floor(eff.maxHp * (effect.value ?? 0.3))
+        return {
+          potionBelt: newBelt,
+          player: { ...state.player, currentHp: Math.min(eff.maxHp, state.player.currentHp + healAmt) },
+        }
+      }
+
+      const buff: ActiveBuff = { type: effect.type as ActiveBuff['type'] }
+      if (effect.durationMS !== undefined) buff.expiresAt = Date.now() + effect.durationMS
+      if (effect.charges !== undefined) buff.charges = effect.charges
+      if (effect.value !== undefined) buff.value = effect.value
+      return {
+        potionBelt: newBelt,
+        activeBuffs: [...state.activeBuffs, buff],
       }
     }),
 
@@ -917,9 +1002,20 @@ export const useGameStore = create<GameStore>()(
   tickCombat: () =>
     set((state) => {
       if (!state.isCombatActive) return state
+      if (!state.currentMob) return state
 
       const now = Date.now()
       const damageIndicators = state.damageIndicators.filter(d => now - d.createdAt < 1400)
+
+      // ── Active buff bookkeeping ──────────────────────────────────────────────
+      // Filter expired duration buffs; vampire charges are filtered below after attacking
+      let activeBuffs = state.activeBuffs.filter(b =>
+        b.expiresAt === undefined || b.expiresAt > now
+      )
+      const hasFreezeEnemy = activeBuffs.some(b => b.type === 'freezeEnemy')
+      const hasBerserk     = activeBuffs.some(b => b.type === 'berserk')
+      const vampIdx        = activeBuffs.findIndex(b => b.type === 'lifestealBuff' && (b.charges ?? 0) > 0)
+      const vampBuff       = vampIdx >= 0 ? activeBuffs[vampIdx] : null
 
       let playerAttackProgress = state.playerAttackProgress
       let mobAttackProgress = state.mobAttackProgress
@@ -927,13 +1023,20 @@ export const useGameStore = create<GameStore>()(
       const mob = { ...state.currentMob }
       const eff = getEffectiveStats(state.player, state.equipment, state.talents)
 
-      // Frenzy: double attack speed below 30% HP
-      const effectiveAttackSpeed = eff.hasFrenzy && player.currentHp < eff.maxHp * 0.30
+      // ── Berserk / Frenzy: compute effective attack speed ─────────────────────
+      const baseSpeed = eff.hasFrenzy && player.currentHp < eff.maxHp * 0.30
         ? eff.attackSpeed * 2
         : eff.attackSpeed
+      const effectiveAttackSpeed = baseSpeed * (hasBerserk ? 2 : 1)
+
+      // ── Berserk: damage reduction = 0 ────────────────────────────────────────
+      const effectiveDR = hasBerserk ? 0 : eff.damageReduction
 
       playerAttackProgress += effectiveAttackSpeed * (TICK_MS / 1000) * 100
-      mobAttackProgress += mob.attackSpeed * (TICK_MS / 1000) * 100
+      // Freeze: skip mob progress
+      if (!hasFreezeEnemy) {
+        mobAttackProgress += mob.attackSpeed * (TICK_MS / 1000) * 100
+      }
 
       let newEventText: string | null = null
 
@@ -945,9 +1048,19 @@ export const useGameStore = create<GameStore>()(
         const dmg = Math.floor((isCrit ? eff.damage * 2 : eff.damage) * giantMult)
         mob.currentHp = Math.max(0, mob.currentHp - dmg)
         if (isCrit) newEventText = '⚡ Critical Hit!'
-        if (eff.lifesteal > 0) {
-          player.currentHp = Math.min(eff.maxHp, player.currentHp + eff.lifesteal)
+
+        // Vampire: bonus lifesteal for next N hits
+        const effectiveLifesteal = eff.lifesteal + (vampBuff ? (vampBuff.value ?? 0) : 0)
+        if (effectiveLifesteal > 0) {
+          player.currentHp = Math.min(eff.maxHp, player.currentHp + effectiveLifesteal)
         }
+        // Decrement vampire charges after a successful hit
+        if (vampBuff) {
+          activeBuffs = activeBuffs.map((b, i) =>
+            i === vampIdx ? { ...b, charges: (b.charges ?? 1) - 1 } : b
+          ).filter(b => b.type !== 'lifestealBuff' || (b.charges ?? 0) > 0)
+        }
+
         damageIndicators.push({ id: now + Math.random(), value: dmg, isCrit, isSkill: false, target: 'enemy', createdAt: now })
       }
 
@@ -963,7 +1076,7 @@ export const useGameStore = create<GameStore>()(
         mobAttackProgress -= 100
         const isDodged = eff.dodgeChance > 0 && Math.random() < eff.dodgeChance
         if (!isDodged) {
-          const dmgTaken = Math.max(0, mob.baseDamage - eff.damageReduction)
+          const dmgTaken = Math.max(0, mob.baseDamage - effectiveDR)
           player.currentHp = Math.max(0, player.currentHp - dmgTaken)
           if (dmgTaken > 0) {
             damageIndicators.push({ id: now + Math.random() + 1, value: dmgTaken, isCrit: false, isSkill: false, target: 'player', createdAt: now })
@@ -989,6 +1102,7 @@ export const useGameStore = create<GameStore>()(
           isCombatActive: true,
           usedUndyingThisRun: true,
           damageIndicators,
+          activeBuffs,
         }
       }
 
@@ -1003,13 +1117,29 @@ export const useGameStore = create<GameStore>()(
           powerStrikeCooldown,
           equippedSpellCooldown,
           damageIndicators,
-          ...triggerEnemyDeath(state, mob),
+          ...triggerEnemyDeath(state, mob),  // mobDeathPatch clears activeBuffs
         }
       }
 
       const eventUpdate = newEventText
         ? { combatEventKey: state.combatEventKey + 1, combatEventText: newEventText }
         : {}
+
+      // Player died — clear buffs
+      if (!isCombatActive) {
+        return {
+          player,
+          currentMob: mob,
+          playerAttackProgress,
+          mobAttackProgress,
+          powerStrikeCooldown,
+          equippedSpellCooldown,
+          isCombatActive,
+          damageIndicators,
+          activeBuffs: [],
+          ...eventUpdate,
+        }
+      }
 
       return {
         player,
@@ -1020,6 +1150,7 @@ export const useGameStore = create<GameStore>()(
         equippedSpellCooldown,
         isCombatActive,
         damageIndicators,
+        activeBuffs,
         ...eventUpdate,
       }
     }),

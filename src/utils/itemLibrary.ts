@@ -71,6 +71,13 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Frost Tome',            equipSlot: 'spell',    rarity: 'rare',     description: 'Pages inscribed in permafrost runes.',           stats: { damage: 3 }, ability: { name: 'Ice Lance',         description: 'Deals 30 damage.',  cooldown: 10000, effectType: 'damageEnemy', value: 30 } },
   { name: 'Thunder Codex',         equipSlot: 'spell',    rarity: 'epic',     description: 'Lightning trapped between two pages.',           stats: { damage: 5 }, ability: { name: 'Lightning Strike',  description: 'Deals 50 damage.',  cooldown: 15000, effectType: 'damageEnemy', value: 50 } },
   { name: 'Arcane Grimoire',       equipSlot: 'spell',    rarity: 'uncommon', description: 'A scholar\'s notebook rewritten with power.',    stats: { hp: 5 },    ability: { name: 'Arcane Bolt',       description: 'Deals 20 damage.',  cooldown:  8000, effectType: 'damageEnemy', value: 20 } },
+
+  // ── potions ─────────────────────────────────────────────────────────────────
+  { name: 'Minor Health Potion',  equipSlot: 'potion', rarity: 'common',   description: 'Heals 30% of your Max HP instantly.',                 stats: {}, consumableEffect: { type: 'heal',         value: 0.3                      } },
+  { name: 'Glacial Flask',        equipSlot: 'potion', rarity: 'uncommon', description: 'Freezes the enemy for 4 seconds.',                    stats: {}, consumableEffect: { type: 'freezeEnemy', durationMS: 4000                } },
+  { name: "Berserker's Brew",     equipSlot: 'potion', rarity: 'rare',     description: '2× Attack Speed for 5s, but Damage Reduction = 0.',   stats: {}, consumableEffect: { type: 'berserk',     durationMS: 5000                } },
+  { name: "Vampire's Draught",    equipSlot: 'potion', rarity: 'rare',     description: '+15 Lifesteal for the next 5 successful attacks.',     stats: {}, consumableEffect: { type: 'lifestealBuff', charges: 5, value: 15        } },
+  { name: 'Midas Elixir',         equipSlot: 'potion', rarity: 'epic',     description: 'Next enemy death within 4s drops 3× Gold.',           stats: {}, consumableEffect: { type: 'midas',       durationMS: 4000                } },
 ]
 
 // ─── Rarity weight helpers ────────────────────────────────────────────────────
