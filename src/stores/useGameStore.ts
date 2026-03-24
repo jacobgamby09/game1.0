@@ -518,6 +518,7 @@ interface GameStore {
   sellAllBackpack: () => void
   equipPotion: (item: Item) => void
   usePotion: (index: number) => void
+  unequipPotion: (index: number) => void
 
   // Loot picker actions
   selectLoot: (item: Item) => void
@@ -921,6 +922,21 @@ export const useGameStore = create<GameStore>()(
       return {
         potionBelt: newBelt,
         activeBuffs: [...state.activeBuffs, buff],
+      }
+    }),
+
+  // ── unequipPotion ────────────────────────────────────────────────────────────
+  unequipPotion: (index) =>
+    set((state) => {
+      const slot = state.potionBelt[index]
+      if (!slot) return state
+      if (state.backpack.length >= 16) return state // backpack full
+      const newBelt = state.potionBelt
+        .map((s, i) => i === index ? { ...s, count: s.count - 1 } : s)
+        .filter(s => s.count > 0)
+      return {
+        potionBelt: newBelt,
+        backpack: [...state.backpack, { ...slot.item }],
       }
     }),
 

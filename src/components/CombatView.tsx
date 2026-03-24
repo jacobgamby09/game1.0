@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart } from 'lucide-react'
+import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical } from 'lucide-react'
 import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS } from '../stores/useGameStore'
-import type { Player, Mob, MapNode, Item, EquipSlot, MobTier, DamageIndicator } from '../stores/useGameStore'
+import type { Player, Mob, MapNode, Item, EquipSlot, ItemSlot, MobTier, DamageIndicator, ActiveBuff } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
 // ─── Slot icon maps (shared by LootCard) ──────────────────────────────────────
@@ -16,6 +16,16 @@ const SLOT_LABELS: Record<EquipSlot, string> = {
   head: 'Head', chest: 'Chest', legs: 'Legs',
   mainHand: 'Main Hand', offHand: 'Off Hand',
   amulet: 'Amulet', ring1: 'Ring 1', ring2: 'Ring 2', spell: 'Spell',
+}
+
+function getSlotIcon(slot: ItemSlot): React.ElementType {
+  if (slot === 'potion') return FlaskConical
+  return SLOT_ICONS[slot]
+}
+
+function getSlotLabel(slot: ItemSlot): string {
+  if (slot === 'potion') return 'Potion'
+  return SLOT_LABELS[slot]
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -348,9 +358,11 @@ interface ActiveSkillsProps {
   spellItem: Item | null
   equippedSpellCooldown: number
   onUseSpell: () => void
+  potionBelt: { item: Item; count: number }[]
+  onUsePotion: (index: number) => void
 }
 
-function ActiveSkills({ powerStrikeCooldown, onPowerStrike, isCombatActive, spellItem, equippedSpellCooldown, onUseSpell }: ActiveSkillsProps) {
+function ActiveSkills({ powerStrikeCooldown, onPowerStrike, isCombatActive, spellItem, equippedSpellCooldown, onUseSpell, potionBelt, onUsePotion }: ActiveSkillsProps) {
   const bashReady = powerStrikeCooldown <= 0
   const bashDisabled = !isCombatActive || !bashReady
 
@@ -395,7 +407,58 @@ function ActiveSkills({ powerStrikeCooldown, onPowerStrike, isCombatActive, spel
             Empty Slot
           </div>
         )}
+
+        {potionBelt.map((slot, i) => (
+          <button
+            key={i}
+            onClick={() => onUsePotion(i)}
+            disabled={!isCombatActive}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
+              ${isCombatActive
+                ? 'border border-purple-500 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 ring-1 ring-purple-400/50'
+                : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
+              }`}
+          >
+            <FlaskConical size={16} />
+            {slot.item.name.split(' ')[0]} ×{slot.count}
+          </button>
+        ))}
       </div>
+    </div>
+  )
+}
+
+// ─── ActiveBuffsBar ───────────────────────────────────────────────────────────
+
+function ActiveBuffsBar({ activeBuffs }: { activeBuffs: ActiveBuff[] }) {
+  if (activeBuffs.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1.5 justify-center">
+      {activeBuffs.map((b, i) => {
+        let label = ''
+        let color = ''
+        if (b.type === 'freezeEnemy') {
+          const secs = b.expiresAt ? Math.max(0, Math.ceil((b.expiresAt - Date.now()) / 1000)) : 0
+          label = `❄ Enemy Frozen (${secs}s)`
+          color = 'text-cyan-300 bg-cyan-900/40 border-cyan-700/50'
+        } else if (b.type === 'berserk') {
+          const secs = b.expiresAt ? Math.max(0, Math.ceil((b.expiresAt - Date.now()) / 1000)) : 0
+          label = `🔥 Berserk! (${secs}s)`
+          color = 'text-orange-300 bg-orange-900/40 border-orange-700/50'
+        } else if (b.type === 'lifestealBuff') {
+          label = `🩸 Vampire ×${b.charges ?? 0}`
+          color = 'text-emerald-300 bg-emerald-900/40 border-emerald-700/50'
+        } else if (b.type === 'midas') {
+          const secs = b.expiresAt ? Math.max(0, Math.ceil((b.expiresAt - Date.now()) / 1000)) : 0
+          label = `💰 Midas (${secs}s)`
+          color = 'text-yellow-300 bg-yellow-900/40 border-yellow-700/50'
+        }
+        return (
+          <span key={i} className={`text-[11px] font-bold px-2 py-0.5 rounded border ${color}`}>
+            {label}
+          </span>
+        )
+      })}
     </div>
   )
 }
@@ -422,7 +485,12 @@ function CombatArena() {
     combatEventText,
     damageIndicators,
     isKillingBlowActive,
+    potionBelt,
+    activeBuffs,
+    usePotion,
   } = useGameStore()
+
+  if (!currentMob) return null
 
   const [displayText, setDisplayText] = useState<string | null>(null)
   useEffect(() => {
@@ -477,6 +545,7 @@ function CombatArena() {
             icon={<Swords size={20} />}
             damageIndicators={damageIndicators.filter(d => d.target === 'player')}
           />
+          <ActiveBuffsBar activeBuffs={activeBuffs} />
           <ActiveSkills
             powerStrikeCooldown={powerStrikeCooldown}
             onPowerStrike={usePowerStrike}
@@ -484,6 +553,8 @@ function CombatArena() {
             spellItem={equipment.spell}
             equippedSpellCooldown={equippedSpellCooldown}
             onUseSpell={useEquippedSpell}
+            potionBelt={potionBelt}
+            onUsePotion={usePotion}
           />
         </div>
 
@@ -540,9 +611,9 @@ function CombatArena() {
 // ─── LootCard ─────────────────────────────────────────────────────────────────
 
 function LootCard({ item, onSelect, equipment }: { item: Item; onSelect: () => void; equipment: Record<EquipSlot, Item | null> }) {
-  const Icon = SLOT_ICONS[item.equipSlot]
+  const Icon = getSlotIcon(item.equipSlot)
   const rc = RARITY_COLORS[item.rarity]
-  const diff = getStatDiff(item, equipment[item.equipSlot])
+  const diff = getStatDiff(item, item.equipSlot === 'potion' ? null : equipment[item.equipSlot as EquipSlot])
   return (
     <div
       onClick={onSelect}
@@ -560,14 +631,14 @@ function LootCard({ item, onSelect, equipment }: { item: Item; onSelect: () => v
 
       <div className="text-center">
         <p className={`font-bold text-lg leading-tight ${rc.text}`}>{item.name}</p>
-        <p className="text-gray-500 text-xs">{SLOT_LABELS[item.equipSlot]}</p>
+        <p className="text-gray-500 text-xs">{getSlotLabel(item.equipSlot)}</p>
         <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${rc.text}`}>{item.rarity}</p>
       </div>
 
       <p className="text-gray-400 text-sm italic text-center leading-snug">{item.description}</p>
 
       <div className="flex flex-col gap-1">
-        {!equipment[item.equipSlot] && (
+        {item.equipSlot !== 'potion' && !equipment[item.equipSlot as EquipSlot] && (
           <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
         )}
         {item.stats.damage          !== undefined && <p className="text-red-400 text-sm font-semibold">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
@@ -635,8 +706,8 @@ function VictoryOverlay() {
   if (!combatReward) return null
   const { xp, gold, item } = combatReward
   const rc = RARITY_COLORS[item.rarity]
-  const Icon = SLOT_ICONS[item.equipSlot]
-  const diff = getStatDiff(item, equipment[item.equipSlot])
+  const Icon = getSlotIcon(item.equipSlot)
+  const diff = getStatDiff(item, item.equipSlot === 'potion' ? null : equipment[item.equipSlot as EquipSlot])
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="flex flex-col items-center gap-6 text-center">
@@ -661,11 +732,11 @@ function VictoryOverlay() {
           </div>
           <div className="text-center">
             <p className={`font-bold text-base leading-tight ${rc.text}`}>{item.name}</p>
-            <p className="text-gray-500 text-xs">{SLOT_LABELS[item.equipSlot]}</p>
+            <p className="text-gray-500 text-xs">{getSlotLabel(item.equipSlot)}</p>
             <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${rc.text}`}>{item.rarity}</p>
           </div>
           <div className="flex flex-col gap-0.5 text-left text-sm font-semibold">
-            {!equipment[item.equipSlot] && (
+            {item.equipSlot !== 'potion' && !equipment[item.equipSlot as EquipSlot] && (
               <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
             )}
             {item.stats.damage          !== undefined && <p className="text-red-400">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
@@ -752,8 +823,8 @@ function MarketOverlay() {
         {marketItems.map(({ item, price }) => {
           const canAfford = player.gold >= price
           const rc = RARITY_COLORS[item.rarity]
-          const Icon = SLOT_ICONS[item.equipSlot]
-          const diff = getStatDiff(item, equipment[item.equipSlot])
+          const Icon = getSlotIcon(item.equipSlot)
+          const diff = getStatDiff(item, item.equipSlot === 'potion' ? null : equipment[item.equipSlot as EquipSlot])
           return (
             <div key={item.id} className={`bg-gray-900 border rounded-xl p-3 flex flex-col gap-2 ${rc.border} ${rc.glow}`}>
               <div className="flex items-center gap-2">
@@ -765,7 +836,7 @@ function MarketOverlay() {
               </div>
               <p className="text-gray-400 text-xs italic leading-snug flex-1">{item.description}</p>
               <div className="flex flex-col gap-0.5 text-xs font-semibold">
-                {!equipment[item.equipSlot] && (
+                {item.equipSlot !== 'potion' && !equipment[item.equipSlot as EquipSlot] && (
                   <p className="text-amber-400 text-[9px] font-bold uppercase tracking-wide">Slot: Empty</p>
                 )}
                 {item.stats.damage          !== undefined && <p className="text-red-400">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}

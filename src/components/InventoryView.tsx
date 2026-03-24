@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import {
-  Crown, Shirt, Layers, Swords, Shield, Award, Circle, Zap, Coins,
+  Crown, Shirt, Layers, Swords, Shield, Award, Circle, Zap, Coins, FlaskConical,
 } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS } from '../stores/useGameStore'
-import type { Item, EquipSlot } from '../stores/useGameStore'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS } from '../stores/useGameStore'
+import type { Item, EquipSlot, ItemSlot } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
 // ─── Slot icon map ────────────────────────────────────────────────────────────
@@ -27,6 +27,16 @@ const SLOT_LABELS: Record<EquipSlot, string> = {
   spell: 'Spell',
 }
 
+function getSlotIcon(slot: ItemSlot): React.ElementType {
+  if (slot === 'potion') return FlaskConical
+  return SLOT_ICONS[slot]
+}
+
+function getSlotLabel(slot: ItemSlot): string {
+  if (slot === 'potion') return 'Potion'
+  return SLOT_LABELS[slot]
+}
+
 // ─── SlotButton ───────────────────────────────────────────────────────────────
 
 interface SlotButtonProps {
@@ -39,7 +49,7 @@ interface SlotButtonProps {
 function SlotButton({ slotKey, item, isSelected, onClick }: SlotButtonProps) {
   const Icon = SLOT_ICONS[slotKey]
   const filled = item !== null
-  const ItemIcon = filled ? SLOT_ICONS[item.equipSlot] : null
+  const ItemIcon = filled ? getSlotIcon(item.equipSlot) : null
   const rarityBorder = filled ? RARITY_COLORS[item.rarity].border : ''
   const rarityGlow   = filled ? RARITY_COLORS[item.rarity].glow   : ''
 
@@ -123,6 +133,56 @@ function PaperDoll({ equipment, selectedItem, onSelect }: PaperDollProps) {
   )
 }
 
+// ─── PotionBelt ───────────────────────────────────────────────────────────────
+
+interface PotionBeltProps {
+  potionBelt: { item: Item; count: number }[]
+  maxSlots: number
+  selectedBeltIndex: number | null
+  onSelect: (index: number) => void
+}
+
+function PotionBelt({ potionBelt, maxSlots, selectedBeltIndex, onSelect }: PotionBeltProps) {
+  return (
+    <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-2">
+      <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest mb-1">
+        Potion Belt
+      </p>
+      <div className="flex gap-2 justify-center">
+        {Array.from({ length: maxSlots }).map((_, i) => {
+          const slot = potionBelt[i]
+          return slot ? (
+            <button
+              key={i}
+              onClick={() => onSelect(i)}
+              title={slot.item.name}
+              className={`relative w-14 h-14 rounded-lg bg-gray-700 border-2 flex flex-col items-center
+                          justify-center gap-0.5 text-amber-300 transition-all duration-150 cursor-pointer
+                          ${RARITY_COLORS[slot.item.rarity].border} ${RARITY_COLORS[slot.item.rarity].glow}
+                          ${selectedBeltIndex === i ? 'ring-2 ring-amber-400' : ''}`}
+            >
+              <FlaskConical size={20} />
+              <span className="text-[9px] leading-none text-amber-400/70 font-medium tracking-tight truncate w-12 text-center px-0.5">
+                {slot.item.name.split(' ')[0]}
+              </span>
+              <span className="absolute top-0.5 right-1 text-[9px] font-bold text-amber-300">
+                ×{slot.count}
+              </span>
+            </button>
+          ) : (
+            <div
+              key={i}
+              className="w-14 h-14 rounded-lg bg-gray-800 border-2 border-dashed border-gray-600 flex items-center justify-center"
+            >
+              <FlaskConical size={18} className="text-gray-700" />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── BackpackGrid ─────────────────────────────────────────────────────────────
 
 const GRID_SIZE = 16
@@ -152,7 +212,7 @@ function BackpackGrid({ backpack, selectedItem, onSelect }: BackpackGridProps) {
               />
             )
           }
-          const Icon = SLOT_ICONS[item.equipSlot]
+          const Icon = getSlotIcon(item.equipSlot)
           const isSelected = selectedItem?.id === item.id
           const rarityBorder = RARITY_COLORS[item.rarity].border
           return (
@@ -182,16 +242,23 @@ function BackpackGrid({ backpack, selectedItem, onSelect }: BackpackGridProps) {
 
 interface ItemDetailsProps {
   selectedItem: Item | null
-  selectedFrom: 'backpack' | EquipSlot | null
+  selectedFrom: 'backpack' | EquipSlot | 'belt' | null
+  beltIndex: number | null
   equipment: Record<EquipSlot, Item | null>
   onEquip: (item: Item) => void
+  onEquipPotion: (item: Item) => void
   onUnequip: (slotKey: string) => void
+  onUnequipBelt: (index: number) => void
   onSell: () => void
   sellValue: number
   onClear: () => void
 }
 
-function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip, onSell, sellValue, onClear }: ItemDetailsProps) {
+function ItemDetails({
+  selectedItem, selectedFrom, beltIndex, equipment,
+  onEquip, onEquipPotion, onUnequip, onUnequipBelt,
+  onSell, sellValue, onClear,
+}: ItemDetailsProps) {
   const isEmpty = selectedItem === null
 
   return (
@@ -209,12 +276,12 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
           {/* Name + icon */}
           <div className="flex items-center gap-2 border-b border-gray-700 pb-3">
             {(() => {
-              const Icon = SLOT_ICONS[selectedItem.equipSlot]
+              const Icon = getSlotIcon(selectedItem.equipSlot)
               return <Icon className="text-amber-400 shrink-0" size={22} />
             })()}
             <div>
               <p className={`font-bold leading-tight ${RARITY_COLORS[selectedItem.rarity].text}`}>{selectedItem.name}</p>
-              <p className="text-gray-500 text-xs">{SLOT_LABELS[selectedItem.equipSlot]}</p>
+              <p className="text-gray-500 text-xs">{getSlotLabel(selectedItem.equipSlot)}</p>
               <p className={`text-xs font-semibold uppercase tracking-widest ${RARITY_COLORS[selectedItem.rarity].text}`}>{selectedItem.rarity}</p>
             </div>
           </div>
@@ -224,12 +291,12 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
 
           {/* Stats */}
           <div className="flex flex-col gap-1">
-            {selectedFrom === 'backpack' && !equipment[selectedItem.equipSlot] && (
+            {selectedItem.equipSlot !== 'potion' && selectedFrom === 'backpack' && !equipment[selectedItem.equipSlot as EquipSlot] && (
               <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
             )}
             {(() => {
-              const d = selectedFrom === 'backpack'
-                ? getStatDiff(selectedItem, equipment[selectedItem.equipSlot])
+              const d = selectedFrom === 'backpack' && selectedItem.equipSlot !== 'potion'
+                ? getStatDiff(selectedItem, equipment[selectedItem.equipSlot as EquipSlot])
                 : null
               return (
                 <>
@@ -254,13 +321,15 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
                   {selectedItem.stats.damageReduction !== undefined && (
                     <p className="text-orange-400 text-sm font-semibold">+{selectedItem.stats.damageReduction} DR{d && <DiffBadge diff={d.damageReduction} />}</p>
                   )}
-                  {selectedItem.stats.hp              === undefined && (equipment[selectedItem.equipSlot]?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50 text-sm font-semibold">Max HP {d && <DiffBadge diff={d.hp} />}</p>}
-                  {selectedItem.stats.damage          === undefined && (equipment[selectedItem.equipSlot]?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50 text-sm font-semibold">Damage {d && <DiffBadge diff={d.damage} />}</p>}
-                  {selectedItem.stats.attackSpeed     === undefined && (equipment[selectedItem.equipSlot]?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50 text-sm font-semibold">Atk Speed {d && <DiffBadgeF diff={d.attackSpeed} decimals={2} />}</p>}
-                  {selectedItem.stats.critChance      === undefined && (equipment[selectedItem.equipSlot]?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50 text-sm font-semibold">Crit {d && <DiffBadge diff={Math.round(d.critChance * 100)} />}</p>}
-                  {selectedItem.stats.dodgeChance     === undefined && (equipment[selectedItem.equipSlot]?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50 text-sm font-semibold">Dodge {d && <DiffBadge diff={Math.round(d.dodgeChance * 100)} />}</p>}
-                  {selectedItem.stats.lifesteal       === undefined && (equipment[selectedItem.equipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50 text-sm font-semibold">Lifesteal {d && <DiffBadge diff={d.lifesteal} />}</p>}
-                  {selectedItem.stats.damageReduction === undefined && (equipment[selectedItem.equipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50 text-sm font-semibold">DR {d && <DiffBadge diff={d.damageReduction} />}</p>}
+                  {selectedItem.equipSlot !== 'potion' && (<>
+                    {selectedItem.stats.hp              === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50 text-sm font-semibold">Max HP {d && <DiffBadge diff={d!.hp} />}</p>}
+                    {selectedItem.stats.damage          === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50 text-sm font-semibold">Damage {d && <DiffBadge diff={d!.damage} />}</p>}
+                    {selectedItem.stats.attackSpeed     === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50 text-sm font-semibold">Atk Speed {d && <DiffBadgeF diff={d!.attackSpeed} decimals={2} />}</p>}
+                    {selectedItem.stats.critChance      === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50 text-sm font-semibold">Crit {d && <DiffBadge diff={Math.round(d!.critChance * 100)} />}</p>}
+                    {selectedItem.stats.dodgeChance     === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50 text-sm font-semibold">Dodge {d && <DiffBadge diff={Math.round(d!.dodgeChance * 100)} />}</p>}
+                    {selectedItem.stats.lifesteal       === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50 text-sm font-semibold">Lifesteal {d && <DiffBadge diff={d!.lifesteal} />}</p>}
+                    {selectedItem.stats.damageReduction === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50 text-sm font-semibold">DR {d && <DiffBadge diff={d!.damageReduction} />}</p>}
+                  </>)}
                 </>
               )
             })()}
@@ -271,10 +340,13 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
             {selectedFrom === 'backpack' ? (
               <>
                 <button
-                  onClick={() => { onEquip(selectedItem); onClear() }}
+                  onClick={() => {
+                    selectedItem.equipSlot === 'potion' ? onEquipPotion(selectedItem) : onEquip(selectedItem)
+                    onClear()
+                  }}
                   className="w-full border border-amber-500 text-amber-400 py-2 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-amber-500/10 transition-colors"
                 >
-                  Equip
+                  {selectedItem.equipSlot === 'potion' ? 'Equip to Belt' : 'Equip'}
                 </button>
                 <button
                   onClick={() => { onSell(); onClear() }}
@@ -284,6 +356,13 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
                   Sell for {sellValue}g
                 </button>
               </>
+            ) : selectedFrom === 'belt' ? (
+              <button
+                onClick={() => { onUnequipBelt(beltIndex!); onClear() }}
+                className="w-full border border-red-800 text-red-400 py-2 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-red-900/20 transition-colors"
+              >
+                Unequip
+              </button>
             ) : (
               <button
                 onClick={() => { onUnequip(selectedFrom!); onClear() }}
@@ -308,37 +387,56 @@ function ItemDetails({ selectedItem, selectedFrom, equipment, onEquip, onUnequip
 // ─── InventoryView ────────────────────────────────────────────────────────────
 
 export default function InventoryView() {
-  const { backpack, equipment, equipItem, unequipItem, sellItem, player, talents } = useGameStore()
+  const {
+    backpack, equipment, equipItem, unequipItem, sellItem, player, talents,
+    potionBelt, equipPotion, unequipPotion,
+  } = useGameStore()
   const eff = getEffectiveStats(player, equipment, talents)
 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
-  const [selectedFrom, setSelectedFrom] = useState<'backpack' | EquipSlot | null>(null)
+  const [selectedFrom, setSelectedFrom] = useState<'backpack' | EquipSlot | 'belt' | null>(null)
+  const [selectedBeltIndex, setSelectedBeltIndex] = useState<number | null>(null)
 
   const sellValue = selectedItem ? getItemSellValue(selectedItem.rarity) : 0
 
   function handleSelectFromBackpack(item: Item) {
     setSelectedItem(item)
     setSelectedFrom('backpack')
+    setSelectedBeltIndex(null)
   }
 
   function handleSelectFromEquipment(item: Item, slotKey: EquipSlot) {
     setSelectedItem(item)
     setSelectedFrom(slotKey)
+    setSelectedBeltIndex(null)
+  }
+
+  function handleSelectFromBelt(index: number) {
+    setSelectedItem(potionBelt[index].item)
+    setSelectedFrom('belt')
+    setSelectedBeltIndex(index)
   }
 
   function clearSelection() {
     setSelectedItem(null)
     setSelectedFrom(null)
+    setSelectedBeltIndex(null)
   }
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 p-4 w-full max-w-5xl mx-auto min-h-full sm:items-start">
-      {/* Section 1: Paper Doll + Stats */}
+      {/* Section 1: Paper Doll + Potion Belt + Stats */}
       <div className="flex flex-col gap-3 w-full sm:w-auto">
         <PaperDoll
           equipment={equipment}
           selectedItem={selectedItem}
           onSelect={handleSelectFromEquipment}
+        />
+        <PotionBelt
+          potionBelt={potionBelt}
+          maxSlots={MAX_POTION_SLOTS}
+          selectedBeltIndex={selectedBeltIndex}
+          onSelect={handleSelectFromBelt}
         />
         <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-1">
           <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest mb-1">Stats</p>
@@ -363,9 +461,12 @@ export default function InventoryView() {
       <ItemDetails
         selectedItem={selectedItem}
         selectedFrom={selectedFrom}
+        beltIndex={selectedBeltIndex}
         equipment={equipment}
         onEquip={equipItem}
+        onEquipPotion={equipPotion}
         onUnequip={unequipItem}
+        onUnequipBelt={unequipPotion}
         onSell={() => { sellItem(selectedItem!.id); clearSelection() }}
         sellValue={sellValue}
         onClear={clearSelection}
