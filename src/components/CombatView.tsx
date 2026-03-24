@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical } from 'lucide-react'
 import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel } from '../stores/useGameStore'
-import type { Player, Mob, MapNode, Item, EquipSlot, ItemSlot, MobTier, DamageIndicator, ActiveBuff } from '../stores/useGameStore'
+import type { Player, Mob, MapNode, Item, EquipSlot, ItemSlot, MobTier, MobTrait, DamageIndicator, ActiveBuff } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
 // ─── Slot icon maps (shared by LootCard) ──────────────────────────────────────
@@ -258,9 +258,10 @@ interface PanelProps {
   tier?: MobTier
   damageIndicators?: DamageIndicator[]
   isKillingBlow?: boolean
+  traits?: MobTrait[]
 }
 
-function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, damageIndicators, isKillingBlow }: PanelProps) {
+function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, damageIndicators, isKillingBlow, traits }: PanelProps) {
   const hpPct = Math.max(0, (combatant.currentHp / combatant.maxHp) * 100)
   const atkPct = Math.min(100, attackProgress)
   const atkFill = atkBarColor === 'amber' ? 'bg-amber-400' : 'bg-orange-500'
@@ -273,7 +274,9 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
         <span
           key={d.id}
           className={`animate-float-up absolute select-none font-extrabold tabular-nums z-10
-            ${d.isSkill
+            ${d.isHeal
+              ? 'text-base text-green-400 top-0'
+              : d.isSkill
               ? 'text-lg text-blue-300 drop-shadow-[0_0_6px_rgb(147_197_253)] top-0'
               : d.isCrit
               ? 'text-2xl text-yellow-300 drop-shadow-[0_0_8px_rgb(253_224_71)] -top-3'
@@ -281,7 +284,7 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
             }`}
           style={{ left: `${(Math.floor(d.id) * 37 % 50) + 20}%` }}
         >
-          {d.isSkill ? `✦${d.value}` : d.isCrit ? `⚡${d.value}` : `-${d.value}`}
+          {d.isHeal ? `+${d.value}` : d.isSkill ? `✦${d.value}` : d.isCrit ? `⚡${d.value}` : `-${d.value}`}
         </span>
       ))}
 
@@ -341,6 +344,21 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
           />
         </div>
       </div>
+
+      {traits && traits.length > 0 && (
+        <div className="flex flex-col gap-1.5 border border-red-900/60 bg-red-950/30 rounded-lg p-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-red-400/70">Traits</p>
+          {traits.map(t => (
+            <div key={t.id} className="flex items-start gap-2">
+              <span className="text-sm leading-none mt-0.5">{t.icon}</span>
+              <div>
+                <p className="text-xs font-bold text-red-300">{t.name}</p>
+                <p className="text-[10px] text-gray-400 leading-snug">{t.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <p className="text-xs text-gray-500 tracking-wide">
         {combatant.baseDamage} dmg &nbsp;·&nbsp; {combatant.attackSpeed}/s
@@ -576,6 +594,7 @@ function CombatArena() {
             tier={currentMob.tier}
             damageIndicators={damageIndicators.filter(d => d.target === 'enemy')}
             isKillingBlow={isKillingBlowActive}
+            traits={currentMob.traits}
           />
         </div>
       </div>

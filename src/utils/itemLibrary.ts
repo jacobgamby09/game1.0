@@ -1,4 +1,4 @@
-import type { Item, Rarity } from '../stores/useGameStore'
+import type { Item, Rarity } from '../types'
 
 type ItemBase = Omit<Item, 'id'>
 

@@ -1,4 +1,4 @@
-import type { Item } from '../stores/useGameStore'
+import type { Item } from '../types'
 
 export function getStatDiff(offered: Item, equipped: Item | null) {
   return {
