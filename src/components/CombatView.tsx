@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS } from '../stores/useGameStore'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, ItemSlot, MobTier, DamageIndicator, ActiveBuff } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
@@ -488,9 +488,13 @@ function CombatArena() {
     potionBelt,
     activeBuffs,
     usePotion,
+    totalXp,
+    runSummary,
   } = useGameStore()
 
   if (!currentMob) return null
+
+  const playerLevel = computePlayerLevel(totalXp)
 
   const [displayText, setDisplayText] = useState<string | null>(null)
   useEffect(() => {
@@ -538,13 +542,18 @@ function CombatArena() {
 
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-3xl">
         <div className="flex flex-col gap-4 flex-1">
-          <CombatantPanel
-            combatant={displayPlayer}
-            attackProgress={playerAttackProgress}
-            atkBarColor="amber"
-            icon={<Swords size={20} />}
-            damageIndicators={damageIndicators.filter(d => d.target === 'player')}
-          />
+          <div className="flex flex-col gap-1">
+            <p className="text-[9px] text-center text-amber-400/40 font-semibold tracking-widest uppercase">
+              Lv.{playerLevel} Fighter
+            </p>
+            <CombatantPanel
+              combatant={displayPlayer}
+              attackProgress={playerAttackProgress}
+              atkBarColor="amber"
+              icon={<Swords size={20} />}
+              damageIndicators={damageIndicators.filter(d => d.target === 'player')}
+            />
+          </div>
           <ActiveBuffsBar activeBuffs={activeBuffs} />
           <ActiveSkills
             powerStrikeCooldown={powerStrikeCooldown}
@@ -571,7 +580,7 @@ function CombatArena() {
         </div>
       </div>
 
-      {playerLost && (
+      {playerLost && !runSummary?.active && (
         <>
           <p className="text-red-500 text-xl font-bold tracking-widest uppercase animate-pulse">
             💀 Defeated!

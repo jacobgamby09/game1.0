@@ -3,6 +3,7 @@ import {
   useGameStore,
   TALENT_TREE,
   computeAvailablePoints,
+  computePlayerLevel,
   type TalentNode,
   type TalentBranch,
 } from '../stores/useGameStore'
@@ -158,6 +159,7 @@ function BranchColumn({ branch, talents, availablePoints, upgradeTalent }: Branc
 export default function HubView() {
   const { totalXp, talents, upgradeTalent, generateMap, hardResetGame } = useGameStore()
   const availablePoints = computeAvailablePoints(totalXp, talents)
+  const playerLevel = computePlayerLevel(totalXp)
 
   return (
     <div className="flex flex-col h-full gap-3 sm:gap-4 p-3 sm:p-5 max-w-lg mx-auto w-full">
@@ -166,6 +168,7 @@ export default function HubView() {
       <div className="relative text-center shrink-0">
         <p className="text-[10px] text-amber-400/40 uppercase tracking-widest mb-0.5">Base Camp</p>
         <h1 className="text-3xl font-bold tracking-widest uppercase text-white">The HUB</h1>
+        <p className="text-sm text-amber-400/50 font-semibold tracking-wide mt-0.5">Level {playerLevel} · Fighter</p>
         <button
           onClick={() => {
             if (window.confirm('WARNING: This will permanently delete your save file, including all XP and Talents. Are you sure?')) {
@@ -182,8 +185,8 @@ export default function HubView() {
       {/* XP + Points bar */}
       <div className="w-full shrink-0 bg-gray-900 border border-gray-700 rounded-xl px-4 sm:px-5 py-3 flex items-center justify-center gap-4 sm:gap-5">
         <div className="text-center">
-          <p className="text-[10px] text-amber-400/50 uppercase tracking-widest">Total XP</p>
-          <p className="text-amber-300 text-lg font-bold">{totalXp}</p>
+          <p className="text-[10px] text-amber-400/50 uppercase tracking-widest">Level</p>
+          <p className="text-amber-300 text-lg font-bold">{playerLevel}</p>
         </div>
         <div className="w-px h-8 bg-gray-700" />
         <div className="text-center">

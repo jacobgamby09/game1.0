@@ -3,6 +3,7 @@ import NavBar from './components/NavBar'
 import CombatView from './components/CombatView'
 import InventoryView from './components/InventoryView'
 import HubView from './components/HubView'
+import RunSummaryView from './components/RunSummaryView'
 
 const views = {
   battle:    <CombatView />,
@@ -19,6 +20,7 @@ export default function App() {
         {views[activeView]}
       </main>
       <NavBar />
+      <RunSummaryView />
     </div>
   )
 }

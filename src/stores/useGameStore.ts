@@ -74,6 +74,10 @@ export function computeAvailablePoints(totalXp: number, talents: Record<string, 
   return Math.floor(totalXp / 100) - spent
 }
 
+export function computePlayerLevel(totalXp: number): number {
+  return Math.floor(totalXp / 100) + 1
+}
+
 // ─── Damage Indicator ─────────────────────────────────────────────────────────
 
 export interface DamageIndicator {
@@ -130,11 +134,24 @@ export interface Item {
 
 export interface Player {
   name: string
+  playerClass: string
   maxHp: number
   currentHp: number
   baseDamage: number
   attackSpeed: number // attacks per second
   gold: number        // per-run; resets on new run / death
+}
+
+export interface RunStats {
+  monstersKilled: number
+  goldGathered: number
+}
+
+export interface RunSummary {
+  active: boolean
+  status: 'dead' | 'victory'
+  previousTotalXp: number
+  goldAtDeath: number
 }
 
 export type MobTier = 'normal' | 'elite' | 'boss'
@@ -160,6 +177,7 @@ export interface MapNode {
 
 const DEFAULT_PLAYER: Player = {
   name: 'Fighter',
+  playerClass: 'Fighter',
   maxHp: 100,
   currentHp: 100,
   baseDamage: 12,
@@ -501,6 +519,8 @@ interface GameStore {
 
   // Run state
   usedUndyingThisRun: boolean
+  currentRunStats: RunStats
+  runSummary: RunSummary | null
 
   // Combat actions
   startCombat: () => void
@@ -574,6 +594,8 @@ export const useGameStore = create<GameStore>()(
         damageIndicators: [],
         isKillingBlowActive: false,
         usedUndyingThisRun: false,
+        currentRunStats: { monstersKilled: 0, goldGathered: 0 },
+        runSummary: null,
       }
     }),
 
@@ -649,6 +671,8 @@ export const useGameStore = create<GameStore>()(
 
   // ── Run state ───────────────────────────────────────────────────────────────
   usedUndyingThisRun: false,
+  currentRunStats: { monstersKilled: 0, goldGathered: 0 },
+  runSummary: null,
 
   // ── Combat state ────────────────────────────────────────────────────────────
   player: { ...DEFAULT_PLAYER },
@@ -728,6 +752,7 @@ export const useGameStore = create<GameStore>()(
           mobAttackProgress: 0,
           powerStrikeCooldown: POWER_STRIKE_COOLDOWN_MS,
           ...triggerEnemyDeath(state, mob),
+          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
         }
       }
 
@@ -762,6 +787,7 @@ export const useGameStore = create<GameStore>()(
           damageIndicators,
           equippedSpellCooldown: ability.cooldown,
           ...triggerEnemyDeath(state, mob),
+          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
         }
       }
 
@@ -804,6 +830,8 @@ export const useGameStore = create<GameStore>()(
         isKillingBlowActive: false,
         potionBelt: [],
         activeBuffs: [],
+        runSummary: null,
+        currentRunStats: { monstersKilled: 0, goldGathered: 0 },
       }
     }),
 
@@ -964,6 +992,7 @@ export const useGameStore = create<GameStore>()(
         currentFloor: state.currentFloor + 1,
         combatReward: null,
         isMapVisible: true,
+        currentRunStats: { ...state.currentRunStats, goldGathered: state.currentRunStats.goldGathered + state.combatReward.gold },
       }
     }),
 
@@ -1134,6 +1163,7 @@ export const useGameStore = create<GameStore>()(
           equippedSpellCooldown,
           damageIndicators,
           ...triggerEnemyDeath(state, mob),  // mobDeathPatch clears activeBuffs
+          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
         }
       }
 
@@ -1141,7 +1171,7 @@ export const useGameStore = create<GameStore>()(
         ? { combatEventKey: state.combatEventKey + 1, combatEventText: newEventText }
         : {}
 
-      // Player died — clear buffs
+      // Player died — clear buffs, trigger summary screen
       if (!isCombatActive) {
         return {
           player,
@@ -1154,6 +1184,12 @@ export const useGameStore = create<GameStore>()(
           damageIndicators,
           activeBuffs: [],
           ...eventUpdate,
+          runSummary: state.runSummary ?? {
+            active: true,
+            status: 'dead' as const,
+            previousTotalXp: state.totalXp,
+            goldAtDeath: state.player.gold,
+          },
         }
       }
 
