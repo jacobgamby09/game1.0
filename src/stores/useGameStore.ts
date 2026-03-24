@@ -490,9 +490,12 @@ export const useGameStore = create<GameStore>()(
       const existing    = state.equipment[targetSlot]
       const newBackpack = state.backpack.filter((i) => i.id !== item.id)
       if (existing) newBackpack.push(existing)
+      const newEquipment = { ...state.equipment, [targetSlot]: item }
+      const newMaxHp = getEffectiveStats(state.player, newEquipment, state.talents).maxHp
       return {
         backpack:  newBackpack,
-        equipment: { ...state.equipment, [targetSlot]: item },
+        equipment: newEquipment,
+        player: { ...state.player, currentHp: Math.min(state.player.currentHp, newMaxHp) },
       }
     }),
 
