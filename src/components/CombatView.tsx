@@ -259,9 +259,11 @@ interface PanelProps {
   damageIndicators?: DamageIndicator[]
   isKillingBlow?: boolean
   traits?: MobTrait[]
+  bossPhase?: 'void' | 'exposed'
+  bossPhaseTimerMs?: number
 }
 
-function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, damageIndicators, isKillingBlow, traits }: PanelProps) {
+function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, damageIndicators, isKillingBlow, traits, bossPhase, bossPhaseTimerMs }: PanelProps) {
   const hpPct = Math.max(0, (combatant.currentHp / combatant.maxHp) * 100)
   const atkPct = Math.min(100, attackProgress)
   const atkFill = atkBarColor === 'amber' ? 'bg-amber-400' : 'bg-orange-500'
@@ -345,6 +347,39 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
         </div>
       </div>
 
+      {/* Boss Phase Panel — only for Void Warden */}
+      {bossPhase && (
+        <div className={`flex flex-col gap-2 rounded-lg p-3 border ${
+          bossPhase === 'void'
+            ? 'border-purple-600 bg-purple-900/20'
+            : 'border-red-500 bg-red-900/20'
+        }`}>
+          <div className="flex items-center gap-2">
+            <span className="text-base">{bossPhase === 'void' ? '🛡️' : '💥'}</span>
+            <div>
+              <p className={`text-xs font-bold uppercase tracking-widest ${
+                bossPhase === 'void' ? 'text-purple-300' : 'text-red-300'
+              }`}>
+                {bossPhase === 'void' ? 'Void Armor' : 'Exposed'}
+              </p>
+              <p className="text-[10px] text-gray-400 leading-snug">
+                {bossPhase === 'void'
+                  ? 'Takes and deals 50% less damage.'
+                  : 'Takes and deals 50% EXTRA damage!'}
+              </p>
+            </div>
+          </div>
+          <div className="bg-gray-700/60 rounded-full h-1.5 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-[50ms] ease-linear ${
+                bossPhase === 'void' ? 'bg-purple-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${((bossPhaseTimerMs ?? 8000) / 8000) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {traits && traits.length > 0 && (
         <div className="flex flex-col gap-1.5 border border-red-900/60 bg-red-950/30 rounded-lg p-2.5">
           <p className="text-[10px] font-bold uppercase tracking-widest text-red-400/70">Traits</p>
@@ -392,55 +427,72 @@ function ActiveSkills({ powerStrikeCooldown, onPowerStrike, isCombatActive, spel
       <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">
         Active Skills
       </p>
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={onPowerStrike}
-          disabled={bashDisabled}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
-            ${bashReady && isCombatActive
-              ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 ring-1 ring-amber-400/50'
-              : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
-            }`}
-        >
-          <Swords size={16} />
-          {bashReady ? 'Power Strike' : `${(powerStrikeCooldown / 1000).toFixed(1)}s`}
-        </button>
+      <div className="flex w-full justify-between items-center gap-4">
+        {/* LEFT — Healing */}
+        <div className="flex gap-2 items-center">
+          {potionBelt.length > 0 ? potionBelt.map((slot, i) => (
+            <button
+              key={i}
+              onClick={() => onUsePotion(i)}
+              disabled={!isCombatActive}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
+                ${isCombatActive
+                  ? 'border border-purple-500 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 ring-1 ring-purple-400/50'
+                  : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
+                }`}
+            >
+              <FlaskConical size={16} />
+              {slot.item.name.split(' ')[0]} ×{slot.count}
+            </button>
+          )) : (
+            <div className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-600 bg-gray-800/50
+                            flex flex-col items-center justify-center opacity-50 select-none">
+              <FlaskConical size={14} className="text-gray-500" />
+              <span className="text-[9px] text-gray-500 mt-0.5">No Potion</span>
+            </div>
+          )}
+        </div>
 
-        {spellItem?.ability ? (
+        {/* RIGHT — Attack Skills */}
+        <div className="flex gap-2 items-center justify-end flex-wrap">
           <button
-            onClick={onUseSpell}
-            disabled={spellDisabled}
+            onClick={onPowerStrike}
+            disabled={bashDisabled}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
-              ${spellReady && isCombatActive
-                ? 'border border-orange-500 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 ring-1 ring-orange-400/50'
+              ${bashReady && isCombatActive
+                ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 ring-1 ring-amber-400/50'
                 : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
               }`}
           >
-            <Flame size={16} />
-            {spellReady ? spellItem.ability.name : `${(equippedSpellCooldown / 1000).toFixed(1)}s`}
+            <Swords size={16} />
+            {bashReady ? 'Power Strike' : `${(powerStrikeCooldown / 1000).toFixed(1)}s`}
           </button>
-        ) : (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-dashed border-gray-700 text-gray-600 opacity-40 cursor-not-allowed select-none">
-            <Plus size={16} />
-            Empty Slot
-          </div>
-        )}
 
-        {potionBelt.map((slot, i) => (
-          <button
-            key={i}
-            onClick={() => onUsePotion(i)}
-            disabled={!isCombatActive}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
-              ${isCombatActive
-                ? 'border border-purple-500 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 ring-1 ring-purple-400/50'
-                : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
-              }`}
-          >
-            <FlaskConical size={16} />
-            {slot.item.name.split(' ')[0]} ×{slot.count}
-          </button>
-        ))}
+          {spellItem?.ability ? (
+            <button
+              onClick={onUseSpell}
+              disabled={spellDisabled}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
+                ${spellReady && isCombatActive
+                  ? 'border border-orange-500 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 ring-1 ring-orange-400/50'
+                  : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
+                }`}
+            >
+              <Flame size={16} />
+              <span className="flex flex-col items-start leading-tight">
+                <span>{spellReady ? spellItem.ability.name : `${(equippedSpellCooldown / 1000).toFixed(1)}s`}</span>
+                {spellReady && (
+                  <span className="text-[10px] opacity-70">{spellItem.ability.value} Dmg</span>
+                )}
+              </span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-dashed border-gray-700 text-gray-600 opacity-40 cursor-not-allowed select-none">
+              <Plus size={16} />
+              Empty Slot
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -508,6 +560,8 @@ function CombatArena() {
     usePotion,
     totalXp,
     runSummary,
+    bossPhase,
+    bossPhaseTimerMs,
   } = useGameStore()
 
   if (!currentMob) return null
@@ -595,6 +649,8 @@ function CombatArena() {
             damageIndicators={damageIndicators.filter(d => d.target === 'enemy')}
             isKillingBlow={isKillingBlowActive}
             traits={currentMob.traits}
+            bossPhase={currentMob.name === 'The Void Warden' ? bossPhase : undefined}
+            bossPhaseTimerMs={currentMob.name === 'The Void Warden' ? bossPhaseTimerMs : undefined}
           />
         </div>
       </div>

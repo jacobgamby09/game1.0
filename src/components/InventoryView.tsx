@@ -335,6 +335,19 @@ function ItemDetails({
             })()}
           </div>
 
+          {/* Ability */}
+          {selectedItem.ability && (
+            <div className="border border-orange-900/60 bg-orange-950/20 rounded-lg p-2.5 flex flex-col gap-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-orange-400/70">Ability</p>
+              <p className="text-xs font-bold text-orange-300">
+                {selectedItem.ability.name}
+                <span className="text-gray-400 font-normal"> — {selectedItem.ability.value} Damage</span>
+              </p>
+              <p className="text-[10px] text-gray-400 leading-snug">{selectedItem.ability.description}</p>
+              <p className="text-[10px] text-gray-500">Cooldown: {(selectedItem.ability.cooldown / 1000).toFixed(1)}s</p>
+            </div>
+          )}
+
           {/* Action button */}
           <div className="mt-auto pt-2 flex flex-col gap-2">
             {selectedFrom === 'backpack' ? (

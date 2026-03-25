@@ -117,6 +117,8 @@ interface GameStore {
   playerAttackProgress: number
   mobAttackProgress: number
   isCombatActive: boolean
+  bossPhase: 'void' | 'exposed'
+  bossPhaseTimerMs: number
 
   // Skills state
   powerStrikeCooldown: number
@@ -261,6 +263,8 @@ export const useGameStore = create<GameStore>()(
           powerStrikeCooldown: 0,
           equippedSpellCooldown: 0,
           isCombatActive: false,
+          bossPhase: 'void' as const,
+          bossPhaseTimerMs: 8000,
         }
       }
 
@@ -312,6 +316,8 @@ export const useGameStore = create<GameStore>()(
   playerAttackProgress: 0,
   mobAttackProgress: 0,
   isCombatActive: false,
+  bossPhase: 'void' as const,
+  bossPhaseTimerMs: 8000,
 
   // ── Skills state ────────────────────────────────────────────────────────────
   powerStrikeCooldown: 0,
@@ -350,6 +356,8 @@ export const useGameStore = create<GameStore>()(
       equippedSpellCooldown: 0,
       isCombatActive: true,
       activeBuffs: [],
+      bossPhase: 'void' as const,
+      bossPhaseTimerMs: 8000,
     }),
 
   // ── engageCombat ────────────────────────────────────────────────────────────
@@ -703,6 +711,19 @@ export const useGameStore = create<GameStore>()(
       const mob = { ...state.currentMob }
       const eff = getEffectiveStats(state.player, state.equipment, state.talents)
 
+      // ── Boss phase (Void Warden) ──────────────────────────────────────────────
+      let bossPhase = state.bossPhase
+      let bossPhaseTimerMs = state.bossPhaseTimerMs
+      const isVoidWarden = mob.name === 'The Void Warden'
+      if (isVoidWarden) {
+        bossPhaseTimerMs -= TICK_MS
+        if (bossPhaseTimerMs <= 0) {
+          bossPhase = bossPhase === 'void' ? 'exposed' : 'void'
+          bossPhaseTimerMs = 8000
+        }
+      }
+      const bossPhaseMultiplier = isVoidWarden ? (bossPhase === 'void' ? 0.5 : 1.5) : 1
+
       // ── Berserk / Frenzy: compute effective attack speed ─────────────────────
       const baseSpeed = eff.hasFrenzy && player.currentHp < eff.maxHp * 0.30
         ? eff.attackSpeed * 2
@@ -729,7 +750,7 @@ export const useGameStore = create<GameStore>()(
         const isCrit = eff.critChance > 0 && Math.random() < eff.critChance
         const giantMult = eff.eliteBonusMultiplier > 0 && (mob.tier === 'elite' || mob.tier === 'boss')
           ? 1 + eff.eliteBonusMultiplier : 1
-        const dmg = Math.floor((isCrit ? eff.damage * 2 : eff.damage) * giantMult)
+        const dmg = Math.floor((isCrit ? eff.damage * 2 : eff.damage) * giantMult * bossPhaseMultiplier)
         mob.currentHp = Math.max(0, mob.currentHp - dmg)
         if (isCrit) newEventText = '⚡ Critical Hit!'
 
@@ -760,7 +781,7 @@ export const useGameStore = create<GameStore>()(
         mobAttackProgress -= 100
         const isDodged = eff.dodgeChance > 0 && Math.random() < eff.dodgeChance
         if (!isDodged) {
-          const dmgTaken = Math.max(0, mob.baseDamage - effectiveDR)
+          const dmgTaken = Math.max(0, Math.floor((mob.baseDamage - effectiveDR) * bossPhaseMultiplier))
           player.currentHp = Math.max(0, player.currentHp - dmgTaken)
           if (dmgTaken > 0) {
             damageIndicators.push({ id: now + Math.random() + 1, value: dmgTaken, isCrit: false, isSkill: false, target: 'player', createdAt: now })
@@ -796,6 +817,8 @@ export const useGameStore = create<GameStore>()(
           usedUndyingThisRun: true,
           damageIndicators,
           activeBuffs,
+          bossPhase,
+          bossPhaseTimerMs,
         }
       }
 
@@ -810,6 +833,8 @@ export const useGameStore = create<GameStore>()(
           powerStrikeCooldown,
           equippedSpellCooldown,
           damageIndicators,
+          bossPhase,
+          bossPhaseTimerMs,
           ...triggerEnemyDeath(state, mob),  // mobDeathPatch clears activeBuffs
           currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
         }
@@ -831,6 +856,8 @@ export const useGameStore = create<GameStore>()(
           isCombatActive,
           damageIndicators,
           activeBuffs: [],
+          bossPhase,
+          bossPhaseTimerMs,
           ...eventUpdate,
           runSummary: state.runSummary ?? {
             active: true,
@@ -851,6 +878,8 @@ export const useGameStore = create<GameStore>()(
         isCombatActive,
         damageIndicators,
         activeBuffs,
+        bossPhase,
+        bossPhaseTimerMs,
         ...eventUpdate,
       }
     }),
