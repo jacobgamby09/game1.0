@@ -16,6 +16,8 @@ export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic'
 
 // ─── Talent System ────────────────────────────────────────────────────────────
 
+import type { LucideIcon } from 'lucide-react'
+
 export type TalentBranch = 'vitality' | 'might' | 'celerity'
 
 export interface TalentNode {
@@ -26,6 +28,7 @@ export interface TalentNode {
   costPerRank: number
   branch: TalentBranch
   tier: number              // 1 = top of branch; tier N requires tier N-1 rank >= 1
+  icon: LucideIcon
   effect: {
     type: 'flat' | 'percent'
     stat: 'hp' | 'damage' | 'attackSpeed' | 'damageReduction' | 'critChance' | 'dodgeChance'
