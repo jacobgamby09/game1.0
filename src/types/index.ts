@@ -108,8 +108,10 @@ export interface Player {
 // ─── Run tracking ─────────────────────────────────────────────────────────────
 
 export interface RunStats {
-  monstersKilled: number
-  goldGathered: number
+  monstersKilled:    number
+  goldGathered:      number
+  ironScrapGathered: number
+  voidDustGathered:  number
 }
 
 export interface RunSummary {

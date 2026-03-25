@@ -46,6 +46,14 @@ const EMPTY_EQUIPMENT: Record<EquipSlot, Item | null> = {
   spell: null,
 }
 
+// ─── Meta-resource drop helper ───────────────────────────────────────────────
+
+function calcMetaDrops(tier: MobTier): { scrapDrop: number; dustDrop: number } {
+  if (tier === 'boss')  return { scrapDrop: 3, dustDrop: 3 }
+  if (tier === 'elite') return { scrapDrop: 1, dustDrop: 1 }
+  return { scrapDrop: Math.random() < 0.30 ? 1 : 0, dustDrop: 0 }
+}
+
 // ─── Mob-death patch helper ───────────────────────────────────────────────────
 // Returns the state fields that should be set whenever a mob's HP hits 0.
 // Calling it in one place ensures usePowerStrike, useEquippedSpell, and
@@ -187,8 +195,10 @@ interface GameStore {
   addDamageIndicator: (indicator: DamageIndicator) => void
 
   // Meta-progression (persistent across runs)
-  totalXp: number
-  talents: Record<string, number>
+  totalXp:   number
+  talents:   Record<string, number>
+  ironScrap: number
+  voidDust:  number
   upgradeTalent: (nodeId: string) => void
   hardResetGame: () => void
 }
@@ -228,7 +238,7 @@ export const useGameStore = create<GameStore>()(
         damageIndicators: [],
         isKillingBlowActive: false,
         usedUndyingThisRun: false,
-        currentRunStats: { monstersKilled: 0, goldGathered: 0 },
+        currentRunStats: { monstersKilled: 0, goldGathered: 0, ironScrapGathered: 0, voidDustGathered: 0 },
         runSummary: null,
       }
     }),
@@ -307,7 +317,7 @@ export const useGameStore = create<GameStore>()(
 
   // ── Run state ───────────────────────────────────────────────────────────────
   usedUndyingThisRun: false,
-  currentRunStats: { monstersKilled: 0, goldGathered: 0 },
+  currentRunStats: { monstersKilled: 0, goldGathered: 0, ironScrapGathered: 0, voidDustGathered: 0 },
   runSummary: null,
 
   // ── Combat state ────────────────────────────────────────────────────────────
@@ -392,7 +402,7 @@ export const useGameStore = create<GameStore>()(
           mobAttackProgress: 0,
           powerStrikeCooldown: POWER_STRIKE_COOLDOWN_MS,
           ...triggerEnemyDeath(state, mob),
-          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
+          currentRunStats: (() => { const { scrapDrop, dustDrop } = calcMetaDrops(mob.tier); return { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1, ironScrapGathered: state.currentRunStats.ironScrapGathered + scrapDrop, voidDustGathered: state.currentRunStats.voidDustGathered + dustDrop } })(),
         }
       }
 
@@ -427,7 +437,7 @@ export const useGameStore = create<GameStore>()(
           damageIndicators,
           equippedSpellCooldown: ability.cooldown,
           ...triggerEnemyDeath(state, mob),
-          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
+          currentRunStats: (() => { const { scrapDrop, dustDrop } = calcMetaDrops(mob.tier); return { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1, ironScrapGathered: state.currentRunStats.ironScrapGathered + scrapDrop, voidDustGathered: state.currentRunStats.voidDustGathered + dustDrop } })(),
         }
       }
 
@@ -444,7 +454,9 @@ export const useGameStore = create<GameStore>()(
     set((state) => {
       const effMaxHp = getEffectiveStats({ ...DEFAULT_PLAYER }, { ...EMPTY_EQUIPMENT }, state.talents).maxHp
       return {
-        totalXp: state.totalXp + state.playerXp,
+        totalXp:   state.totalXp   + state.playerXp,
+        ironScrap: state.ironScrap + state.currentRunStats.ironScrapGathered,
+        voidDust:  state.voidDust  + state.currentRunStats.voidDustGathered,
         playerXp: 0,
         act1Map: [],
         currentFloor: 1,
@@ -471,7 +483,7 @@ export const useGameStore = create<GameStore>()(
         potionBelt: [],
         activeBuffs: [],
         runSummary: null,
-        currentRunStats: { monstersKilled: 0, goldGathered: 0 },
+        currentRunStats: { monstersKilled: 0, goldGathered: 0, ironScrapGathered: 0, voidDustGathered: 0 },
       }
     }),
 
@@ -658,8 +670,10 @@ export const useGameStore = create<GameStore>()(
     set((state) => ({ damageIndicators: [...state.damageIndicators, indicator] })),
 
   // ── Meta-progression ────────────────────────────────────────────────────────
-  totalXp: 0,
-  talents: {},
+  totalXp:   0,
+  talents:   {},
+  ironScrap: 0,
+  voidDust:  0,
 
   upgradeTalent: (nodeId) =>
     set((state) => {
@@ -823,7 +837,7 @@ export const useGameStore = create<GameStore>()(
           bossPhase,
           bossPhaseTimerMs,
           ...triggerEnemyDeath(state, mob),  // mobDeathPatch clears activeBuffs
-          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
+          currentRunStats: (() => { const { scrapDrop, dustDrop } = calcMetaDrops(mob.tier); return { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1, ironScrapGathered: state.currentRunStats.ironScrapGathered + scrapDrop, voidDustGathered: state.currentRunStats.voidDustGathered + dustDrop } })(),
         }
       }
 
@@ -879,8 +893,10 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'tactical-roguelite-storage',
       partialize: (state) => ({
-        totalXp: state.totalXp,
-        talents:  state.talents,
+        totalXp:   state.totalXp,
+        talents:   state.talents,
+        ironScrap: state.ironScrap,
+        voidDust:  state.voidDust,
       }),
     }
   )

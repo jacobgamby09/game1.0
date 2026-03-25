@@ -175,7 +175,7 @@ export default function HubView() {
   const [selectedNodeId,  setSelectedNodeId]  = useState<string | null>(null)
 
   return (
-    <div className="flex flex-col h-full max-w-lg mx-auto w-full">
+    <div className="flex flex-col h-full w-full max-w-lg">
 
       {/* Header */}
       <div className="text-center shrink-0 pt-4 pb-2 px-4">

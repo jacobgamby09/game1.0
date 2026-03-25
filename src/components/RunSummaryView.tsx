@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useGameStore, computePlayerLevel } from '../stores/useGameStore'
 
 export default function RunSummaryView() {
-  const { runSummary, currentRunStats, playerXp, currentFloor, resetRun } = useGameStore()
+  const { runSummary, currentRunStats, playerXp, currentFloor, ironScrap, voidDust, resetRun } = useGameStore()
 
   const prevXp   = runSummary?.previousTotalXp ?? 0
   const xpGained = playerXp
@@ -52,6 +52,25 @@ export default function RunSummaryView() {
             <p className="text-white font-bold text-xl">{value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Resources Secured */}
+      <div className="w-full max-w-xs rounded-xl border border-emerald-900/40 bg-emerald-900/10 px-4 py-3 flex flex-col gap-1.5">
+        <p className="text-[10px] text-emerald-500/60 uppercase tracking-widest font-semibold">Resources Secured</p>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-400">⚙ Iron Scrap</span>
+          <span className="text-emerald-300 font-bold">
+            +{currentRunStats.ironScrapGathered}
+            <span className="text-gray-600 font-normal text-xs"> ({ironScrap + currentRunStats.ironScrapGathered} total)</span>
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-400">✦ Void Dust</span>
+          <span className="text-emerald-300 font-bold">
+            +{currentRunStats.voidDustGathered}
+            <span className="text-gray-600 font-normal text-xs"> ({voidDust + currentRunStats.voidDustGathered} total)</span>
+          </span>
+        </div>
       </div>
 
       {/* XP / Level progress */}

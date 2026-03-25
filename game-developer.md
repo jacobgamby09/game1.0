@@ -7,17 +7,17 @@ We are building a web-based "Tactical Auto-Battler Roguelite".
 - **Core Loop:** Auto-battle with active cooldown skills, an active Potion/Buff system, and a Pre-Combat tactical phase.
 - **Map System:** Slay the Spire inspired 20-floor layout, strictly balanced for attrition (70% Mob, 20% Rest, 10% Chest).
 - **Inventory & Economy:** Diablo-style Paper Doll, comprehensive Item Library, Merchant nodes, and inline Stat Diffs.
-- **Progression:** In-run Gold (lost on death) and Meta-progression XP used in a 12-node Talent Tree (Zustand `persist` Local Storage).
+- **Progression:** In-run Gold (lost on death) and persistent Meta-progression. Meta-progression uses XP (Talent Tree), and newly introduced materials: Iron Scrap and Void Dust (Town Rebuilding).
 
 # Current Status
-- **Completed:** Phases 1-10. This includes the Core Combat Engine, Map Generation, Inventory, Merchant, Talent Tree, Active Potion System, Run Summary Death Screen, and a massive architectural refactor (decoupling the Zustand store into `types`, `data/constants`, and `utils`).
-- **Current Focus:** Phase 11 - Combat Readability & Elite Mechanics. Ensuring the player can clearly see and understand enemy abilities before adding complex boss phases.
+- **Completed:** Phases 1-13. This includes the Combat Engine, Map Generation, Inventory, Merchant, Talent Tree, Active Potion System, Monster Traits/Elite Mechanics, Act 1 Boss Phases (The Void Warden), Action Bar mobile layout, and a major HUB/Town Square redesign (compact grid UI).
+- **Current Focus:** Phase 14 - Town Rebuilding & Meta-Economy. Transforming the HUB into a dynamic Base Camp where the player uses persistent resources gathered during runs to rebuild and upgrade town structures.
 
-# Phase 11 & 12 Goals (Upcoming)
-1. **Monster Traits & Readability (Current):** Introduce unique traits for Elite mobs (e.g., Vampiric, Frenzied) and build a clear UI panel in combat so the player can read what the enemy's passive abilities do.
-2. **Boss Mechanics (Next):** Design a multi-phase or skill-based attack pattern for the Act 1 Boss (The Void Warden) that forces the player to use potions tactically.
-3. **Visual Polish (Upcoming):** Integrate character and monster portraits, and add haptic UI feedback (Screen Shake, Combat Nudges, Flash on hit).
-4. **The Hamlet & Classes (Future):** Expand the HUB into a town map and introduce distinct starting classes (e.g., Rogue, Mage) utilizing the established `playerClass` foundation.
+# Phase 14 & 15 Goals (Upcoming)
+1. **Meta-Economy Foundation (Current):** Implement `ironScrap` (dropped by normal/elite mobs) and `voidDust` (dropped by elites/bosses) into the persistent Zustand store, and display gathered resources on the Run Summary death screen.
+2. **The Base Camp UI (Next):** Remove the redundant "Battle Arena" button from the HUB. Add "The Apothecary", "The Blacksmith", and "The Tavern" to the HUB grid as rebuildable structures (Level 0 = Ruin, Level 1+ = Active).
+3. **The Apothecary Upgrades (Upcoming):** Build an 8-level upgrade path costing Scrap/Dust to improve existing potions, unlock Potion Slot 2 (Level 6), and unlock new potions like Stoneskin (Level 7) and Venom Flask (Level 8).
+4. **The Blacksmith Upgrades (Upcoming):** Build a permanent stat-upgrade system tied to Paper Doll equipment slots (Main Hand, Chest, etc.). Players upgrade slots from Common to Epic, granting permanent base stats even when equipping weak items.
 
 # Guidelines
 - Write clean, modular, and well-documented code.
