@@ -7,7 +7,7 @@ import type {
   Player, RunStats, RunSummary, Mob, MapNode,
 } from '../types'
 import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS } from '../data/constants'
-import { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats } from '../utils/gameHelpers'
+import { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot } from '../utils/gameHelpers'
 import { spawnMob, generateMarketItems, randomDrop, randomThreeDrops, buildMap } from '../utils/storeHelpers'
 
 // ─── Re-exports (preserve existing component import paths) ───────────────────
@@ -18,7 +18,7 @@ export type {
   Player, RunStats, RunSummary, Mob, MapNode,
 }
 export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS }
-export { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats }
+export { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot }
 
 // ─── Internal constants ───────────────────────────────────────────────────────
 
@@ -480,20 +480,7 @@ export const useGameStore = create<GameStore>()(
   equipItem: (item) =>
     set((state) => {
       if (item.equipSlot === 'potion') return state   // potions use equipPotion
-      let targetSlot: EquipSlot = item.equipSlot as EquipSlot
-
-      // Smart dual-wield: weapons prefer mainHand, overflow to offHand
-      if (item.equipSlot === 'mainHand') {
-        if      (!state.equipment.mainHand) targetSlot = 'mainHand'
-        else if (!state.equipment.offHand)  targetSlot = 'offHand'
-        else                                targetSlot = 'mainHand' // swap mainHand
-      }
-      // Smart ring: fill ring1 first, then ring2, then swap ring1
-      else if (item.equipSlot === 'ring1' || item.equipSlot === 'ring2') {
-        if      (!state.equipment.ring1) targetSlot = 'ring1'
-        else if (!state.equipment.ring2) targetSlot = 'ring2'
-        else                             targetSlot = 'ring1'
-      }
+      const targetSlot = getTargetEquipSlot(item, state.equipment)
 
       const existing    = state.equipment[targetSlot]
       const newBackpack = state.backpack.filter((i) => i.id !== item.id)

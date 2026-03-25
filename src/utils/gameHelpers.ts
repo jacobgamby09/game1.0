@@ -8,6 +8,25 @@ export function getItemSellValue(rarity: Rarity): number {
   return VALUES[rarity]
 }
 
+// ─── Smart slot targeting ─────────────────────────────────────────────────────
+// Returns the actual EquipSlot the item will land in, mirroring equipItem
+// smart-fill logic (fill empty slot first, fall back to primary slot).
+
+export function getTargetEquipSlot(item: Item, equipment: Record<EquipSlot, Item | null>): EquipSlot {
+  const slot = item.equipSlot
+  if (slot === 'mainHand' || slot === 'offHand') {
+    if (!equipment.mainHand) return 'mainHand'
+    if (!equipment.offHand)  return 'offHand'
+    return 'mainHand'
+  }
+  if (slot === 'ring1' || slot === 'ring2') {
+    if (!equipment.ring1) return 'ring1'
+    if (!equipment.ring2) return 'ring2'
+    return 'ring1'
+  }
+  return slot as EquipSlot
+}
+
 // ─── Talent point helpers ─────────────────────────────────────────────────────
 
 export function computeAvailablePoints(totalXp: number, talents: Record<string, number>): number {

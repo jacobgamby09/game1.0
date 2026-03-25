@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Crown, Shirt, Layers, Swords, Shield, Award, Circle, Zap, Coins, FlaskConical,
 } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS } from '../stores/useGameStore'
+import { useGameStore, getEffectiveStats, getItemSellValue, getTargetEquipSlot, RARITY_COLORS, MAX_POTION_SLOTS } from '../stores/useGameStore'
 import type { Item, EquipSlot, ItemSlot } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
@@ -291,15 +291,18 @@ function ItemDetails({
 
           {/* Stats */}
           <div className="flex flex-col gap-1">
-            {selectedItem.equipSlot !== 'potion' && selectedFrom === 'backpack' && !equipment[selectedItem.equipSlot as EquipSlot] && (
-              <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
-            )}
             {(() => {
-              const d = selectedFrom === 'backpack' && selectedItem.equipSlot !== 'potion'
-                ? getStatDiff(selectedItem, equipment[selectedItem.equipSlot as EquipSlot])
-                : null
+              const isBackpackItem = selectedFrom === 'backpack' && selectedItem.equipSlot !== 'potion'
+              const targetSlot = isBackpackItem
+                ? getTargetEquipSlot(selectedItem, equipment)
+                : selectedItem.equipSlot as EquipSlot
+              const equippedItem = isBackpackItem ? (equipment[targetSlot] ?? null) : null
+              const d = isBackpackItem ? getStatDiff(selectedItem, equippedItem) : null
               return (
                 <>
+                  {isBackpackItem && !equippedItem && (
+                    <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
+                  )}
                   {selectedItem.stats.damage !== undefined && (
                     <p className="text-red-400 text-sm font-semibold">+{selectedItem.stats.damage} Damage{d && <DiffBadge diff={d.damage} />}</p>
                   )}
@@ -322,13 +325,13 @@ function ItemDetails({
                     <p className="text-orange-400 text-sm font-semibold">+{selectedItem.stats.damageReduction} DR{d && <DiffBadge diff={d.damageReduction} />}</p>
                   )}
                   {selectedItem.equipSlot !== 'potion' && (<>
-                    {selectedItem.stats.hp              === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50 text-sm font-semibold">Max HP {d && <DiffBadge diff={d!.hp} />}</p>}
-                    {selectedItem.stats.damage          === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50 text-sm font-semibold">Damage {d && <DiffBadge diff={d!.damage} />}</p>}
-                    {selectedItem.stats.attackSpeed     === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50 text-sm font-semibold">Atk Speed {d && <DiffBadgeF diff={d!.attackSpeed} decimals={2} />}</p>}
-                    {selectedItem.stats.critChance      === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50 text-sm font-semibold">Crit {d && <DiffBadge diff={Math.round(d!.critChance * 100)} />}</p>}
-                    {selectedItem.stats.dodgeChance     === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50 text-sm font-semibold">Dodge {d && <DiffBadge diff={Math.round(d!.dodgeChance * 100)} />}</p>}
-                    {selectedItem.stats.lifesteal       === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50 text-sm font-semibold">Lifesteal {d && <DiffBadge diff={d!.lifesteal} />}</p>}
-                    {selectedItem.stats.damageReduction === undefined && (equipment[selectedItem.equipSlot as EquipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50 text-sm font-semibold">DR {d && <DiffBadge diff={d!.damageReduction} />}</p>}
+                    {selectedItem.stats.hp              === undefined && (equippedItem?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50 text-sm font-semibold">Max HP {d && <DiffBadge diff={d!.hp} />}</p>}
+                    {selectedItem.stats.damage          === undefined && (equippedItem?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50 text-sm font-semibold">Damage {d && <DiffBadge diff={d!.damage} />}</p>}
+                    {selectedItem.stats.attackSpeed     === undefined && (equippedItem?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50 text-sm font-semibold">Atk Speed {d && <DiffBadgeF diff={d!.attackSpeed} decimals={2} />}</p>}
+                    {selectedItem.stats.critChance      === undefined && (equippedItem?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50 text-sm font-semibold">Crit {d && <DiffBadge diff={Math.round(d!.critChance * 100)} />}</p>}
+                    {selectedItem.stats.dodgeChance     === undefined && (equippedItem?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50 text-sm font-semibold">Dodge {d && <DiffBadge diff={Math.round(d!.dodgeChance * 100)} />}</p>}
+                    {selectedItem.stats.lifesteal       === undefined && (equippedItem?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50 text-sm font-semibold">Lifesteal {d && <DiffBadge diff={d!.lifesteal} />}</p>}
+                    {selectedItem.stats.damageReduction === undefined && (equippedItem?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50 text-sm font-semibold">DR {d && <DiffBadge diff={d!.damageReduction} />}</p>}
                   </>)}
                 </>
               )
