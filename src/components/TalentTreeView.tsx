@@ -118,9 +118,11 @@ interface BranchColumnProps {
   playerXp: number
   selectedNodeId: string | null
   onSelect: (id: string) => void
+  unspentPoints: number
+  upgradeTalent: (id: string) => void
 }
 
-function BranchColumn({ branch, talents, playerXp, selectedNodeId, onSelect }: BranchColumnProps) {
+function BranchColumn({ branch, talents, playerXp, selectedNodeId, onSelect, unspentPoints, upgradeTalent }: BranchColumnProps) {
   const nodes    = TALENT_TREE.filter(n => n.branch === branch).sort((a, b) => a.tier - b.tier)
   const meta     = BRANCH_META[branch]
   const Icon     = meta.Icon
@@ -133,21 +135,50 @@ function BranchColumn({ branch, talents, playerXp, selectedNodeId, onSelect }: B
         <span className="text-[10px] font-bold uppercase tracking-widest">{meta.label}</span>
       </div>
       {nodes.map((node, i) => {
-        const prereqNode = TALENT_TREE.find(n => n.branch === branch && n.tier === node.tier - 1)
-        const prereqMet  = !prereqNode || (talents[prereqNode.id] ?? 0) >= prereqNode.maxRank
-        const cost       = upgradeCost(talents, node.costPerRank)
-        const canAfford  = prereqMet && playerXp >= xpSpent + cost
+        const prereqNode  = TALENT_TREE.find(n => n.branch === branch && n.tier === node.tier - 1)
+        const prereqMet   = !prereqNode || (talents[prereqNode.id] ?? 0) >= prereqNode.maxRank
+        const cost        = upgradeCost(talents, node.costPerRank)
+        const canAfford   = prereqMet && playerXp >= xpSpent + cost
+        const isSelected  = selectedNodeId === node.id
+        const currentRank = talents[node.id] ?? 0
+        const isMaxRank   = currentRank >= node.maxRank
+        const canUpgrade  = prereqMet && !isMaxRank && unspentPoints >= node.costPerRank
         return (
-          <div key={node.id} className="flex flex-col items-center">
+          <div key={node.id} className="flex flex-col items-center w-full">
             <CompactTalentNode
               node={node}
-              currentRank={talents[node.id] ?? 0}
+              currentRank={currentRank}
               canAfford={canAfford}
               prereqMet={prereqMet}
-              isSelected={selectedNodeId === node.id}
+              isSelected={isSelected}
               onSelect={onSelect}
             />
-            {i < nodes.length - 1 && <div className="w-px h-3 bg-gray-800" />}
+            {isSelected && (
+              <div className="w-full rounded-b-lg border-x border-b border-gray-700 bg-gray-800/80 px-2 py-2 flex flex-col gap-1.5">
+                <p className="text-[9px] leading-snug text-gray-400">{node.description}</p>
+                <div className="flex items-center justify-between text-[9px]">
+                  <span className="text-gray-300 font-bold">{currentRank}/{node.maxRank}</span>
+                  {isMaxRank
+                    ? <span className="text-amber-400 font-bold">MAX</span>
+                    : <span className={unspentPoints >= node.costPerRank && prereqMet ? 'text-amber-300 font-bold' : 'text-red-500'}>{node.costPerRank}pt</span>
+                  }
+                </div>
+                {!isMaxRank && (
+                  <button
+                    onClick={() => upgradeTalent(node.id)}
+                    disabled={!canUpgrade}
+                    className={`w-full py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-colors
+                      ${canUpgrade
+                        ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 cursor-pointer'
+                        : 'border border-gray-700 bg-gray-800 text-gray-600 cursor-default'
+                      }`}
+                  >
+                    {!prereqMet ? 'Locked' : !canUpgrade ? 'Need pts' : 'Upgrade'}
+                  </button>
+                )}
+              </div>
+            )}
+            {i < nodes.length - 1 && !isSelected && <div className="w-px h-3 bg-gray-800" />}
           </div>
         )
       })}
@@ -208,62 +239,12 @@ export default function TalentTreeView() {
               talents={talents}
               playerXp={playerXp}
               selectedNodeId={selectedNodeId}
-              onSelect={setSelectedNodeId}
+              onSelect={(id) => setSelectedNodeId(selectedNodeId === id ? null : id)}
+              unspentPoints={unspentPoints}
+              upgradeTalent={upgradeTalent}
             />
           ))}
         </div>
-
-        {/* Inspect panel */}
-        {(() => {
-          const selectedNode = selectedNodeId ? TALENT_TREE.find(n => n.id === selectedNodeId) ?? null : null
-          if (!selectedNode) return (
-            <div className="rounded-xl border border-gray-800 bg-gray-800/40 p-4 flex items-center justify-center min-h-[80px]">
-              <p className="text-[11px] text-gray-600">Select a talent to view details.</p>
-            </div>
-          )
-          const branch      = BRANCH_META[selectedNode.branch]
-          const NodeIcon    = selectedNode.icon
-          const currentRank = talents[selectedNode.id] ?? 0
-          const isMaxRank   = currentRank >= selectedNode.maxRank
-          const prereqNode  = TALENT_TREE.find(n => n.branch === selectedNode.branch && n.tier === selectedNode.tier - 1)
-          const prereqMet   = !prereqNode || (talents[prereqNode.id] ?? 0) >= prereqNode.maxRank
-          const canAfford  = unspentPoints >= selectedNode.costPerRank
-          const canUpgrade = !isMaxRank && prereqMet && canAfford
-          return (
-            <div className="rounded-xl border border-gray-700 bg-gray-800/60 p-4 flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <NodeIcon size={16} className={branch.color} />
-                <p className="text-sm font-bold text-gray-200">{selectedNode.name}</p>
-                <span className={`ml-auto text-[10px] font-bold uppercase tracking-widest ${branch.color}`}>
-                  {branch.label}
-                </span>
-              </div>
-              <p className={`text-xs leading-relaxed ${STAT_COLOR[selectedNode.effect.stat] ?? 'text-gray-400'}`}>
-                {selectedNode.description}
-              </p>
-              <div className="flex items-center justify-between text-[11px] text-gray-500">
-                <span>Rank <span className="text-gray-300 font-bold">{currentRank} / {selectedNode.maxRank}</span></span>
-                {isMaxRank
-                  ? <span className="text-amber-400 font-bold">MAX RANK</span>
-                  : <span>Cost: <span className={canAfford ? 'text-amber-300 font-bold' : 'text-red-500 font-bold'}>{selectedNode.costPerRank} {selectedNode.costPerRank === 1 ? 'point' : 'points'}</span></span>
-                }
-              </div>
-              {!isMaxRank && (
-                <button
-                  onClick={() => upgradeTalent(selectedNode.id)}
-                  disabled={!canUpgrade}
-                  className={`w-full py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-colors
-                    ${canUpgrade
-                      ? 'border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 cursor-pointer'
-                      : 'border-gray-700 bg-gray-800 text-gray-600 cursor-default'
-                    }`}
-                >
-                  {!prereqMet ? 'Locked' : !canAfford ? 'Not Enough XP' : 'Upgrade'}
-                </button>
-              )}
-            </div>
-          )
-        })()}
 
         <p className="text-[9px] text-gray-700 text-center mt-1">
           Earn XP by defeating monsters · Talents reset each run

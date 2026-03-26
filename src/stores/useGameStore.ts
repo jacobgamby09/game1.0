@@ -91,7 +91,7 @@ function calcMetaDrops(tier: MobTier): { scrapDrop: number; dustDrop: number } {
 // Calling it in one place ensures usePowerStrike, useEquippedSpell, and
 // tickCombat all produce the same victory transition.
 
-function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob | null; currentFloor: number; activeBuffs: ActiveBuff[] }) {
+function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob | null; currentFloor: number; activeBuffs: ActiveBuff[]; playerXp: number }) {
   const act1Map = state.act1Map.map((floor) =>
     floor.map((n) =>
       n.id === state.currentMapNodeId ? { ...n, isCompleted: true } : n
@@ -103,11 +103,14 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
     * (state.currentMob?.tier === 'elite' ? 2 : 1)
     * (hasMidas ? 3 : 1)
   const { scrapDrop, dustDrop } = calcMetaDrops(state.currentMob?.tier ?? 'normal')
+  const pendingXp    = calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss')
+  const levelBefore  = calculateLevelFromXp(state.playerXp).level
+  const levelAfter   = calculateLevelFromXp(state.playerXp + pendingXp).level
   return {
     act1Map,
     isCombatActive: false as const,
     isMapVisible:   false as const,
-    combatReward: { xp: calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss'), gold: goldAmount, item: randomDrop(state.currentFloor), scrap: scrapDrop, dust: dustDrop },
+    combatReward: { xp: pendingXp, gold: goldAmount, item: randomDrop(state.currentFloor), scrap: scrapDrop, dust: dustDrop, leveledUp: levelAfter > levelBefore },
     activeBuffs: [] as ActiveBuff[],
   }
 }
@@ -178,7 +181,7 @@ interface GameStore {
   isLootPickerVisible: boolean
 
   // Event state
-  combatReward: { xp: number; gold: number; item: Item; scrap: number; dust: number } | null
+  combatReward: { xp: number; gold: number; item: Item; scrap: number; dust: number; leveledUp: boolean } | null
   restEvent: { healedAmount: number } | null
   combatEventKey: number
   combatEventText: string | null
@@ -206,6 +209,7 @@ interface GameStore {
 
   // Inventory actions
   equipItem: (item: Item) => void
+  equipItemToSlot: (item: Item, slot: EquipSlot) => void
   unequipItem: (slotKey: string) => void
   sellItem: (itemId: string) => void
   sellAllBackpack: () => void
@@ -538,6 +542,23 @@ export const useGameStore = create<GameStore>()(
       const newBackpack = state.backpack.filter((i) => i.id !== item.id)
       if (existing) newBackpack.push(existing)
       const newEquipment = { ...state.equipment, [targetSlot]: item }
+      const newMaxHp = getEffectiveStats(state.player, newEquipment, state.talents).maxHp
+      return {
+        backpack:  newBackpack,
+        equipment: newEquipment,
+        player: { ...state.player, currentHp: Math.min(state.player.currentHp, newMaxHp) },
+      }
+    }),
+
+  // ── equipItemToSlot ──────────────────────────────────────────────────────────
+  // Forces item into a specific slot, bypassing smart-fill logic.
+  equipItemToSlot: (item, slot) =>
+    set((state) => {
+      if (item.equipSlot === 'potion') return state
+      const existing    = state.equipment[slot]
+      const newBackpack = state.backpack.filter((i) => i.id !== item.id)
+      if (existing) newBackpack.push(existing)
+      const newEquipment = { ...state.equipment, [slot]: item }
       const newMaxHp = getEffectiveStats(state.player, newEquipment, state.talents).maxHp
       return {
         backpack:  newBackpack,

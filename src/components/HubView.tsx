@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Hammer } from 'lucide-react'
 import {
   useGameStore,
   type BuildingId,
@@ -32,7 +33,7 @@ export default function HubView() {
         <div className="flex items-center justify-center gap-3 mt-2">
           <div className="flex flex-col items-center gap-0.5 border border-amber-500/30 bg-amber-500/5 rounded-lg px-3 py-1.5 min-w-[72px]">
             <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500/60">Iron Scrap</span>
-            <span className="text-base font-bold text-amber-300 font-mono">⚙ {ironScrap}</span>
+            <span className="text-base font-bold text-amber-300 font-mono flex items-center gap-1"><Hammer size={14} /> {ironScrap}</span>
           </div>
           <div className="flex flex-col items-center gap-0.5 border border-purple-500/30 bg-purple-500/5 rounded-lg px-3 py-1.5 min-w-[72px]">
             <span className="text-[9px] font-bold uppercase tracking-widest text-purple-400/60">Void Dust</span>

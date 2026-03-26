@@ -2,9 +2,9 @@ import { useState } from 'react'
 import {
   Crown, Shirt, Layers, Swords, Shield, Award, Circle, Zap, Coins, FlaskConical,
 } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, getTargetEquipSlot, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES } from '../stores/useGameStore'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES } from '../stores/useGameStore'
 import type { Item, EquipSlot, ItemSlot, EquipmentSlotName, EquipmentSlotUpgrades, SlotRarityLevel } from '../stores/useGameStore'
-import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
+import ItemComparisonPanel from './ItemComparisonPanel'
 
 // ─── Slot icon map ────────────────────────────────────────────────────────────
 
@@ -298,70 +298,54 @@ function ItemDetails({
           {/* Description */}
           <p className="text-gray-400 text-sm italic">{selectedItem.description}</p>
 
-          {/* Stats */}
-          <div className="flex flex-col gap-1">
-            {(() => {
-              const isBackpackItem = selectedFrom === 'backpack' && selectedItem.equipSlot !== 'potion'
-              const targetSlot = isBackpackItem
-                ? getTargetEquipSlot(selectedItem, equipment)
-                : selectedItem.equipSlot as EquipSlot
-              const equippedItem = isBackpackItem ? (equipment[targetSlot] ?? null) : null
-              const d = isBackpackItem ? getStatDiff(selectedItem, equippedItem) : null
-              // Slot bonus helper: returns the bonus value for this stat from the slot upgrade, if applicable
-              const slotName = selectedItem.equipSlot !== 'potion' ? selectedItem.equipSlot as EquipmentSlotName : null
-              const slotTier = slotName && slotName !== 'spell' ? (slotUpgrades[slotName] ?? 0) : 0
-              const slotBonus = slotTier > 0 && slotName && slotName !== 'spell'
-                ? SLOT_TIER_BONUSES[slotName]?.[slotTier as 1 | 2 | 3 | 4]
-                : null
-              return (
-                <>
-                  {isBackpackItem && !equippedItem && (
-                    <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
-                  )}
-                  {selectedItem.stats.damage !== undefined && (
-                    <><p className="text-red-400 text-sm font-semibold">+{selectedItem.stats.damage} Damage{d && <DiffBadge diff={d.damage} />}</p>
-                    {slotBonus?.damage ? <p className="text-red-400/40 text-xs pl-2">+{slotBonus.damage} from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
-                  )}
-                  {selectedItem.stats.hp !== undefined && (
-                    <><p className="text-green-400 text-sm font-semibold">+{selectedItem.stats.hp} Max HP{d && <DiffBadge diff={d.hp} />}</p>
-                    {slotBonus?.hp ? <p className="text-green-400/40 text-xs pl-2">+{slotBonus.hp} from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
-                  )}
-                  {selectedItem.stats.attackSpeed !== undefined && (
-                    <><p className="text-blue-400 text-sm font-semibold">{selectedItem.stats.attackSpeed >= 0 ? '+' : ''}{selectedItem.stats.attackSpeed.toFixed(2)} Atk Speed{d && <DiffBadgeF diff={d.attackSpeed} decimals={2} />}</p>
-                    {slotBonus?.attackSpeed ? <p className="text-blue-400/40 text-xs pl-2">+{slotBonus.attackSpeed.toFixed(2)} from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
-                  )}
-                  {selectedItem.stats.critChance !== undefined && (
-                    <><p className="text-yellow-400 text-sm font-semibold">+{(selectedItem.stats.critChance * 100).toFixed(0)}% Crit{d && <DiffBadge diff={Math.round(d.critChance * 100)} />}</p>
-                    {slotBonus?.critChance ? <p className="text-yellow-400/40 text-xs pl-2">+{(slotBonus.critChance * 100).toFixed(0)}% from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
-                  )}
-                  {selectedItem.stats.dodgeChance !== undefined && (
-                    <><p className="text-cyan-400 text-sm font-semibold">+{(selectedItem.stats.dodgeChance * 100).toFixed(0)}% Dodge{d && <DiffBadge diff={Math.round(d.dodgeChance * 100)} />}</p>
-                    {slotBonus?.dodgeChance ? <p className="text-cyan-400/40 text-xs pl-2">+{(slotBonus.dodgeChance * 100).toFixed(0)}% from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
-                  )}
-                  {selectedItem.stats.lifesteal !== undefined && (
-                    <><p className="text-emerald-400 text-sm font-semibold">+{selectedItem.stats.lifesteal} Lifesteal{d && <DiffBadge diff={d.lifesteal} />}</p>
-                    {slotBonus?.lifesteal ? <p className="text-emerald-400/40 text-xs pl-2">+{slotBonus.lifesteal} from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
-                  )}
-                  {selectedItem.stats.damageReduction !== undefined && (
-                    <><p className="text-orange-400 text-sm font-semibold">+{selectedItem.stats.damageReduction} DR{d && <DiffBadge diff={d.damageReduction} />}</p>
-                    {slotBonus?.damageReduction ? <p className="text-orange-400/40 text-xs pl-2">+{slotBonus.damageReduction} DR from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
-                  )}
-                  {selectedItem.equipSlot !== 'potion' && (<>
-                    {selectedItem.stats.hp              === undefined && (equippedItem?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50 text-sm font-semibold">Max HP {d && <DiffBadge diff={d!.hp} />}</p>}
-                    {selectedItem.stats.damage          === undefined && (equippedItem?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50 text-sm font-semibold">Damage {d && <DiffBadge diff={d!.damage} />}</p>}
-                    {selectedItem.stats.attackSpeed     === undefined && (equippedItem?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50 text-sm font-semibold">Atk Speed {d && <DiffBadgeF diff={d!.attackSpeed} decimals={2} />}</p>}
-                    {selectedItem.stats.critChance      === undefined && (equippedItem?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50 text-sm font-semibold">Crit {d && <DiffBadge diff={Math.round(d!.critChance * 100)} />}</p>}
-                    {selectedItem.stats.dodgeChance     === undefined && (equippedItem?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50 text-sm font-semibold">Dodge {d && <DiffBadge diff={Math.round(d!.dodgeChance * 100)} />}</p>}
-                    {selectedItem.stats.lifesteal       === undefined && (equippedItem?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50 text-sm font-semibold">Lifesteal {d && <DiffBadge diff={d!.lifesteal} />}</p>}
-                    {selectedItem.stats.damageReduction === undefined && (equippedItem?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50 text-sm font-semibold">DR {d && <DiffBadge diff={d!.damageReduction} />}</p>}
-                  </>)}
-                </>
-              )
-            })()}
-          </div>
+          {/* Comparison panel for backpack non-potion items */}
+          {selectedFrom === 'backpack' && selectedItem.equipSlot !== 'potion' && (
+            <ItemComparisonPanel item={selectedItem} onEquip={onClear} />
+          )}
+
+          {/* Stats for equipped/belt items and potions */}
+          {(selectedFrom !== 'backpack' || selectedItem.equipSlot === 'potion') && selectedItem.equipSlot !== 'potion' && (() => {
+            const slotName = selectedItem.equipSlot as EquipmentSlotName
+            const slotTier = slotName !== 'spell' ? (slotUpgrades[slotName] ?? 0) : 0
+            const slotBonus = slotTier > 0 && slotName !== 'spell'
+              ? SLOT_TIER_BONUSES[slotName]?.[slotTier as 1 | 2 | 3 | 4]
+              : null
+            return (
+              <div className="flex flex-col gap-1">
+                {selectedItem.stats.damage          !== undefined && (
+                  <><p className="text-red-400 text-sm font-semibold">+{selectedItem.stats.damage} Damage</p>
+                  {slotBonus?.damage ? <p className="text-red-400/40 text-xs pl-2">+{slotBonus.damage} from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
+                )}
+                {selectedItem.stats.hp              !== undefined && (
+                  <><p className="text-green-400 text-sm font-semibold">+{selectedItem.stats.hp} Max HP</p>
+                  {slotBonus?.hp ? <p className="text-green-400/40 text-xs pl-2">+{slotBonus.hp} from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
+                )}
+                {selectedItem.stats.attackSpeed     !== undefined && (
+                  <><p className="text-blue-400 text-sm font-semibold">{selectedItem.stats.attackSpeed >= 0 ? '+' : ''}{selectedItem.stats.attackSpeed.toFixed(2)} Atk Speed</p>
+                  {slotBonus?.attackSpeed ? <p className="text-blue-400/40 text-xs pl-2">+{slotBonus.attackSpeed.toFixed(2)} from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
+                )}
+                {selectedItem.stats.critChance      !== undefined && (
+                  <><p className="text-yellow-400 text-sm font-semibold">+{(selectedItem.stats.critChance * 100).toFixed(0)}% Crit</p>
+                  {slotBonus?.critChance ? <p className="text-yellow-400/40 text-xs pl-2">+{(slotBonus.critChance * 100).toFixed(0)}% from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
+                )}
+                {selectedItem.stats.dodgeChance     !== undefined && (
+                  <><p className="text-cyan-400 text-sm font-semibold">+{(selectedItem.stats.dodgeChance * 100).toFixed(0)}% Dodge</p>
+                  {slotBonus?.dodgeChance ? <p className="text-cyan-400/40 text-xs pl-2">+{(slotBonus.dodgeChance * 100).toFixed(0)}% from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
+                )}
+                {selectedItem.stats.lifesteal       !== undefined && (
+                  <><p className="text-emerald-400 text-sm font-semibold">+{selectedItem.stats.lifesteal} Lifesteal</p>
+                  {slotBonus?.lifesteal ? <p className="text-emerald-400/40 text-xs pl-2">+{slotBonus.lifesteal} from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
+                )}
+                {selectedItem.stats.damageReduction !== undefined && (
+                  <><p className="text-orange-400 text-sm font-semibold">+{selectedItem.stats.damageReduction} DR</p>
+                  {slotBonus?.damageReduction ? <p className="text-orange-400/40 text-xs pl-2">+{slotBonus.damageReduction} DR from {SLOT_LABELS[selectedItem.equipSlot as EquipSlot]} slot</p> : null}</>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Ability */}
-          {selectedItem.ability && (
+          {selectedItem.ability && selectedFrom !== 'backpack' && (
             <div className="border border-orange-900/60 bg-orange-950/20 rounded-lg p-2.5 flex flex-col gap-1">
               <p className="text-[10px] font-bold uppercase tracking-widest text-orange-400/70">Ability</p>
               <p className="text-xs font-bold text-orange-300">
@@ -377,15 +361,14 @@ function ItemDetails({
           <div className="mt-auto pt-2 flex flex-col gap-2">
             {selectedFrom === 'backpack' ? (
               <>
-                <button
-                  onClick={() => {
-                    selectedItem.equipSlot === 'potion' ? onEquipPotion(selectedItem) : onEquip(selectedItem)
-                    onClear()
-                  }}
-                  className="w-full border border-amber-500 text-amber-400 py-2 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-amber-500/10 transition-colors"
-                >
-                  {selectedItem.equipSlot === 'potion' ? 'Equip to Belt' : 'Equip'}
-                </button>
+                {selectedItem.equipSlot === 'potion' && (
+                  <button
+                    onClick={() => { onEquipPotion(selectedItem); onClear() }}
+                    className="w-full border border-amber-500 text-amber-400 py-2 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-amber-500/10 transition-colors"
+                  >
+                    Equip to Belt
+                  </button>
+                )}
                 <button
                   onClick={() => { onSell(); onClear() }}
                   className="w-full border border-yellow-700 text-yellow-500 py-2 rounded-lg text-sm font-bold uppercase tracking-widest hover:bg-yellow-900/20 transition-colors flex items-center justify-center gap-1.5"

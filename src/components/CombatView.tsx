@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical } from 'lucide-react'
+import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical, Hammer } from 'lucide-react'
 import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, ItemSlot, MobTier, MobTrait, DamageIndicator, ActiveBuff } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
+import ItemComparisonPanel from './ItemComparisonPanel'
 
 // ─── Slot icon maps (shared by LootCard) ──────────────────────────────────────
 
@@ -302,9 +303,9 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
           </span>
         )}
         {tier === 'boss' && (
-          <span className="self-start text-[10px] font-bold tracking-widest uppercase
+          <span className="self-start flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase
                            text-purple-300 bg-purple-900/40 border border-purple-600/50 px-2 py-0.5 rounded animate-pulse">
-            ☠ BOSS
+            <Crown size={10} /> BOSS
           </span>
         )}
         <div className="flex items-center gap-2">
@@ -836,65 +837,51 @@ function LootSelectionOverlay() {
 // ─── VictoryOverlay ───────────────────────────────────────────────────────────
 
 function VictoryOverlay() {
-  const { combatReward, collectCombatReward, equipment } = useGameStore()
+  const { combatReward, collectCombatReward } = useGameStore()
   if (!combatReward) return null
   const { xp, gold, item } = combatReward
-  const rc = RARITY_COLORS[item.rarity]
-  const Icon = getSlotIcon(item.equipSlot)
-  const diff = getStatDiff(item, item.equipSlot === 'potion' ? null : equipment[item.equipSlot as EquipSlot])
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="flex flex-col items-center gap-6 text-center">
+      <div className="flex flex-col items-center gap-6 text-center w-full max-w-xs">
         <p className="text-xs text-amber-400/60 uppercase tracking-widest">Enemy Defeated</p>
         <h2 className="text-4xl font-bold tracking-widest uppercase text-amber-400 animate-pulse">
           Victory!
         </h2>
-        <div className="flex items-center gap-3">
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-5 py-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2">
             <span className="text-amber-300 font-bold text-sm">+{xp} XP</span>
           </div>
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-5 py-2 flex items-center gap-1.5">
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-2 flex items-center gap-1.5">
             <Coins size={14} className="text-yellow-400" />
             <span className="text-yellow-300 font-bold text-sm">+{gold}g</span>
           </div>
           {combatReward.scrap > 0 && (
-            <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg px-5 py-2">
-              <span className="text-gray-300 font-bold text-sm">⚙ +{combatReward.scrap}</span>
+            <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg px-4 py-2 flex items-center gap-1.5">
+              <Hammer size={12} className="text-gray-300" />
+              <span className="text-gray-300 font-bold text-sm">+{combatReward.scrap}</span>
+            </div>
+          )}
+          {combatReward.leveledUp && (
+            <div className="border border-emerald-500 bg-emerald-500/10 rounded-lg px-4 py-2 animate-pulse">
+              <span className="text-emerald-400 font-bold text-sm uppercase tracking-widest">Level Up! +1 Talent Point</span>
             </div>
           )}
         </div>
-        <div className={`bg-gray-900 border rounded-2xl p-6 w-52 flex flex-col gap-3 ${rc.border} ${rc.glow}`}>
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Icon size={32} />
+        {/* Loot card */}
+        {item.equipSlot === 'potion' ? (
+          <div className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 flex items-center gap-3 text-left">
+            <FlaskConical size={28} className="text-green-400 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-bold text-white leading-tight">{item.name}</p>
+              <p className="text-xs text-gray-400 mt-0.5 leading-snug">{item.description}</p>
+              <p className="text-[10px] text-green-400/70 uppercase tracking-widest mt-1.5">→ Backpack</p>
             </div>
           </div>
-          <div className="text-center">
-            <p className={`font-bold text-base leading-tight ${rc.text}`}>{item.name}</p>
-            <p className="text-gray-500 text-xs">{getSlotLabel(item.equipSlot)}</p>
-            <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${rc.text}`}>{item.rarity}</p>
+        ) : (
+          <div className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4">
+            <ItemComparisonPanel item={item} />
           </div>
-          <div className="flex flex-col gap-0.5 text-left text-sm font-semibold">
-            {item.equipSlot !== 'potion' && !equipment[item.equipSlot as EquipSlot] && (
-              <p className="text-amber-400 text-xs font-bold uppercase tracking-wide">Slot: Empty</p>
-            )}
-            {item.stats.damage          !== undefined && <p className="text-red-400">+{item.stats.damage} Damage<DiffBadge diff={diff.damage} /></p>}
-            {item.stats.hp              !== undefined && <p className="text-green-400">+{item.stats.hp} Max HP<DiffBadge diff={diff.hp} /></p>}
-            {item.stats.attackSpeed     !== undefined && <p className="text-blue-400">{item.stats.attackSpeed >= 0 ? '+' : ''}{item.stats.attackSpeed.toFixed(2)} Atk Speed<DiffBadgeF diff={diff.attackSpeed} decimals={2} /></p>}
-            {item.stats.critChance      !== undefined && <p className="text-yellow-400">+{(item.stats.critChance * 100).toFixed(0)}% Crit<DiffBadge diff={Math.round(diff.critChance * 100)} /></p>}
-            {item.stats.dodgeChance     !== undefined && <p className="text-cyan-400">+{(item.stats.dodgeChance * 100).toFixed(0)}% Dodge<DiffBadge diff={Math.round(diff.dodgeChance * 100)} /></p>}
-            {item.stats.lifesteal       !== undefined && <p className="text-emerald-400">+{item.stats.lifesteal} Lifesteal<DiffBadge diff={diff.lifesteal} /></p>}
-            {item.stats.damageReduction !== undefined && <p className="text-orange-400">+{item.stats.damageReduction} DR<DiffBadge diff={diff.damageReduction} /></p>}
-            {item.stats.hp              === undefined && (equipment[item.equipSlot]?.stats.hp              ?? 0) > 0   && <p className="text-green-400/50">Max HP <DiffBadge diff={diff.hp} /></p>}
-            {item.stats.damage          === undefined && (equipment[item.equipSlot]?.stats.damage          ?? 0) > 0   && <p className="text-red-400/50">Damage <DiffBadge diff={diff.damage} /></p>}
-            {item.stats.attackSpeed     === undefined && (equipment[item.equipSlot]?.stats.attackSpeed     ?? 0) !== 0 && <p className="text-blue-400/50">Atk Speed <DiffBadgeF diff={diff.attackSpeed} decimals={2} /></p>}
-            {item.stats.critChance      === undefined && (equipment[item.equipSlot]?.stats.critChance      ?? 0) > 0   && <p className="text-yellow-400/50">Crit <DiffBadge diff={Math.round(diff.critChance * 100)} /></p>}
-            {item.stats.dodgeChance     === undefined && (equipment[item.equipSlot]?.stats.dodgeChance     ?? 0) > 0   && <p className="text-cyan-400/50">Dodge <DiffBadge diff={Math.round(diff.dodgeChance * 100)} /></p>}
-            {item.stats.lifesteal       === undefined && (equipment[item.equipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50">Lifesteal <DiffBadge diff={diff.lifesteal} /></p>}
-            {item.stats.damageReduction === undefined && (equipment[item.equipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50">DR <DiffBadge diff={diff.damageReduction} /></p>}
-            {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
-          </div>
-        </div>
+        )}
         <button
           onClick={collectCombatReward}
           className="border border-amber-500 bg-amber-500/10 text-amber-300 px-10 py-3 rounded-lg uppercase tracking-widest font-bold hover:bg-amber-500/20 transition-colors"
