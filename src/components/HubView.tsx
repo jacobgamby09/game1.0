@@ -29,9 +29,15 @@ export default function HubView() {
       <div className="text-center shrink-0 pt-4 pb-3 px-4">
         <p className="text-[10px] text-amber-400/40 uppercase tracking-widest mb-0.5">Base Camp</p>
         <h1 className="text-2xl font-bold tracking-widest uppercase text-white">The HUB</h1>
-        <div className="flex items-center justify-center gap-4 mt-1">
-          <span className="text-xs text-gray-500 font-semibold">⚙ <span className="text-gray-300">{ironScrap}</span></span>
-          <span className="text-xs text-gray-500 font-semibold">✦ <span className="text-gray-300">{voidDust}</span></span>
+        <div className="flex items-center justify-center gap-3 mt-2">
+          <div className="flex flex-col items-center gap-0.5 border border-amber-500/30 bg-amber-500/5 rounded-lg px-3 py-1.5 min-w-[72px]">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500/60">Iron Scrap</span>
+            <span className="text-base font-bold text-amber-300 font-mono">⚙ {ironScrap}</span>
+          </div>
+          <div className="flex flex-col items-center gap-0.5 border border-purple-500/30 bg-purple-500/5 rounded-lg px-3 py-1.5 min-w-[72px]">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-purple-400/60">Void Dust</span>
+            <span className="text-base font-bold text-purple-300 font-mono">✦ {voidDust}</span>
+          </div>
         </div>
       </div>
 

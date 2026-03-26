@@ -4,6 +4,7 @@ import {
   useGameStore,
   TALENT_TREE,
   calculateTalentCost,
+  calculateLevelFromXp,
   type TalentNode,
   type TalentBranch,
 } from '../stores/useGameStore'
@@ -161,30 +162,37 @@ export default function TalentTreeView() {
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
 
-  const xpSpent    = totalTalentXpSpent(talents)
-  const totalSpent = Object.values(talents).reduce((a, b) => a + b, 0)
-  const nextCost   = calculateTalentCost(totalSpent)
+  const { level, currentXp, nextLevelXp } = calculateLevelFromXp(playerXp)
+  const totalSpent    = Object.values(talents).reduce((a, b) => a + b, 0)
+  const unspentPoints = level - totalSpent
 
   return (
     <div className="flex flex-col h-full w-full max-w-lg">
 
-      {/* XP bar */}
-      <div className="shrink-0 w-full bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-center gap-4 sm:gap-5">
-        <div className="text-center">
-          <p className="text-[10px] text-amber-400/50 uppercase tracking-widest">XP This Run</p>
-          <p className="text-amber-300 text-lg font-bold">{playerXp}</p>
+      {/* Header */}
+      <div className="shrink-0 w-full bg-gray-800 border-b border-gray-700 px-4 pt-3 pb-2 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Talents</p>
+          {unspentPoints > 0 && (
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-lg border-2 border-amber-500/50 bg-amber-900/20 flex items-center justify-center">
+                <span className="text-2xl font-bold text-amber-300">{unspentPoints}</span>
+              </div>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500/70 mt-0.5">Unspent</span>
+            </div>
+          )}
         </div>
-        <div className="w-px h-8 bg-gray-700" />
-        <div className="text-center">
-          <p className="text-[10px] text-amber-400/50 uppercase tracking-widest">Spent</p>
-          <p className="text-gray-400 text-lg font-bold">{xpSpent}</p>
-        </div>
-        <div className="w-px h-8 bg-gray-700" />
-        <div className="text-center">
-          <p className="text-[10px] text-amber-400/50 uppercase tracking-widest">Next Point</p>
-          <p className={`text-sm font-semibold ${playerXp >= xpSpent + nextCost ? 'text-amber-300' : 'text-gray-500'}`}>
-            {nextCost} XP
-          </p>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-gray-300">Talent Level {level}</p>
+            <p className="text-[10px] text-gray-500">{currentXp} / {nextLevelXp} XP</p>
+          </div>
+          <div className="w-full h-3 rounded-full bg-gray-950 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-blue-600 transition-all duration-300"
+              style={{ width: `${Math.min(100, (currentXp / nextLevelXp) * 100)}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -219,9 +227,8 @@ export default function TalentTreeView() {
           const isMaxRank   = currentRank >= selectedNode.maxRank
           const prereqNode  = TALENT_TREE.find(n => n.branch === selectedNode.branch && n.tier === selectedNode.tier - 1)
           const prereqMet   = !prereqNode || (talents[prereqNode.id] ?? 0) >= prereqNode.maxRank
-          const xpCost      = upgradeCost(talents, selectedNode.costPerRank)
-          const canAfford   = playerXp >= xpSpent + xpCost
-          const canUpgrade  = !isMaxRank && prereqMet && canAfford
+          const canAfford  = unspentPoints >= selectedNode.costPerRank
+          const canUpgrade = !isMaxRank && prereqMet && canAfford
           return (
             <div className="rounded-xl border border-gray-700 bg-gray-800/60 p-4 flex flex-col gap-3">
               <div className="flex items-center gap-2">
@@ -238,7 +245,7 @@ export default function TalentTreeView() {
                 <span>Rank <span className="text-gray-300 font-bold">{currentRank} / {selectedNode.maxRank}</span></span>
                 {isMaxRank
                   ? <span className="text-amber-400 font-bold">MAX RANK</span>
-                  : <span>Cost: <span className={canAfford ? 'text-amber-300 font-bold' : 'text-red-500 font-bold'}>{xpCost} XP</span></span>
+                  : <span>Cost: <span className={canAfford ? 'text-amber-300 font-bold' : 'text-red-500 font-bold'}>{selectedNode.costPerRank} {selectedNode.costPerRank === 1 ? 'point' : 'points'}</span></span>
                 }
               </div>
               {!isMaxRank && (

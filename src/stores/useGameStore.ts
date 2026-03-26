@@ -39,6 +39,20 @@ function totalTalentXpCost(k: number): number {
   return 100 * k + 25 * (k * (k - 1)) / 2
 }
 
+// Derives talent Level, XP progress within that level, and XP required for the next level.
+// Level N = enough XP earned to buy N talent points total.
+export function calculateLevelFromXp(totalXp: number): { level: number; currentXp: number; nextLevelXp: number } {
+  let level = 0
+  let spent = 0
+  while (true) {
+    const next = calculateTalentCost(level)
+    if (spent + next > totalXp) break
+    spent += next
+    level++
+  }
+  return { level, currentXp: totalXp - spent, nextLevelXp: calculateTalentCost(level) }
+}
+
 // ─── Internal constants ───────────────────────────────────────────────────────
 
 const TICK_MS = 50
@@ -88,11 +102,12 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
   const goldAmount = (goldBase + state.currentFloor * 2)
     * (state.currentMob?.tier === 'elite' ? 2 : 1)
     * (hasMidas ? 3 : 1)
+  const { scrapDrop, dustDrop } = calcMetaDrops(state.currentMob?.tier ?? 'normal')
   return {
     act1Map,
     isCombatActive: false as const,
     isMapVisible:   false as const,
-    combatReward: { xp: calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss'), gold: goldAmount, item: randomDrop(state.currentFloor) },
+    combatReward: { xp: calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss'), gold: goldAmount, item: randomDrop(state.currentFloor), scrap: scrapDrop, dust: dustDrop },
     activeBuffs: [] as ActiveBuff[],
   }
 }
@@ -163,7 +178,7 @@ interface GameStore {
   isLootPickerVisible: boolean
 
   // Event state
-  combatReward: { xp: number; gold: number; item: Item } | null
+  combatReward: { xp: number; gold: number; item: Item; scrap: number; dust: number } | null
   restEvent: { healedAmount: number } | null
   combatEventKey: number
   combatEventText: string | null
@@ -426,7 +441,7 @@ export const useGameStore = create<GameStore>()(
           mobAttackProgress: 0,
           powerStrikeCooldown: POWER_STRIKE_COOLDOWN_MS,
           ...triggerEnemyDeath(state, mob),
-          currentRunStats: (() => { const { scrapDrop, dustDrop } = calcMetaDrops(mob.tier); return { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1, ironScrapGathered: state.currentRunStats.ironScrapGathered + scrapDrop, voidDustGathered: state.currentRunStats.voidDustGathered + dustDrop } })(),
+          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
         }
       }
 
@@ -461,7 +476,7 @@ export const useGameStore = create<GameStore>()(
           damageIndicators,
           equippedSpellCooldown: ability.cooldown,
           ...triggerEnemyDeath(state, mob),
-          currentRunStats: (() => { const { scrapDrop, dustDrop } = calcMetaDrops(mob.tier); return { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1, ironScrapGathered: state.currentRunStats.ironScrapGathered + scrapDrop, voidDustGathered: state.currentRunStats.voidDustGathered + dustDrop } })(),
+          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
         }
       }
 
@@ -659,7 +674,12 @@ export const useGameStore = create<GameStore>()(
         currentFloor: state.currentFloor + 1,
         combatReward: null,
         isMapVisible: true,
-        currentRunStats: { ...state.currentRunStats, goldGathered: state.currentRunStats.goldGathered + state.combatReward.gold },
+        currentRunStats: {
+          ...state.currentRunStats,
+          goldGathered:      state.currentRunStats.goldGathered      + state.combatReward.gold,
+          ironScrapGathered: state.currentRunStats.ironScrapGathered + state.combatReward.scrap,
+          voidDustGathered:  state.currentRunStats.voidDustGathered  + state.combatReward.dust,
+        },
       }
     }),
 
@@ -888,7 +908,7 @@ export const useGameStore = create<GameStore>()(
           bossPhase,
           bossPhaseTimerMs,
           ...triggerEnemyDeath(state, mob),  // mobDeathPatch clears activeBuffs
-          currentRunStats: (() => { const { scrapDrop, dustDrop } = calcMetaDrops(mob.tier); return { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1, ironScrapGathered: state.currentRunStats.ironScrapGathered + scrapDrop, voidDustGathered: state.currentRunStats.voidDustGathered + dustDrop } })(),
+          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
         }
       }
 

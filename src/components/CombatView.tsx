@@ -458,7 +458,7 @@ function ActiveSkills({ powerStrikeCooldown, onPowerStrike, isCombatActive, spel
           <button
             onClick={onPowerStrike}
             disabled={bashDisabled}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
+            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors min-w-[130px]
               ${bashReady && isCombatActive
                 ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 ring-1 ring-amber-400/50'
                 : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
@@ -472,7 +472,7 @@ function ActiveSkills({ powerStrikeCooldown, onPowerStrike, isCombatActive, spel
             <button
               onClick={onUseSpell}
               disabled={spellDisabled}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors min-w-[130px]
                 ${spellReady && isCombatActive
                   ? 'border border-orange-500 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 ring-1 ring-orange-400/50'
                   : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
@@ -487,7 +487,7 @@ function ActiveSkills({ powerStrikeCooldown, onPowerStrike, isCombatActive, spel
               </span>
             </button>
           ) : (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-dashed border-gray-700 text-gray-600 opacity-40 cursor-not-allowed select-none">
+            <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-dashed border-gray-700 text-gray-600 opacity-40 cursor-not-allowed select-none min-w-[130px]">
               <Plus size={16} />
               Empty Slot
             </div>
@@ -857,6 +857,11 @@ function VictoryOverlay() {
             <Coins size={14} className="text-yellow-400" />
             <span className="text-yellow-300 font-bold text-sm">+{gold}g</span>
           </div>
+          {combatReward.scrap > 0 && (
+            <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg px-5 py-2">
+              <span className="text-gray-300 font-bold text-sm">⚙ +{combatReward.scrap}</span>
+            </div>
+          )}
         </div>
         <div className={`bg-gray-900 border rounded-2xl p-6 w-52 flex flex-col gap-3 ${rc.border} ${rc.glow}`}>
           <div className="flex justify-center">
