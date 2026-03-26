@@ -1,12 +1,6 @@
 import { useState } from 'react'
-import { Heart, Swords, Zap } from 'lucide-react'
 import {
   useGameStore,
-  TALENT_TREE,
-  computeAvailablePoints,
-  computePlayerLevel,
-  type TalentNode,
-  type TalentBranch,
   type BuildingId,
 } from '../stores/useGameStore'
 
@@ -18,148 +12,14 @@ const TOWN_BUILDINGS: { id: BuildingId; name: string; img: string; cost: number;
   { id: 'tavern',     name: 'The Tavern',      img: '/images/tavern.webp',      cost: 10, desc: 'Recruit new classes and change your playstyle.' },
 ]
 
-// ─── Branch metadata ──────────────────────────────────────────────────────────
-
-const BRANCH_META: Record<TalentBranch, { label: string; Icon: React.ElementType; color: string; dimColor: string }> = {
-  vitality: { label: 'Vitality', Icon: Heart,  color: 'text-green-400', dimColor: 'text-green-900'  },
-  might:    { label: 'Might',    Icon: Swords, color: 'text-red-400',   dimColor: 'text-red-900'    },
-  celerity: { label: 'Celerity', Icon: Zap,    color: 'text-blue-400',  dimColor: 'text-blue-900'   },
-}
-
-// ─── Stat color map ───────────────────────────────────────────────────────────
-
-const STAT_COLOR: Record<string, string> = {
-  hp:                   'text-green-400',
-  damage:               'text-red-400',
-  attackSpeed:          'text-blue-400',
-  damageReduction:      'text-orange-400',
-  critChance:           'text-yellow-400',
-  dodgeChance:          'text-cyan-400',
-  lifesteal:            'text-emerald-400',
-  postCombatHealPct:    'text-green-300',
-  eliteBonusMultiplier: 'text-red-300',
-  executionThreshold:   'text-purple-400',
-  undying:              'text-amber-300',
-  frenzy:               'text-orange-400',
-}
-
-// ─── CompactTalentNode ────────────────────────────────────────────────────────
-
-interface CompactTalentNodeProps {
-  node: TalentNode
-  currentRank: number
-  availablePoints: number
-  prereqMet: boolean
-  isSelected: boolean
-  onSelect: (id: string) => void
-}
-
-function CompactTalentNode({ node, currentRank, availablePoints, prereqMet, isSelected, onSelect }: CompactTalentNodeProps) {
-  const isMaxRank  = currentRank >= node.maxRank
-  const canAfford  = availablePoints >= node.costPerRank
-  const meta       = BRANCH_META[node.branch]
-  const NodeIcon   = node.icon
-
-  let borderClass = 'border-gray-800'
-  let bgClass     = 'bg-gray-900'
-  let iconColor   = meta.dimColor
-  let nameColor   = 'text-gray-700'
-
-  if (isMaxRank) {
-    borderClass = 'border-amber-500/50'
-    bgClass     = 'bg-amber-500/10'
-    iconColor   = 'text-amber-400'
-    nameColor   = 'text-amber-300/70'
-  } else if (!prereqMet) {
-    borderClass = 'border-gray-800'
-    bgClass     = 'bg-gray-900/50'
-    iconColor   = 'text-gray-600'
-    nameColor   = 'text-gray-500'
-  } else if (canAfford) {
-    borderClass = 'border-gray-600'
-    bgClass     = 'bg-gray-800'
-    iconColor   = meta.color
-    nameColor   = 'text-gray-300'
-  } else {
-    borderClass = 'border-gray-700'
-    bgClass     = 'bg-gray-800/60'
-    iconColor   = 'text-gray-600'
-    nameColor   = 'text-gray-600'
-  }
-
-  return (
-    <button
-      onClick={() => onSelect(node.id)}
-      className={`w-full aspect-square rounded-lg border flex flex-col items-center justify-between py-3 px-1 transition-all duration-150 cursor-pointer
-        ${borderClass} ${bgClass}
-        ${!prereqMet ? 'opacity-65' : 'hover:brightness-110'}
-        ${isSelected ? 'ring-2 ring-white/30' : ''}`}
-    >
-      <NodeIcon size={32} className={iconColor} />
-      <p className={`text-[11px] font-bold text-center leading-tight w-full truncate px-0.5 ${nameColor}`}>
-        {node.name}
-      </p>
-      <span className={`text-[10px] tabular-nums font-bold ${isMaxRank ? 'text-amber-400' : 'text-gray-600'}`}>
-        {currentRank}/{node.maxRank}
-      </span>
-    </button>
-  )
-}
-
-// ─── BranchColumn ─────────────────────────────────────────────────────────────
-
-interface BranchColumnProps {
-  branch: TalentBranch
-  talents: Record<string, number>
-  availablePoints: number
-  selectedNodeId: string | null
-  onSelect: (id: string) => void
-}
-
-function BranchColumn({ branch, talents, availablePoints, selectedNodeId, onSelect }: BranchColumnProps) {
-  const nodes = TALENT_TREE.filter(n => n.branch === branch).sort((a, b) => a.tier - b.tier)
-  const meta  = BRANCH_META[branch]
-  const Icon  = meta.Icon
-
-  return (
-    <div className="flex flex-col items-stretch gap-0">
-      <div className={`flex items-center justify-center gap-1.5 mb-2 ${meta.color}`}>
-        <Icon size={12} />
-        <span className="text-[10px] font-bold uppercase tracking-widest">{meta.label}</span>
-      </div>
-      {nodes.map((node, i) => {
-        const prereqNode = TALENT_TREE.find(n => n.branch === branch && n.tier === node.tier - 1)
-        const prereqMet  = !prereqNode || (talents[prereqNode.id] ?? 0) >= prereqNode.maxRank
-        return (
-          <div key={node.id} className="flex flex-col items-center">
-            <CompactTalentNode
-              node={node}
-              currentRank={talents[node.id] ?? 0}
-              availablePoints={availablePoints}
-              prereqMet={prereqMet}
-              isSelected={selectedNodeId === node.id}
-              onSelect={onSelect}
-            />
-            {i < nodes.length - 1 && <div className="w-px h-3 bg-gray-800" />}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 // ─── HubView ──────────────────────────────────────────────────────────────────
 
 export default function HubView() {
   const {
-    totalXp, talents, ironScrap, voidDust, buildings,
-    upgradeTalent, constructBuilding, generateMap, hardResetGame, setActiveView,
+    ironScrap, voidDust, buildings,
+    constructBuilding, generateMap, hardResetGame, setActiveView,
   } = useGameStore()
-  const availablePoints = computeAvailablePoints(totalXp, talents)
-  const playerLevel     = computePlayerLevel(totalXp)
 
-  const [activeTab,          setActiveTab]          = useState<'town' | 'talents'>('town')
-  const [selectedNodeId,     setSelectedNodeId]     = useState<string | null>(null)
   const [selectedBuildingId, setSelectedBuildingId] = useState<BuildingId | null>(null)
 
   return (
@@ -170,216 +30,93 @@ export default function HubView() {
         <p className="text-[10px] text-amber-400/40 uppercase tracking-widest mb-0.5">Base Camp</p>
         <h1 className="text-2xl font-bold tracking-widest uppercase text-white">The HUB</h1>
         <div className="flex items-center justify-center gap-4 mt-1">
-          <p className="text-sm text-amber-400/50 font-semibold tracking-wide">Level {playerLevel} · Fighter</p>
-          <span className="text-gray-700">·</span>
           <span className="text-xs text-gray-500 font-semibold">⚙ <span className="text-gray-300">{ironScrap}</span></span>
           <span className="text-xs text-gray-500 font-semibold">✦ <span className="text-gray-300">{voidDust}</span></span>
-        </div>
-      </div>
-
-      {/* Tab toggle */}
-      <div className="shrink-0 px-4 pb-3">
-        <div className="flex bg-gray-900 border border-gray-800 rounded-xl p-1 gap-1">
-          {(['town', 'talents'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer
-                ${activeTab === tab
-                  ? 'bg-gray-800 text-gray-200'
-                  : 'text-gray-600 hover:text-gray-400'
-                }`}
-            >
-              {tab === 'town' ? 'The Town' : 'Training Grounds'}
-            </button>
-          ))}
         </div>
       </div>
 
       {/* Scrollable content */}
       <div className="flex-1 min-h-0 overflow-y-auto bg-gray-900 border-t border-gray-800 rounded-t-2xl px-4 py-4 flex flex-col gap-3">
 
-        {/* ── Town tab ── */}
-        {activeTab === 'town' && (
-          <>
-            {/* Enter Dungeon */}
+        {/* Enter Dungeon */}
+        <button
+          onClick={generateMap}
+          className="w-full py-4 rounded-xl border-2 border-amber-500 bg-amber-500/10
+                     text-amber-300 text-base font-bold uppercase tracking-widest shrink-0
+                     hover:bg-amber-500/20 active:bg-amber-500/30 transition-colors"
+        >
+          ⚔ Enter Dungeon
+        </button>
+
+        {/* Building banners */}
+        {TOWN_BUILDINGS.map(b => {
+          const lvl        = buildings[b.id]
+          const isRuin     = lvl === 0
+          const isSelected = selectedBuildingId === b.id
+          return (
             <button
-              onClick={generateMap}
-              className="w-full py-4 rounded-xl border-2 border-amber-500 bg-amber-500/10
-                         text-amber-300 text-base font-bold uppercase tracking-widest shrink-0
-                         hover:bg-amber-500/20 active:bg-amber-500/30 transition-colors"
+              key={b.id}
+              onClick={() => setSelectedBuildingId(isSelected ? null : b.id)}
+              style={{ backgroundImage: `url(${b.img})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+              className={`relative w-full h-32 rounded-xl overflow-hidden border-2 cursor-pointer transition-all shrink-0 text-left
+                ${isRuin ? 'border-gray-700 grayscale brightness-[0.4]' : 'border-amber-600'}
+                ${isSelected ? 'ring-2 ring-white/30' : 'hover:brightness-110'}`}
             >
-              ⚔ Enter Dungeon
-            </button>
-
-            {/* Building banners */}
-            {TOWN_BUILDINGS.map(b => {
-              const lvl    = buildings[b.id]
-              const isRuin = lvl === 0
-              const isSelected = selectedBuildingId === b.id
-              return (
-                <button
-                  key={b.id}
-                  onClick={() => setSelectedBuildingId(isSelected ? null : b.id)}
-                  style={{ backgroundImage: `url(${b.img})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-                  className={`relative w-full h-32 rounded-xl overflow-hidden border-2 cursor-pointer transition-all shrink-0 text-left
-                    ${isRuin ? 'border-gray-700 grayscale brightness-[0.4]' : 'border-amber-600'}
-                    ${isSelected ? 'ring-2 ring-white/30' : 'hover:brightness-110'}`}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent flex items-end p-3">
-                    <p className="text-sm font-bold text-white drop-shadow">
-                      {isRuin ? `Ruined — ${b.name}` : b.name}
-                    </p>
-                  </div>
-                </button>
-              )
-            })}
-
-            {/* Building inspect panel */}
-            {selectedBuildingId && (() => {
-              const b         = TOWN_BUILDINGS.find(x => x.id === selectedBuildingId)!
-              const lvl       = buildings[selectedBuildingId]
-              const canAfford = ironScrap >= b.cost
-              return (
-                <div className="rounded-xl border border-gray-700 bg-gray-800/60 p-4 flex flex-col gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-gray-200">{b.name}</p>
-                    <p className="text-xs text-gray-400 leading-relaxed mt-1">{b.desc}</p>
-                  </div>
-                  {lvl === 0 ? (
-                    <>
-                      <div className="flex items-center justify-between text-[11px] text-gray-500">
-                        <span>Status</span>
-                        <span className="text-gray-600 font-bold">Ruined</span>
-                      </div>
-                      <button
-                        onClick={() => constructBuilding(selectedBuildingId)}
-                        disabled={!canAfford}
-                        className={`w-full py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-colors
-                          ${canAfford
-                            ? 'border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 cursor-pointer'
-                            : 'border-gray-700 bg-gray-800 text-gray-600 cursor-default'
-                          }`}
-                      >
-                        Rebuild — {b.cost} ⚙ Iron Scrap
-                        {!canAfford && <span className="text-red-900/80 ml-1">(need {b.cost - ironScrap} more)</span>}
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => {
-                          if (b.id === 'blacksmith') setActiveView('blacksmith')
-                          else console.log('Enter', b.id)
-                        }}
-                        className="w-full py-2 rounded-lg border border-amber-500 bg-amber-500/10
-                                   text-amber-300 text-xs font-bold uppercase tracking-wider
-                                   hover:bg-amber-500/20 cursor-pointer transition-colors"
-                      >
-                        Enter {b.name}
-                      </button>
-                    </>
-                  )}
-                </div>
-              )
-            })()}
-          </>
-        )}
-
-        {/* ── Talents tab ── */}
-        {activeTab === 'talents' && (
-          <div className="flex flex-col gap-3 flex-1">
-            {/* XP / points bar */}
-            <div className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 flex items-center justify-center gap-4 sm:gap-5 shrink-0">
-              <div className="text-center">
-                <p className="text-[10px] text-amber-400/50 uppercase tracking-widest">Level</p>
-                <p className="text-amber-300 text-lg font-bold">{playerLevel}</p>
-              </div>
-              <div className="w-px h-8 bg-gray-700" />
-              <div className="text-center">
-                <p className="text-[10px] text-amber-400/50 uppercase tracking-widest">Available</p>
-                <p className={`text-lg font-bold ${availablePoints > 0 ? 'text-amber-300' : 'text-gray-600'}`}>
-                  {availablePoints} <span className="text-xs font-normal text-amber-400/40">pts</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent flex items-end p-3">
+                <p className="text-sm font-bold text-white drop-shadow">
+                  {isRuin ? `Ruined — ${b.name}` : b.name}
                 </p>
               </div>
-              <div className="w-px h-8 bg-gray-700" />
-              <div className="text-center">
-                <p className="text-[10px] text-amber-400/50 uppercase tracking-widest">Next Point</p>
-                <p className="text-gray-400 text-sm font-semibold">{100 - (totalXp % 100)} XP</p>
+            </button>
+          )
+        })}
+
+        {/* Building inspect panel */}
+        {selectedBuildingId && (() => {
+          const b         = TOWN_BUILDINGS.find(x => x.id === selectedBuildingId)!
+          const lvl       = buildings[selectedBuildingId]
+          const canAfford = ironScrap >= b.cost
+          return (
+            <div className="rounded-xl border border-gray-700 bg-gray-800/60 p-4 flex flex-col gap-3">
+              <div>
+                <p className="text-sm font-bold text-gray-200">{b.name}</p>
+                <p className="text-xs text-gray-400 leading-relaxed mt-1">{b.desc}</p>
               </div>
-            </div>
-
-            {/* Compact 3-column tree */}
-            <div className="grid grid-cols-3 gap-2">
-              {(['vitality', 'might', 'celerity'] as TalentBranch[]).map(branch => (
-                <BranchColumn
-                  key={branch}
-                  branch={branch}
-                  talents={talents}
-                  availablePoints={availablePoints}
-                  selectedNodeId={selectedNodeId}
-                  onSelect={setSelectedNodeId}
-                />
-              ))}
-            </div>
-
-            {/* Inspect panel */}
-            {(() => {
-              const selectedNode = selectedNodeId ? TALENT_TREE.find(n => n.id === selectedNodeId) ?? null : null
-              if (!selectedNode) return (
-                <div className="rounded-xl border border-gray-800 bg-gray-800/40 p-4 flex items-center justify-center min-h-[80px]">
-                  <p className="text-[11px] text-gray-600">Select a talent to view details.</p>
-                </div>
-              )
-              const branch      = BRANCH_META[selectedNode.branch]
-              const NodeIcon    = selectedNode.icon
-              const currentRank = talents[selectedNode.id] ?? 0
-              const isMaxRank   = currentRank >= selectedNode.maxRank
-              const prereqNode  = TALENT_TREE.find(n => n.branch === selectedNode.branch && n.tier === selectedNode.tier - 1)
-              const prereqMet   = !prereqNode || (talents[prereqNode.id] ?? 0) >= prereqNode.maxRank
-              const canAfford   = availablePoints >= selectedNode.costPerRank
-              const canUpgrade  = !isMaxRank && prereqMet && canAfford
-              return (
-                <div className="rounded-xl border border-gray-700 bg-gray-800/60 p-4 flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <NodeIcon size={16} className={branch.color} />
-                    <p className="text-sm font-bold text-gray-200">{selectedNode.name}</p>
-                    <span className={`ml-auto text-[10px] font-bold uppercase tracking-widest ${branch.color}`}>
-                      {branch.label}
-                    </span>
-                  </div>
-                  <p className={`text-xs leading-relaxed ${STAT_COLOR[selectedNode.effect.stat] ?? 'text-gray-400'}`}>
-                    {selectedNode.description}
-                  </p>
+              {lvl === 0 ? (
+                <>
                   <div className="flex items-center justify-between text-[11px] text-gray-500">
-                    <span>Rank <span className="text-gray-300 font-bold">{currentRank} / {selectedNode.maxRank}</span></span>
-                    {isMaxRank
-                      ? <span className="text-amber-400 font-bold">MAX RANK</span>
-                      : <span>Cost: <span className={canAfford ? 'text-amber-300 font-bold' : 'text-red-500 font-bold'}>{selectedNode.costPerRank} pts</span></span>
-                    }
+                    <span>Status</span>
+                    <span className="text-gray-600 font-bold">Ruined</span>
                   </div>
-                  {!isMaxRank && (
-                    <button
-                      onClick={() => upgradeTalent(selectedNode.id)}
-                      disabled={!canUpgrade}
-                      className={`w-full py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-colors
-                        ${canUpgrade
-                          ? 'border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 cursor-pointer'
-                          : 'border-gray-700 bg-gray-800 text-gray-600 cursor-default'
-                        }`}
-                    >
-                      {!prereqMet ? 'Locked' : !canAfford ? 'Not Enough Points' : 'Upgrade'}
-                    </button>
-                  )}
-                </div>
-              )
-            })()}
-
-            <p className="text-[9px] text-gray-700 text-center mt-1">
-              Earn 1 point per 100 XP · Talents persist between runs
-            </p>
-          </div>
-        )}
+                  <button
+                    onClick={() => constructBuilding(selectedBuildingId)}
+                    disabled={!canAfford}
+                    className={`w-full py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-colors
+                      ${canAfford
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 cursor-pointer'
+                        : 'border-gray-700 bg-gray-800 text-gray-600 cursor-default'
+                      }`}
+                  >
+                    Rebuild — {b.cost} ⚙ Iron Scrap
+                    {!canAfford && <span className="text-red-900/80 ml-1">(need {b.cost - ironScrap} more)</span>}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    if (b.id === 'blacksmith') setActiveView('blacksmith')
+                    else console.log('Enter', b.id)
+                  }}
+                  className="w-full py-2 rounded-lg border border-amber-500 bg-amber-500/10
+                             text-amber-300 text-xs font-bold uppercase tracking-wider
+                             hover:bg-amber-500/20 cursor-pointer transition-colors"
+                >
+                  Enter {b.name}
+                </button>
+              )}
+            </div>
+          )
+        })()}
 
       </div>
 
@@ -387,7 +124,7 @@ export default function HubView() {
       <div className="shrink-0 py-2 text-center">
         <button
           onClick={() => {
-            if (window.confirm('WARNING: This will permanently delete your save file, including all XP, Talents, and Buildings. Are you sure?')) {
+            if (window.confirm('WARNING: This will permanently delete your save file, including all Buildings and Upgrades. Are you sure?')) {
               hardResetGame()
             }
           }}

@@ -24,11 +24,25 @@ export type {
 export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS }
 export { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot }
 
+// ─── Balancing functions ──────────────────────────────────────────────────────
+
+// XP cost to buy the nth talent point (0-indexed: first point costs 100, second 125, etc.)
+export const calculateTalentCost = (currentTotalPoints: number): number =>
+  100 + currentTotalPoints * 25
+
+// XP awarded for killing a monster. monsterLevel = current floor number.
+export const calculateMonsterXp = (monsterLevel: number, isBoss: boolean): number =>
+  isBoss ? 500 : 75 + monsterLevel * 15
+
+// Total XP spent to have k talent points (sum of calculateTalentCost(0..k-1))
+function totalTalentXpCost(k: number): number {
+  return 100 * k + 25 * (k * (k - 1)) / 2
+}
+
 // ─── Internal constants ───────────────────────────────────────────────────────
 
 const TICK_MS = 50
 const POWER_STRIKE_COOLDOWN_MS = 5600
-const XP_PER_KILL = 20
 const XP_PER_CHEST = 25
 
 // ─── Internal defaults ────────────────────────────────────────────────────────
@@ -78,7 +92,7 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
     act1Map,
     isCombatActive: false as const,
     isMapVisible:   false as const,
-    combatReward: { xp: XP_PER_KILL, gold: goldAmount, item: randomDrop(state.currentFloor) },
+    combatReward: { xp: calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss'), gold: goldAmount, item: randomDrop(state.currentFloor) },
     activeBuffs: [] as ActiveBuff[],
   }
 }
@@ -238,6 +252,8 @@ export const useGameStore = create<GameStore>()(
         isMapVisible: true,
         activeView: 'battle' as const,
         player: { ...DEFAULT_PLAYER, currentHp: effMaxHp },
+        talents: {},
+        playerXp: 0,
         lootChoices: [],
         isLootPickerVisible: false,
         combatReward: null,
@@ -462,10 +478,11 @@ export const useGameStore = create<GameStore>()(
     set((state) => {
       const effMaxHp = getEffectiveStats({ ...DEFAULT_PLAYER }, { ...EMPTY_EQUIPMENT }, state.talents, state.slotUpgrades).maxHp
       return {
-        totalXp:   state.totalXp   + state.playerXp,
+        totalXp:   0,
+        talents:   {},
+        playerXp:  0,
         ironScrap: state.ironScrap + state.currentRunStats.ironScrapGathered,
         voidDust:  state.voidDust  + state.currentRunStats.voidDustGathered,
-        playerXp: 0,
         act1Map: [],
         currentFloor: 1,
         currentMapNodeId: null,
@@ -693,7 +710,10 @@ export const useGameStore = create<GameStore>()(
       if (currentRank >= node.maxRank) return state
       const prereq = TALENT_TREE.find(n => n.branch === node.branch && n.tier === node.tier - 1)
       if (prereq && (state.talents[prereq.id] ?? 0) < prereq.maxRank) return state
-      if (computeAvailablePoints(state.totalXp, state.talents) < node.costPerRank) return state
+      const totalSpent = Object.values(state.talents).reduce((a, b) => a + b, 0)
+      let xpCost = 0
+      for (let i = 0; i < node.costPerRank; i++) xpCost += calculateTalentCost(totalSpent + i)
+      if (state.playerXp < totalTalentXpCost(totalSpent) + xpCost) return state
       return { talents: { ...state.talents, [nodeId]: currentRank + 1 } }
     }),
 
@@ -924,8 +944,6 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'tactical-roguelite-storage',
       partialize: (state) => ({
-        totalXp:      state.totalXp,
-        talents:      state.talents,
         ironScrap:    state.ironScrap,
         voidDust:     state.voidDust,
         buildings:    state.buildings,

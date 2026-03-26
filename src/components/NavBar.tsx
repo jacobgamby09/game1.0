@@ -1,10 +1,11 @@
-import { Swords, Package, Shield } from 'lucide-react'
+import { Swords, Package, Shield, BookOpen } from 'lucide-react'
 import { useGameStore, type View } from '../stores/useGameStore'
 
 const tabs: { view: View; label: string; Icon: React.ElementType }[] = [
-  { view: 'battle',    label: 'Battle',    Icon: Swords  },
-  { view: 'inventory', label: 'Inventory', Icon: Package },
-  { view: 'hub',       label: 'Hub',       Icon: Shield  },
+  { view: 'battle',    label: 'Battle',    Icon: Swords   },
+  { view: 'inventory', label: 'Inventory', Icon: Package  },
+  { view: 'talents',   label: 'Talents',   Icon: BookOpen },
+  { view: 'hub',       label: 'Hub',       Icon: Shield   },
 ]
 
 export default function NavBar() {

@@ -1,6 +1,6 @@
 // ─── Navigation ───────────────────────────────────────────────────────────────
 
-export type View = 'battle' | 'inventory' | 'hub' | 'blacksmith'
+export type View = 'battle' | 'inventory' | 'hub' | 'blacksmith' | 'talents'
 
 // ─── Equipment ────────────────────────────────────────────────────────────────
 

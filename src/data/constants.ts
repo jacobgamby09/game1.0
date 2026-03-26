@@ -49,7 +49,7 @@ export const SLOT_TIER_BONUSES: Record<EquipmentSlotName, Record<1 | 2 | 3 | 4, 
 export const TALENT_TREE: TalentNode[] = [
   // ── Vitality ──────────────────────────────────────────────────────────────
   { id:'vit_1', branch:'vitality', tier:1, name:'Fortitude',    icon:ShieldPlus,  description:'+5 Max HP per point',               maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'hp',                   valuePerRank:5    }},
-  { id:'vit_2', branch:'vitality', tier:2, name:'Thick Skin',   icon:Shield,      description:'+1 Damage Reduction per point',     maxRank:3, costPerRank:1, effect:{type:'flat',    stat:'damageReduction',       valuePerRank:1    }},
+  { id:'vit_2', branch:'vitality', tier:2, name:'Thick Skin',   icon:Shield,      description:'+1 Damage Reduction per point',     maxRank:5, costPerRank:1, effect:{type:'flat',    stat:'damageReduction',       valuePerRank:1    }},
   { id:'vit_3', branch:'vitality', tier:3, name:'Field Medic',  icon:HeartPulse,  description:'Heal 5% Max HP after combat/point', maxRank:3, costPerRank:2, effect:{type:'flat',    stat:'postCombatHealPct',     valuePerRank:0.05 }},
   { id:'vit_4', branch:'vitality', tier:4, name:'Undying',      icon:Sparkles,    description:'Revive once per run at 30% HP',     maxRank:1, costPerRank:3, effect:{type:'flat',    stat:'undying',               valuePerRank:1    }},
 
