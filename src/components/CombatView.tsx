@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical, Hammer } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel } from '../stores/useGameStore'
+import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical, Hammer, Sparkles, ChevronsUp, ChevronRight, X } from 'lucide-react'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel, calculateLevelFromXp } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, ItemSlot, MobTier, MobTrait, DamageIndicator, ActiveBuff } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 import ItemComparisonPanel from './ItemComparisonPanel'
@@ -54,7 +54,7 @@ function hpColor(pct: number): string {
 function NodeIcon({ type, size = 16 }: { type: MapNode['type']; size?: number }) {
   if (type === 'mob')    return <Swords size={size} />
   if (type === 'elite')  return <Skull size={size} />
-  if (type === 'boss')   return <Skull size={size} />
+  if (type === 'boss')   return <Crown size={size} />
   if (type === 'rest')   return <Tent size={size} />
   if (type === 'chest')  return <Archive size={size} />
   if (type === 'market') return <ShoppingCart size={size} />
@@ -64,23 +64,30 @@ function NodeIcon({ type, size = 16 }: { type: MapNode['type']; size?: number })
 // ─── PlayerStatsBar ───────────────────────────────────────────────────────────
 
 function PlayerStatsBar() {
-  const { player, equipment, playerXp, talents, slotUpgrades } = useGameStore()
+  const { player, equipment, playerXp, talents, slotUpgrades, ironScrap, voidDust } = useGameStore()
   const eff = getEffectiveStats(player, equipment, talents, slotUpgrades)
+  const unspentPoints = calculateLevelFromXp(playerXp).level - Object.values(talents).reduce((a, b) => a + b, 0)
   return (
-    <div className="w-full max-w-sm bg-gray-900/80 border border-gray-800 rounded-xl px-4 py-2 flex items-center gap-5 text-xs font-semibold">
+    <div className="w-full max-w-sm bg-gray-900/80 border border-gray-800 rounded-xl px-4 py-2 flex items-center gap-4 text-xs font-semibold">
       <div className="flex items-center gap-1.5 text-green-400">
         <Heart size={13} />
         <span>{player.currentHp} / {eff.maxHp}</span>
       </div>
-      <div className="flex items-center gap-1.5 text-red-400">
-        <Swords size={13} />
-        <span>{eff.damage} dmg</span>
+      <div className="flex items-center gap-1.5 text-amber-400">
+        <Hammer size={13} />
+        <span>{ironScrap}</span>
       </div>
-      <div className="flex items-center gap-1.5 text-blue-400">
-        <Zap size={13} />
-        <span>{eff.attackSpeed.toFixed(2)}/s</span>
+      <div className="flex items-center gap-1.5 text-purple-400">
+        <Sparkles size={13} />
+        <span>{voidDust}</span>
       </div>
       <div className="ml-auto flex items-center gap-3">
+        {unspentPoints > 0 && (
+          <span className="flex items-center gap-1 text-emerald-400 font-bold bg-emerald-900/30 border border-emerald-500/50 px-2 py-0.5 rounded-full">
+            <ChevronsUp size={12} />
+            {unspentPoints} PT
+          </span>
+        )}
         <span className="text-amber-400">⭐ {playerXp} XP</span>
         <span className="flex items-center gap-1 text-yellow-400">
           <Coins size={12} />
@@ -303,10 +310,7 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
           </span>
         )}
         {tier === 'boss' && (
-          <span className="self-start flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase
-                           text-purple-300 bg-purple-900/40 border border-purple-600/50 px-2 py-0.5 rounded animate-pulse">
-            <Crown size={10} /> BOSS
-          </span>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">BOSS</p>
         )}
         <div className="flex items-center gap-2">
           <span className="text-amber-400">{icon}</span>
@@ -397,7 +401,7 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
       )}
 
       <p className="text-xs text-gray-500 tracking-wide">
-        {combatant.baseDamage} dmg &nbsp;·&nbsp; {combatant.attackSpeed}/s
+        {combatant.baseDamage} dmg &nbsp;·&nbsp; {combatant.attackSpeed.toFixed(2)}/s
       </p>
     </div>
   )
@@ -646,7 +650,11 @@ function CombatArena() {
             combatant={currentMob}
             attackProgress={mobAttackProgress}
             atkBarColor="orange"
-            icon={<Shield size={20} />}
+            icon={
+              currentMob.tier === 'boss'  ? <Crown  size={20} className="text-amber-500" /> :
+              currentMob.tier === 'elite' ? <Skull  size={20} className="text-red-400"   /> :
+                                            <Shield size={20} className="text-gray-500"  />
+            }
             tier={currentMob.tier}
             damageIndicators={damageIndicators.filter(d => d.target === 'enemy')}
             isKillingBlow={isKillingBlowActive}
@@ -691,9 +699,9 @@ function CombatArena() {
                 </span>
               )}
               {currentMob.tier === 'boss' && (
-                <span className="self-start text-[10px] font-bold tracking-widest uppercase
+                <span className="self-start flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase
                                  text-purple-300 bg-purple-900/40 border border-purple-600/50 px-2 py-0.5 rounded animate-pulse">
-                  ☠ BOSS
+                  <Crown size={10} /> BOSS
                 </span>
               )}
               <p className={`font-bold tracking-widest uppercase ${
@@ -710,7 +718,7 @@ function CombatArena() {
             <div className="flex gap-4 text-xs text-gray-400">
               <span>❤ {currentMob.maxHp} HP</span>
               <span>⚔ {currentMob.baseDamage} dmg</span>
-              <span>⚡ {currentMob.attackSpeed}/s</span>
+              <span>⚡ {currentMob.attackSpeed.toFixed(2)}/s</span>
             </div>
 
             {currentMob.traits && currentMob.traits.length > 0 && (
@@ -834,10 +842,51 @@ function LootSelectionOverlay() {
   )
 }
 
+// ─── InspectionModal ──────────────────────────────────────────────────────────
+
+function InspectionModal() {
+  const {
+    inspectedItem, setInspectedItem,
+    combatReward, collectCombatReward,
+    equipItem, equipItemToSlot, equipPotion,
+  } = useGameStore()
+  if (!inspectedItem || !combatReward) return null
+
+  const handleEquip = (slot?: EquipSlot) => {
+    collectCombatReward()
+    if (inspectedItem.equipSlot === 'potion') {
+      equipPotion(inspectedItem)
+    } else if (slot) {
+      equipItemToSlot(inspectedItem, slot)
+    } else {
+      equipItem(inspectedItem)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="w-full max-w-xs max-h-[85dvh] flex flex-col bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Item Details</p>
+          <button
+            onClick={() => setInspectedItem(null)}
+            className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <ItemComparisonPanel item={inspectedItem} onEquip={handleEquip} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── VictoryOverlay ───────────────────────────────────────────────────────────
 
 function VictoryOverlay() {
-  const { combatReward, collectCombatReward } = useGameStore()
+  const { combatReward, collectCombatReward, setInspectedItem } = useGameStore()
   if (!combatReward) return null
   const { xp, gold, item } = combatReward
   return (
@@ -867,20 +916,39 @@ function VictoryOverlay() {
             </div>
           )}
         </div>
-        {/* Loot card */}
+        {/* Loot row */}
         {item.equipSlot === 'potion' ? (
-          <div className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 flex items-center gap-3 text-left">
-            <FlaskConical size={28} className="text-green-400 shrink-0" />
-            <div className="min-w-0">
-              <p className="font-bold text-white leading-tight">{item.name}</p>
-              <p className="text-xs text-gray-400 mt-0.5 leading-snug">{item.description}</p>
-              <p className="text-[10px] text-green-400/70 uppercase tracking-widest mt-1.5">→ Backpack</p>
+          <button
+            onClick={() => setInspectedItem(item)}
+            className="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 flex items-center gap-3 text-left hover:bg-gray-800 active:bg-gray-800 transition-colors cursor-pointer"
+          >
+            <FlaskConical size={24} className="text-green-400 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-sm text-white leading-tight">{item.name}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>
             </div>
-          </div>
+            <ChevronRight size={16} className="text-gray-600 shrink-0" />
+          </button>
         ) : (
-          <div className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4">
-            <ItemComparisonPanel item={item} />
-          </div>
+          <button
+            onClick={() => setInspectedItem(item)}
+            className="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 flex items-center gap-3 text-left hover:bg-gray-800 active:bg-gray-800 transition-colors cursor-pointer"
+          >
+            {(() => {
+              const Icon = SLOT_ICONS[item.equipSlot as EquipSlot]
+              const rc   = RARITY_COLORS[item.rarity]
+              return (
+                <>
+                  <Icon size={24} className={`${rc.text} shrink-0`} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`font-bold text-sm leading-tight ${rc.text}`}>{item.name}</p>
+                    <p className="text-gray-500 text-xs mt-0.5">{SLOT_LABELS[item.equipSlot as EquipSlot]} · {item.rarity}</p>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-600 shrink-0" />
+                </>
+              )
+            })()}
+          </button>
         )}
         <button
           onClick={collectCombatReward}
@@ -1049,6 +1117,7 @@ export default function CombatView() {
       {isMapVisible ? <MapView /> : <CombatArena />}
       <LootSelectionOverlay />
       <VictoryOverlay />
+      <InspectionModal />
       <CampOverlay />
       <MarketOverlay />
     </>

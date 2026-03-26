@@ -255,6 +255,7 @@ interface ItemDetailsProps {
   equipment: Record<EquipSlot, Item | null>
   slotUpgrades: EquipmentSlotUpgrades
   onEquip: (item: Item) => void
+  onEquipToSlot: (item: Item, slot: EquipSlot) => void
   onEquipPotion: (item: Item) => void
   onUnequip: (slotKey: string) => void
   onUnequipBelt: (index: number) => void
@@ -265,7 +266,7 @@ interface ItemDetailsProps {
 
 function ItemDetails({
   selectedItem, selectedFrom, beltIndex, equipment, slotUpgrades,
-  onEquip, onEquipPotion, onUnequip, onUnequipBelt,
+  onEquip, onEquipToSlot, onEquipPotion, onUnequip, onUnequipBelt,
   onSell, sellValue, onClear,
 }: ItemDetailsProps) {
   const isEmpty = selectedItem === null
@@ -298,9 +299,21 @@ function ItemDetails({
           {/* Description */}
           <p className="text-gray-400 text-sm italic">{selectedItem.description}</p>
 
-          {/* Comparison panel for backpack non-potion items */}
-          {selectedFrom === 'backpack' && selectedItem.equipSlot !== 'potion' && (
-            <ItemComparisonPanel item={selectedItem} onEquip={onClear} />
+          {/* Comparison panel for backpack items */}
+          {selectedFrom === 'backpack' && (
+            <ItemComparisonPanel
+              item={selectedItem}
+              onEquip={(slot) => {
+                if (selectedItem.equipSlot === 'potion') {
+                  onEquipPotion(selectedItem)
+                } else if (slot) {
+                  onEquipToSlot(selectedItem, slot)
+                } else {
+                  onEquip(selectedItem)
+                }
+                onClear()
+              }}
+            />
           )}
 
           {/* Stats for equipped/belt items and potions */}
@@ -409,7 +422,7 @@ function ItemDetails({
 
 export default function InventoryView() {
   const {
-    backpack, equipment, equipItem, unequipItem, sellItem, player, talents, slotUpgrades,
+    backpack, equipment, equipItem, equipItemToSlot, unequipItem, sellItem, player, talents, slotUpgrades,
     potionBelt, equipPotion, unequipPotion,
   } = useGameStore()
   const eff = getEffectiveStats(player, equipment, talents, slotUpgrades)
@@ -487,6 +500,7 @@ export default function InventoryView() {
         equipment={equipment}
         slotUpgrades={slotUpgrades}
         onEquip={equipItem}
+        onEquipToSlot={equipItemToSlot}
         onEquipPotion={equipPotion}
         onUnequip={unequipItem}
         onUnequipBelt={unequipPotion}

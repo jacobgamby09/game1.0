@@ -1,29 +1,7 @@
-import { useEffect, useState } from 'react'
-import { useGameStore, computePlayerLevel } from '../stores/useGameStore'
+import { useGameStore } from '../stores/useGameStore'
 
 export default function RunSummaryView() {
-  const { runSummary, currentRunStats, playerXp, currentFloor, ironScrap, voidDust, resetRun } = useGameStore()
-
-  const prevXp   = runSummary?.previousTotalXp ?? 0
-  const xpGained = playerXp
-  const levelUps = Math.floor((prevXp + xpGained) / 100) - Math.floor(prevXp / 100)
-  const startFill = prevXp % 100
-  const endFill   = (prevXp + xpGained) % 100
-  const newLevel  = computePlayerLevel(prevXp + xpGained)
-
-  const [barWidth, setBarWidth]       = useState(startFill)
-  const [showLevelUp, setShowLevelUp] = useState(false)
-
-  useEffect(() => {
-    if (!runSummary?.active) return
-    setBarWidth(startFill)
-    setShowLevelUp(false)
-    const t1 = setTimeout(() => setBarWidth(levelUps > 0 ? 100 : endFill), 300)
-    const t2 = setTimeout(() => {
-      if (levelUps > 0) { setShowLevelUp(true); setBarWidth(endFill) }
-    }, 1400)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
-  }, [runSummary?.active])
+  const { runSummary, currentRunStats, currentFloor, ironScrap, voidDust, resetRun } = useGameStore()
 
   if (!runSummary?.active) return null
 
@@ -70,31 +48,6 @@ export default function RunSummaryView() {
             +{currentRunStats.voidDustGathered}
             <span className="text-gray-600 font-normal text-xs"> ({voidDust + currentRunStats.voidDustGathered} total)</span>
           </span>
-        </div>
-      </div>
-
-      {/* XP / Level progress */}
-      <div className="w-full max-w-xs bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-3">
-        <div className="flex justify-between items-center">
-          <p className="text-[10px] uppercase tracking-widest text-amber-400/60">XP Gained</p>
-          <p className="text-amber-300 font-bold text-sm">+{xpGained} XP</p>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-[10px] text-gray-500">
-            <span>Lv {computePlayerLevel(prevXp)} Fighter</span>
-            <span>Lv {newLevel} Fighter</span>
-          </div>
-          <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-amber-500 rounded-full transition-all duration-1000 ease-out"
-              style={{ width: `${barWidth}%` }}
-            />
-          </div>
-          {showLevelUp && levelUps > 0 && (
-            <p className="text-center text-amber-300 text-xs font-bold animate-pulse">
-              ✨ {levelUps} Talent Point{levelUps > 1 ? 's' : ''} Earned!
-            </p>
-          )}
         </div>
       </div>
 

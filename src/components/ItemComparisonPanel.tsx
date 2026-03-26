@@ -48,13 +48,47 @@ function StatRows({ item, equippedItem }: { item: Item; equippedItem: Item | nul
 
 interface ItemComparisonPanelProps {
   item: Item
-  onEquip?: () => void  // if provided, equip buttons are shown
+  onEquip?: (slot?: EquipSlot) => void  // if provided, equip buttons are shown; slot is set for dual-slot items
 }
 
 export default function ItemComparisonPanel({ item, onEquip }: ItemComparisonPanelProps) {
-  const { equipment, equipItem, equipItemToSlot } = useGameStore()
+  const { equipment, potionBelt } = useGameStore()
 
-  if (item.equipSlot === 'potion') return null
+  if (item.equipSlot === 'potion') {
+    const rc       = RARITY_COLORS[item.rarity]
+    const beltItem = potionBelt[0]?.item ?? null
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2 pb-2">
+          <FlaskConical size={20} className={rc.text} />
+          <div>
+            <p className={`font-bold leading-tight ${rc.text}`}>{item.name}</p>
+            <p className="text-gray-500 text-xs">Potion Belt</p>
+            <p className={`text-xs font-semibold uppercase tracking-widest ${rc.text}`}>{item.rarity}</p>
+          </div>
+        </div>
+        <hr className="border-gray-700 mb-1" />
+        <div className="border border-green-900/60 bg-green-950/20 rounded-lg p-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-green-400/70 mb-1">Effect</p>
+          <p className="text-xs text-gray-300 leading-snug">{item.description}</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          {beltItem
+            ? <p className="text-[10px] text-gray-500">In belt: <span className="text-gray-400">{beltItem.name}</span></p>
+            : <p className="text-amber-400 text-[10px] font-bold uppercase tracking-wide">Belt: Empty</p>
+          }
+          {onEquip && (
+            <button
+              onClick={() => onEquip(undefined)}
+              className="w-full py-2 rounded-lg border border-amber-500 bg-amber-500/10 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-500/20 cursor-pointer transition-colors"
+            >
+              Equip
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const isDualRing   = item.equipSlot === 'ring1' || item.equipSlot === 'ring2'
   const isDualWeapon = item.equipSlot === 'mainHand' || item.equipSlot === 'offHand'
@@ -102,7 +136,7 @@ export default function ItemComparisonPanel({ item, onEquip }: ItemComparisonPan
               <StatRows item={item} equippedItem={equipment[slot]} />
               {onEquip && (
                 <button
-                  onClick={() => { equipItemToSlot(item, slot); onEquip() }}
+                  onClick={() => onEquip(slot)}
                   className="w-full mt-auto py-1.5 rounded border border-amber-500 bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-wider hover:bg-amber-500/20 cursor-pointer transition-colors"
                 >
                   Equip → {SLOT_LABELS[slot]}
@@ -121,7 +155,7 @@ export default function ItemComparisonPanel({ item, onEquip }: ItemComparisonPan
           <StatRows item={item} equippedItem={equipment[slotA]} />
           {onEquip && (
             <button
-              onClick={() => { equipItem(item); onEquip() }}
+              onClick={() => onEquip(undefined)}
               className="w-full py-2 rounded-lg border border-amber-500 bg-amber-500/10 text-amber-300 text-xs font-bold uppercase tracking-wider hover:bg-amber-500/20 cursor-pointer transition-colors"
             >
               Equip

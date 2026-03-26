@@ -182,6 +182,8 @@ interface GameStore {
 
   // Event state
   combatReward: { xp: number; gold: number; item: Item; scrap: number; dust: number; leveledUp: boolean } | null
+  inspectedItem: Item | null
+  setInspectedItem: (item: Item | null) => void
   restEvent: { healedAmount: number } | null
   combatEventKey: number
   combatEventText: string | null
@@ -388,6 +390,8 @@ export const useGameStore = create<GameStore>()(
 
   // ── Event state ─────────────────────────────────────────────────────────────
   combatReward: null,
+  inspectedItem: null,
+  setInspectedItem: (item) => set({ inspectedItem: item }),
   restEvent: null,
   combatEventKey: 0,
   combatEventText: null,
@@ -520,6 +524,7 @@ export const useGameStore = create<GameStore>()(
         lootChoices: [],
         isLootPickerVisible: false,
         combatReward: null,
+        inspectedItem: null,
         restEvent: null,
         marketItems: null,
         damageIndicators: [],
@@ -694,6 +699,7 @@ export const useGameStore = create<GameStore>()(
         playerXp: state.playerXp + state.combatReward.xp,
         currentFloor: state.currentFloor + 1,
         combatReward: null,
+        inspectedItem: null,
         isMapVisible: true,
         currentRunStats: {
           ...state.currentRunStats,
