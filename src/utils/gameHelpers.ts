@@ -57,7 +57,7 @@ export function getEffectiveStats(
   let flatHealPct = 0, flatEliteBonus = 0, flatExecution = 0, flatUndying = 0, flatFrenzy = 0
 
   for (const node of TALENT_TREE) {
-    const rank = talents[node.id] ?? 0
+    const rank = Math.min(talents[node.id] ?? 0, node.maxRank)
     if (rank === 0) continue
     const total = node.effect.valuePerRank * rank
     if (node.effect.type === 'flat') {
