@@ -1,6 +1,6 @@
 // ─── Navigation ───────────────────────────────────────────────────────────────
 
-export type View = 'battle' | 'inventory' | 'hub'
+export type View = 'battle' | 'inventory' | 'hub' | 'blacksmith'
 
 // ─── Equipment ────────────────────────────────────────────────────────────────
 
@@ -104,6 +104,17 @@ export interface Player {
   attackSpeed: number // attacks per second
   gold: number        // per-run; resets on new run / death
 }
+
+// ─── Buildings ────────────────────────────────────────────────────────────────
+
+export type BuildingId = 'apothecary' | 'blacksmith' | 'tavern'
+export type Buildings  = Record<BuildingId, number>
+
+// ─── Slot upgrades ────────────────────────────────────────────────────────────
+
+export type SlotRarityLevel       = 0 | 1 | 2 | 3 | 4
+export type EquipmentSlotName     = Exclude<EquipSlot, 'spell'>
+export type EquipmentSlotUpgrades = Record<EquipmentSlotName, SlotRarityLevel>
 
 // ─── Run tracking ─────────────────────────────────────────────────────────────
 

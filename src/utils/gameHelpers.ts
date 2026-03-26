@@ -1,5 +1,5 @@
-import type { Rarity, Player, EquipSlot, Item } from '../types'
-import { TALENT_TREE } from '../data/constants'
+import type { Rarity, Player, EquipSlot, Item, EquipmentSlotName, EquipmentSlotUpgrades } from '../types'
+import { TALENT_TREE, SLOT_TIER_BONUSES } from '../data/constants'
 
 // ─── Item sell value ──────────────────────────────────────────────────────────
 
@@ -43,7 +43,8 @@ export function computePlayerLevel(totalXp: number): number {
 export function getEffectiveStats(
   player: Player,
   equipment: Record<EquipSlot, Item | null>,
-  talents: Record<string, number> = {}
+  talents: Record<string, number> = {},
+  slotUpgrades?: EquipmentSlotUpgrades
 ) {
   const items = Object.values(equipment).filter(Boolean) as Item[]
 
@@ -76,16 +77,33 @@ export function getEffectiveStats(
     }
   }
 
-  const gearHp          = items.reduce((s, i) => s + (i.stats.hp              ?? 0), 0)
-  const gearDmg         = items.reduce((s, i) => s + (i.stats.damage          ?? 0), 0)
-  const gearSpd         = items.reduce((s, i) => s + (i.stats.attackSpeed     ?? 0), 0)
-  const gearCritRaw     = items.reduce((s, i) => s + (i.stats.critChance      ?? 0), 0)
-  const gearDodgeRaw    = items.reduce((s, i) => s + (i.stats.dodgeChance     ?? 0), 0)
-  const gearLifesteal   = items.reduce((s, i) => s + (i.stats.lifesteal       ?? 0), 0)
-  const gearDr          = items.reduce((s, i) => s + (i.stats.damageReduction ?? 0), 0)
+  let gearHp        = items.reduce((s, i) => s + (i.stats.hp              ?? 0), 0)
+  let gearDmg       = items.reduce((s, i) => s + (i.stats.damage          ?? 0), 0)
+  let gearSpd       = items.reduce((s, i) => s + (i.stats.attackSpeed     ?? 0), 0)
+  let gearCritRaw   = items.reduce((s, i) => s + (i.stats.critChance      ?? 0), 0)
+  let gearDodgeRaw  = items.reduce((s, i) => s + (i.stats.dodgeChance     ?? 0), 0)
+  let gearLifesteal = items.reduce((s, i) => s + (i.stats.lifesteal       ?? 0), 0)
+  let gearDr        = items.reduce((s, i) => s + (i.stats.damageReduction ?? 0), 0)
+
+  // Apply slot upgrade bonuses (stacks with gear and talent %)
+  if (slotUpgrades) {
+    for (const [slot, level] of Object.entries(slotUpgrades) as [EquipmentSlotName, number][]) {
+      if (level === 0) continue
+      const bonus = SLOT_TIER_BONUSES[slot]?.[level as 1 | 2 | 3 | 4]
+      if (!bonus) continue
+      gearHp        += bonus.hp              ?? 0
+      gearDmg       += bonus.damage          ?? 0
+      gearSpd       += bonus.attackSpeed     ?? 0
+      gearCritRaw   += bonus.critChance      ?? 0
+      gearDodgeRaw  += bonus.dodgeChance     ?? 0
+      gearLifesteal += bonus.lifesteal       ?? 0
+      gearDr        += bonus.damageReduction ?? 0
+    }
+  }
+
   // Safety: if values were accidentally stored as integers (e.g. 10 instead of 0.10), normalise
-  const gearCrit        = gearCritRaw  > 1 ? gearCritRaw  / 100 : gearCritRaw
-  const gearDodge       = gearDodgeRaw > 1 ? gearDodgeRaw / 100 : gearDodgeRaw
+  const gearCrit  = gearCritRaw  > 1 ? gearCritRaw  / 100 : gearCritRaw
+  const gearDodge = gearDodgeRaw > 1 ? gearDodgeRaw / 100 : gearDodgeRaw
 
   return {
     maxHp:                Math.floor((player.maxHp      + flatHp  + gearHp)  * (1 + pctHp)),

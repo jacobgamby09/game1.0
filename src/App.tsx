@@ -3,12 +3,14 @@ import NavBar from './components/NavBar'
 import CombatView from './components/CombatView'
 import InventoryView from './components/InventoryView'
 import HubView from './components/HubView'
+import BlacksmithView from './components/BlacksmithView'
 import RunSummaryView from './components/RunSummaryView'
 
 const views = {
-  battle:    <CombatView />,
-  inventory: <InventoryView />,
-  hub:       <HubView />,
+  battle:     <CombatView />,
+  inventory:  <InventoryView />,
+  hub:        <HubView />,
+  blacksmith: <BlacksmithView />,
 }
 
 export default function App() {

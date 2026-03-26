@@ -5,8 +5,10 @@ import type {
   View, EquipSlot, ItemSlot, Rarity, TalentBranch, MobTier, MobTrait, TalentNode,
   DamageIndicator, ItemAbility, ConsumableEffect, ActiveBuff, Item,
   Player, RunStats, RunSummary, Mob, MapNode,
+  BuildingId, Buildings,
+  SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
 } from '../types'
-import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS } from '../data/constants'
+import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS } from '../data/constants'
 import { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot } from '../utils/gameHelpers'
 import { spawnMob, generateMarketItems, randomDrop, randomThreeDrops, buildMap } from '../utils/storeHelpers'
 
@@ -16,8 +18,10 @@ export type {
   View, EquipSlot, ItemSlot, Rarity, TalentBranch, MobTier, MobTrait, TalentNode,
   DamageIndicator, ItemAbility, ConsumableEffect, ActiveBuff, Item,
   Player, RunStats, RunSummary, Mob, MapNode,
+  BuildingId, Buildings,
+  SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
 }
-export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS }
+export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS }
 export { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot }
 
 // ─── Internal constants ───────────────────────────────────────────────────────
@@ -199,8 +203,12 @@ interface GameStore {
   talents:   Record<string, number>
   ironScrap: number
   voidDust:  number
-  upgradeTalent: (nodeId: string) => void
-  hardResetGame: () => void
+  buildings:    Buildings
+  slotUpgrades: EquipmentSlotUpgrades
+  upgradeTalent:         (nodeId: string) => void
+  constructBuilding:     (id: BuildingId) => void
+  upgradeEquipmentSlot:  (slotName: EquipmentSlotName) => void
+  hardResetGame:         () => void
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -222,7 +230,7 @@ export const useGameStore = create<GameStore>()(
   // ── generateMap ─────────────────────────────────────────────────────────────
   generateMap: () =>
     set((state) => {
-      const effMaxHp = getEffectiveStats({ ...DEFAULT_PLAYER }, { ...EMPTY_EQUIPMENT }, state.talents).maxHp
+      const effMaxHp = getEffectiveStats({ ...DEFAULT_PLAYER }, { ...EMPTY_EQUIPMENT }, state.talents, state.slotUpgrades).maxHp
       return {
         act1Map: buildMap(),
         currentFloor: 1,
@@ -279,7 +287,7 @@ export const useGameStore = create<GameStore>()(
       }
 
       if (node.type === 'rest') {
-        const eff = getEffectiveStats(state.player, state.equipment, state.talents)
+        const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
         const healAmount = Math.floor(eff.maxHp * 0.30)
         const newHp = Math.min(eff.maxHp, state.player.currentHp + healAmount)
         const actualHealed = newHp - state.player.currentHp
@@ -386,7 +394,7 @@ export const useGameStore = create<GameStore>()(
       if (!state.currentMob) return state
 
       const now = Date.now()
-      const eff = getEffectiveStats(state.player, state.equipment, state.talents)
+      const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
       const dmg = Math.floor(eff.damage * 1.5)
       const mob = { ...state.currentMob }
       mob.currentHp = Math.max(0, mob.currentHp - dmg)
@@ -452,7 +460,7 @@ export const useGameStore = create<GameStore>()(
   // ── resetRun ────────────────────────────────────────────────────────────────
   resetRun: () =>
     set((state) => {
-      const effMaxHp = getEffectiveStats({ ...DEFAULT_PLAYER }, { ...EMPTY_EQUIPMENT }, state.talents).maxHp
+      const effMaxHp = getEffectiveStats({ ...DEFAULT_PLAYER }, { ...EMPTY_EQUIPMENT }, state.talents, state.slotUpgrades).maxHp
       return {
         totalXp:   state.totalXp   + state.playerXp,
         ironScrap: state.ironScrap + state.currentRunStats.ironScrapGathered,
@@ -577,7 +585,7 @@ export const useGameStore = create<GameStore>()(
       if (!effect) return { potionBelt: newBelt }
 
       if (effect.type === 'heal') {
-        const eff = getEffectiveStats(state.player, state.equipment, state.talents)
+        const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
         const healAmt = Math.floor(eff.maxHp * (effect.value ?? 0.3))
         return {
           potionBelt: newBelt,
@@ -622,7 +630,7 @@ export const useGameStore = create<GameStore>()(
   collectCombatReward: () =>
     set((state) => {
       if (!state.combatReward) return state
-      const eff = getEffectiveStats(state.player, state.equipment, state.talents)
+      const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
       const healAmount = Math.floor(eff.maxHp * eff.postCombatHealPct)
       const newHp = healAmount > 0
         ? Math.min(eff.maxHp, state.player.currentHp + healAmount)
@@ -674,6 +682,8 @@ export const useGameStore = create<GameStore>()(
   talents:   {},
   ironScrap: 0,
   voidDust:  0,
+  buildings:    { apothecary: 0, blacksmith: 0, tavern: 0 },
+  slotUpgrades: { head: 0, chest: 0, legs: 0, mainHand: 0, offHand: 0, amulet: 0, ring1: 0, ring2: 0 },
 
   upgradeTalent: (nodeId) =>
     set((state) => {
@@ -685,6 +695,27 @@ export const useGameStore = create<GameStore>()(
       if (prereq && (state.talents[prereq.id] ?? 0) < prereq.maxRank) return state
       if (computeAvailablePoints(state.totalXp, state.talents) < node.costPerRank) return state
       return { talents: { ...state.talents, [nodeId]: currentRank + 1 } }
+    }),
+
+  constructBuilding: (id) =>
+    set((state) => {
+      if (state.ironScrap < 10) return state
+      return {
+        ironScrap: state.ironScrap - 10,
+        buildings: { ...state.buildings, [id]: (state.buildings[id] ?? 0) + 1 },
+      }
+    }),
+
+  upgradeEquipmentSlot: (slotName) =>
+    set((state) => {
+      const currentLevel = state.slotUpgrades[slotName]
+      if (currentLevel >= 4) return state
+      const cost = SLOT_UPGRADE_COSTS[(currentLevel + 1) as 1 | 2 | 3 | 4]
+      if (state.ironScrap < cost) return state
+      return {
+        ironScrap:    state.ironScrap - cost,
+        slotUpgrades: { ...state.slotUpgrades, [slotName]: currentLevel + 1 },
+      }
     }),
 
   // ── tickCombat ──────────────────────────────────────────────────────────────
@@ -710,7 +741,7 @@ export const useGameStore = create<GameStore>()(
       let mobAttackProgress = state.mobAttackProgress
       const player = { ...state.player }
       const mob = { ...state.currentMob }
-      const eff = getEffectiveStats(state.player, state.equipment, state.talents)
+      const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
 
       // ── Boss phase (Void Warden) ──────────────────────────────────────────────
       let bossPhase = state.bossPhase
@@ -893,10 +924,12 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'tactical-roguelite-storage',
       partialize: (state) => ({
-        totalXp:   state.totalXp,
-        talents:   state.talents,
-        ironScrap: state.ironScrap,
-        voidDust:  state.voidDust,
+        totalXp:      state.totalXp,
+        talents:      state.talents,
+        ironScrap:    state.ironScrap,
+        voidDust:     state.voidDust,
+        buildings:    state.buildings,
+        slotUpgrades: state.slotUpgrades,
       }),
     }
   )

@@ -63,8 +63,8 @@ function NodeIcon({ type, size = 16 }: { type: MapNode['type']; size?: number })
 // ─── PlayerStatsBar ───────────────────────────────────────────────────────────
 
 function PlayerStatsBar() {
-  const { player, equipment, playerXp, talents } = useGameStore()
-  const eff = getEffectiveStats(player, equipment, talents)
+  const { player, equipment, playerXp, talents, slotUpgrades } = useGameStore()
+  const eff = getEffectiveStats(player, equipment, talents, slotUpgrades)
   return (
     <div className="w-full max-w-sm bg-gray-900/80 border border-gray-800 rounded-xl px-4 py-2 flex items-center gap-5 text-xs font-semibold">
       <div className="flex items-center gap-1.5 text-green-400">
@@ -562,6 +562,7 @@ function CombatArena() {
     runSummary,
     bossPhase,
     bossPhaseTimerMs,
+    slotUpgrades,
   } = useGameStore()
 
   if (!currentMob) return null
@@ -576,7 +577,7 @@ function CombatArena() {
     return () => clearTimeout(t)
   }, [combatEventKey])
 
-  const eff = getEffectiveStats(player, equipment, talents)
+  const eff = getEffectiveStats(player, equipment, talents, slotUpgrades)
   const displayPlayer = { ...player, maxHp: eff.maxHp, baseDamage: eff.damage, attackSpeed: eff.attackSpeed }
 
   useEffect(() => {

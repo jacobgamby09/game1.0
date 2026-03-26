@@ -1,4 +1,4 @@
-import type { Rarity, TalentNode } from '../types'
+import type { Rarity, TalentNode, SlotRarityLevel, EquipmentSlotName } from '../types'
 import {
   ShieldPlus, Shield, HeartPulse, Sparkles,
   Axe, Crosshair, Swords, Skull,
@@ -12,6 +12,36 @@ export const RARITY_COLORS: Record<Rarity, { text: string; border: string; glow:
   uncommon: { text: 'text-teal-400',   border: 'border-teal-500',   glow: 'ring-1 ring-teal-500/40' },
   rare:     { text: 'text-blue-400',   border: 'border-blue-500',   glow: 'ring-1 ring-blue-500/40' },
   epic:     { text: 'text-purple-400', border: 'border-purple-500', glow: 'ring-1 ring-purple-500/40' },
+}
+
+// ─── Slot upgrade config ──────────────────────────────────────────────────────
+
+export const SLOT_TIER_COLORS: Record<SlotRarityLevel, { border: string; text: string; label: string; dot: string }> = {
+  0: { border: 'border-gray-700',    text: 'text-gray-500',    label: 'Base',     dot: '' },
+  1: { border: 'border-gray-500',    text: 'text-gray-300',    label: 'Common',   dot: 'bg-stone-500' },
+  2: { border: 'border-emerald-500', text: 'text-emerald-400', label: 'Uncommon', dot: 'bg-emerald-500 shadow-sm shadow-emerald-500' },
+  3: { border: 'border-blue-500',    text: 'text-blue-400',    label: 'Rare',     dot: 'bg-blue-500 shadow-sm shadow-blue-500' },
+  4: { border: 'border-purple-600',  text: 'text-purple-400',  label: 'Epic',     dot: 'bg-purple-600 shadow-sm shadow-purple-600' },
+}
+
+export const SLOT_UPGRADE_COSTS: Record<1 | 2 | 3 | 4, number> = {
+  1: 10, 2: 25, 3: 75, 4: 200,
+}
+
+type SlotBonus = {
+  hp?: number; damage?: number; attackSpeed?: number
+  critChance?: number; dodgeChance?: number; lifesteal?: number; damageReduction?: number
+}
+
+export const SLOT_TIER_BONUSES: Record<EquipmentSlotName, Record<1 | 2 | 3 | 4, SlotBonus>> = {
+  head:     { 1: { hp: 5 }, 2: { hp: 12 }, 3: { hp: 22 }, 4: { hp: 35, dodgeChance: 0.03 } },
+  chest:    { 1: { hp: 5, damageReduction: 1 }, 2: { hp: 12, damageReduction: 2 }, 3: { hp: 22, damageReduction: 3 }, 4: { hp: 35, damageReduction: 5 } },
+  legs:     { 1: { dodgeChance: 0.01 }, 2: { dodgeChance: 0.02 }, 3: { dodgeChance: 0.03 }, 4: { dodgeChance: 0.05 } },
+  mainHand: { 1: { damage: 2 }, 2: { damage: 5 }, 3: { damage: 9 }, 4: { damage: 14, critChance: 0.05 } },
+  offHand:  { 1: { damageReduction: 1 }, 2: { damageReduction: 2 }, 3: { damageReduction: 4 }, 4: { damageReduction: 6, hp: 5 } },
+  amulet:   { 1: { critChance: 0.01 }, 2: { critChance: 0.02 }, 3: { critChance: 0.03 }, 4: { critChance: 0.05, damage: 2 } },
+  ring1:    { 1: { attackSpeed: 0.03 }, 2: { attackSpeed: 0.06 }, 3: { attackSpeed: 0.10 }, 4: { attackSpeed: 0.14, damage: 3 } },
+  ring2:    { 1: { lifesteal: 2 }, 2: { lifesteal: 5 }, 3: { lifesteal: 8 }, 4: { lifesteal: 12, hp: 5 } },
 }
 
 // ─── Talent tree ──────────────────────────────────────────────────────────────
