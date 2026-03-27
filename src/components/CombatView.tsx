@@ -302,27 +302,38 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
       {isKillingBlow && (
         <div className="animate-killing-blow absolute inset-0 rounded-xl bg-red-500/20 pointer-events-none z-20" />
       )}
-      <div className="flex flex-col gap-1">
-        {tier === 'elite' && (
-          <span className="self-start text-[10px] font-bold tracking-widest uppercase
-                           text-red-400 bg-red-900/40 border border-red-700/50 px-2 py-0.5 rounded">
-            ⚡ ELITE
-          </span>
+      <div className="flex items-start gap-3">
+        {combatant.portraitUrl && (
+          <img
+            src={combatant.portraitUrl}
+            alt={combatant.name}
+            className={`w-16 h-16 rounded-md object-cover border-2 flex-shrink-0 ${
+              tier === 'boss'  ? 'border-fuchsia-600 shadow-sm shadow-fuchsia-600/50' :
+              tier === 'elite' ? 'border-red-500 shadow-sm shadow-red-500/50' :
+                                 'border-gray-600'
+            }`}
+          />
         )}
-        {tier === 'boss' && (
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">BOSS</p>
-        )}
-        <div className="flex items-center gap-2">
-          <span className="text-amber-400">{icon}</span>
-          <h2 className={`font-bold tracking-widest uppercase ${
-            tier === 'boss'
-              ? 'text-2xl text-purple-300 drop-shadow-[0_0_12px_rgb(168_85_247)]'
-              : tier === 'elite'
-              ? 'text-lg text-red-400 drop-shadow-[0_0_8px_rgb(239_68_68)]'
-              : 'text-lg text-white'
-          }`}>
-            {combatant.name}
-          </h2>
+        <div className="flex flex-col gap-1">
+          {tier === 'elite' && (
+            <span className="self-start text-[10px] font-bold tracking-widest uppercase
+                             text-red-400 bg-red-900/40 border border-red-700/50 px-2 py-0.5 rounded">
+              ⚡ ELITE
+            </span>
+          )}
+          {tier === 'boss' && (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">BOSS</p>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-amber-400">{icon}</span>
+            <h2 className={`font-bold tracking-widest uppercase ${
+              tier === 'boss'  ? 'text-2xl text-purple-300 drop-shadow-[0_0_12px_rgb(168_85_247)]' :
+              tier === 'elite' ? 'text-lg text-red-400 drop-shadow-[0_0_8px_rgb(239_68_68)]' :
+                                 'text-lg text-white'
+            }`}>
+              {combatant.name}
+            </h2>
+          </div>
         </div>
       </div>
 
@@ -691,28 +702,41 @@ function CombatArena() {
 
           {/* Target Preview */}
           <div className="w-full max-w-xs bg-gray-900/80 border border-gray-700 rounded-xl p-4 flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              {currentMob.tier === 'elite' && (
-                <span className="self-start text-[10px] font-bold tracking-widest uppercase
-                                 text-red-400 bg-red-900/40 border border-red-700/50 px-2 py-0.5 rounded">
-                  ⚡ ELITE
-                </span>
+            <div className="flex items-start gap-3">
+              {currentMob.portraitUrl && (
+                <img
+                  src={currentMob.portraitUrl}
+                  alt={currentMob.name}
+                  className={`w-20 h-20 rounded-md object-cover border-2 flex-shrink-0 ${
+                    currentMob.tier === 'boss'  ? 'border-fuchsia-600 shadow-sm shadow-fuchsia-600/50' :
+                    currentMob.tier === 'elite' ? 'border-red-500 shadow-sm shadow-red-500/50' :
+                                                  'border-gray-600'
+                  }`}
+                />
               )}
-              {currentMob.tier === 'boss' && (
-                <span className="self-start flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase
-                                 text-purple-300 bg-purple-900/40 border border-purple-600/50 px-2 py-0.5 rounded animate-pulse">
-                  <Crown size={10} /> BOSS
-                </span>
-              )}
-              <p className={`font-bold tracking-widest uppercase ${
-                currentMob.tier === 'boss'
-                  ? 'text-xl text-purple-300 drop-shadow-[0_0_12px_rgb(168_85_247)]'
-                  : currentMob.tier === 'elite'
-                  ? 'text-lg text-red-400 drop-shadow-[0_0_8px_rgb(239_68_68)]'
-                  : 'text-lg text-white'
-              }`}>
-                {currentMob.name}
-              </p>
+              <div className="flex flex-col gap-1">
+                {currentMob.tier === 'elite' && (
+                  <span className="self-start text-[10px] font-bold tracking-widest uppercase
+                                   text-red-400 bg-red-900/40 border border-red-700/50 px-2 py-0.5 rounded">
+                    ⚡ ELITE
+                  </span>
+                )}
+                {currentMob.tier === 'boss' && (
+                  <span className="self-start flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase
+                                   text-purple-300 bg-purple-900/40 border border-purple-600/50 px-2 py-0.5 rounded animate-pulse">
+                    <Crown size={10} /> BOSS
+                  </span>
+                )}
+                <p className={`font-bold tracking-widest uppercase ${
+                  currentMob.tier === 'boss'
+                    ? 'text-xl text-purple-300 drop-shadow-[0_0_12px_rgb(168_85_247)]'
+                    : currentMob.tier === 'elite'
+                    ? 'text-lg text-red-400 drop-shadow-[0_0_8px_rgb(239_68_68)]'
+                    : 'text-lg text-white'
+                }`}>
+                  {currentMob.name}
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-4 text-xs text-gray-400">

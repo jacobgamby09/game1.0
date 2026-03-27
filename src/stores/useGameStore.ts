@@ -69,6 +69,7 @@ const DEFAULT_PLAYER: Player = {
   baseDamage: 12,
   attackSpeed: 0.45,
   gold: 0,
+  portraitUrl: '/portraits/fighter.webp',
 }
 
 const EMPTY_EQUIPMENT: Record<EquipSlot, Item | null> = {

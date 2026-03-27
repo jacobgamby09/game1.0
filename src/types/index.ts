@@ -103,6 +103,7 @@ export interface Player {
   baseDamage: number
   attackSpeed: number // attacks per second
   gold: number        // per-run; resets on new run / death
+  portraitUrl?: string
 }
 
 // ─── Buildings ────────────────────────────────────────────────────────────────
@@ -151,6 +152,7 @@ export interface Mob {
   attackSpeed: number // attacks per second
   tier: MobTier
   traits?: MobTrait[]
+  portraitUrl?: string
 }
 
 // ─── Map ──────────────────────────────────────────────────────────────────────

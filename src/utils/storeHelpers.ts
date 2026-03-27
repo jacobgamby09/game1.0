@@ -3,16 +3,17 @@ import { pickItemForFloor } from './itemLibrary'
 
 // ─── Bestiary ─────────────────────────────────────────────────────────────────
 
-type MobBase = Omit<Mob, 'tier' | 'currentHp'>
+type MobBase  = Omit<Mob, 'tier' | 'currentHp'>
+type MobEntry = MobBase & { elitePortraitUrl?: string }
 
-const BESTIARY: MobBase[] = [
-  { name: 'Goblin Rogue',  maxHp: 20,  baseDamage: 3,  attackSpeed: 0.30 },
-  { name: 'Undead Brute',  maxHp: 45,  baseDamage: 9,  attackSpeed: 0.90 },
-  { name: 'Orc Warrior',   maxHp: 40,  baseDamage: 7,  attackSpeed: 0.55 },
+const BESTIARY: MobEntry[] = [
+  { name: 'Goblin Rogue', maxHp: 20, baseDamage: 3, attackSpeed: 0.30, portraitUrl: '/portraits/goblin-rogue.webp', elitePortraitUrl: '/portraits/elite-goblin-warrior.webp' },
+  { name: 'Undead Brute', maxHp: 45, baseDamage: 9, attackSpeed: 0.90, portraitUrl: '/portraits/undead-brute.webp', elitePortraitUrl: '/portraits/elite-undead-brute.webp' },
+  { name: 'Orc Warrior',  maxHp: 40, baseDamage: 7, attackSpeed: 0.55, portraitUrl: '/portraits/orc-warrior.webp' },
 ]
 
 const VOID_WARDEN_BASE: MobBase = {
-  name: 'The Void Warden', maxHp: 200, baseDamage: 15, attackSpeed: 0.65,
+  name: 'The Void Warden', maxHp: 200, baseDamage: 15, attackSpeed: 0.65, portraitUrl: '/portraits/void-warden.webp',
 }
 
 // ─── Elite Traits ─────────────────────────────────────────────────────────────
@@ -63,6 +64,9 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
     currentHp:   scaledHp,
     baseDamage:  scaledDmg,
     attackSpeed: base.attackSpeed,
+    portraitUrl: tier === 'elite'
+      ? ((base as MobEntry).elitePortraitUrl ?? base.portraitUrl)
+      : base.portraitUrl,
     tier,
     traits: tier === 'elite'
       ? [ELITE_TRAITS[Math.floor(Math.random() * ELITE_TRAITS.length)]]
