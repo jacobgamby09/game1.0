@@ -1,6 +1,6 @@
 // ─── Navigation ───────────────────────────────────────────────────────────────
 
-export type View = 'battle' | 'inventory' | 'hub' | 'blacksmith' | 'talents'
+export type View = 'battle' | 'inventory' | 'hub' | 'blacksmith' | 'apothecary' | 'talents'
 
 // ─── Boons ────────────────────────────────────────────────────────────────────
 

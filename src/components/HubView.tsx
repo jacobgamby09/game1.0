@@ -112,7 +112,7 @@ export default function HubView() {
                 <button
                   onClick={() => {
                     if (b.id === 'blacksmith') setActiveView('blacksmith')
-                    else console.log('Enter', b.id)
+                    else if (b.id === 'apothecary') setActiveView('apothecary')
                   }}
                   className="w-full py-2 rounded-lg border border-amber-500 bg-amber-500/10
                              text-amber-300 text-xs font-bold uppercase tracking-wider

@@ -15,8 +15,6 @@ export function getItemSellValue(rarity: Rarity): number {
 export function getTargetEquipSlot(item: Item, equipment: Record<EquipSlot, Item | null>): EquipSlot {
   const slot = item.equipSlot
   if (slot === 'mainHand') {
-    if (!equipment.mainHand) return 'mainHand'
-    if (!equipment.offHand)  return 'offHand'
     return 'mainHand'
   }
   if (slot === 'offHand') {

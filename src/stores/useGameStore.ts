@@ -86,7 +86,7 @@ const EMPTY_EQUIPMENT: Record<EquipSlot, Item | null> = {
 function calcMetaDrops(tier: MobTier): { scrapDrop: number; dustDrop: number } {
   if (tier === 'boss')  return { scrapDrop: 3, dustDrop: 3 }
   if (tier === 'elite') return { scrapDrop: 1, dustDrop: 1 }
-  return { scrapDrop: Math.random() < 0.30 ? 1 : 0, dustDrop: 0 }
+  return { scrapDrop: Math.random() < 0.40 ? 1 : 0, dustDrop: 0 }
 }
 
 // ─── Mob-death patch helper ───────────────────────────────────────────────────
@@ -94,7 +94,7 @@ function calcMetaDrops(tier: MobTier): { scrapDrop: number; dustDrop: number } {
 // Calling it in one place ensures usePowerStrike, useEquippedSpell, and
 // tickCombat all produce the same victory transition.
 
-function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob | null; currentFloor: number; activeBuffs: ActiveBuff[]; playerXp: number; activeBoon: string | null }) {
+function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob | null; currentFloor: number; activeBuffs: ActiveBuff[]; playerXp: number; activeBoon: string | null; buildings: Buildings }) {
   const act1Map = state.act1Map.map((floor) =>
     floor.map((n) =>
       n.id === state.currentMapNodeId ? { ...n, isCompleted: true } : n
@@ -104,7 +104,7 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
   const hasMidas = state.activeBuffs.some(b => b.type === 'midas')
   const goldAmount = (goldBase + state.currentFloor * 2)
     * (state.currentMob?.tier === 'elite' ? 2 : 1)
-    * (hasMidas ? 3 : 1)
+    * (hasMidas ? (state.buildings.apothecary >= 5 ? 4 : 3) : 1)
   const { scrapDrop, dustDrop } = calcMetaDrops(state.currentMob?.tier ?? 'normal')
   const scholarMult = state.activeBoon === 'scholar' ? 1.5 : 1
   const pendingXp    = Math.round(calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss') * scholarMult)
@@ -251,6 +251,7 @@ interface GameStore {
   slotUpgrades: EquipmentSlotUpgrades
   upgradeTalent:         (nodeId: string) => void
   constructBuilding:     (id: BuildingId) => void
+  upgradeBuilding:       (id: BuildingId) => void
   upgradeEquipmentSlot:  (slotName: EquipmentSlotName) => void
   hardResetGame:         () => void
 }
@@ -533,8 +534,8 @@ export const useGameStore = create<GameStore>()(
         totalXp:   0,
         talents:   {},
         playerXp:  0,
-        ironScrap: state.ironScrap + state.currentRunStats.ironScrapGathered,
-        voidDust:  state.voidDust  + state.currentRunStats.voidDustGathered,
+        ironScrap: state.ironScrap,
+        voidDust:  state.voidDust,
         act1Map: [],
         currentFloor: 1,
         currentMapNodeId: null,
@@ -655,7 +656,8 @@ export const useGameStore = create<GameStore>()(
         }
         return state // can't stack, stays in backpack
       }
-      if (state.potionBelt.length >= MAX_POTION_SLOTS) return state // belt full
+      const maxSlots = MAX_POTION_SLOTS + (state.buildings.apothecary >= 6 ? 1 : 0)
+      if (state.potionBelt.length >= maxSlots) return state // belt full
       return {
         potionBelt: [...state.potionBelt, { item, count: 1 }],
         backpack: state.backpack.filter(b => b.id !== item.id),
@@ -675,7 +677,8 @@ export const useGameStore = create<GameStore>()(
 
       if (effect.type === 'heal') {
         const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
-        const healAmt = Math.floor(eff.maxHp * (effect.value ?? 0.3))
+        const healMult = (effect.value ?? 0.3) + (state.buildings.apothecary >= 1 ? 0.1 : 0)
+        const healAmt = Math.floor(eff.maxHp * healMult)
         return {
           potionBelt: newBelt,
           player: { ...state.player, currentHp: Math.min(eff.maxHp, state.player.currentHp + healAmt) },
@@ -686,6 +689,9 @@ export const useGameStore = create<GameStore>()(
       if (effect.durationMS !== undefined) buff.expiresAt = Date.now() + effect.durationMS
       if (effect.charges !== undefined) buff.charges = effect.charges
       if (effect.value !== undefined) buff.value = effect.value
+      if (effect.type === 'freezeEnemy'   && state.buildings.apothecary >= 2 && buff.expiresAt !== undefined) buff.expiresAt += 1000
+      if (effect.type === 'berserk'       && state.buildings.apothecary >= 3 && buff.expiresAt !== undefined) buff.expiresAt += 1000
+      if (effect.type === 'lifestealBuff' && state.buildings.apothecary >= 4 && buff.charges   !== undefined) buff.charges   += 1
       return {
         potionBelt: newBelt,
         activeBuffs: [...state.activeBuffs, buff],
@@ -728,6 +734,8 @@ export const useGameStore = create<GameStore>()(
         player: { ...state.player, currentHp: newHp, gold: state.player.gold + state.combatReward.gold },
         backpack: [...state.backpack, state.combatReward.item],
         playerXp: state.playerXp + state.combatReward.xp,
+        ironScrap: state.ironScrap + state.combatReward.scrap,
+        voidDust:  state.voidDust  + state.combatReward.dust,
         currentFloor: state.currentFloor + 1,
         combatReward: null,
         inspectedItem: null,
@@ -801,6 +809,19 @@ export const useGameStore = create<GameStore>()(
       return {
         ironScrap: state.ironScrap - 10,
         buildings: { ...state.buildings, [id]: (state.buildings[id] ?? 0) + 1 },
+      }
+    }),
+
+  upgradeBuilding: (id) =>
+    set((state) => {
+      const currentLevel = state.buildings[id]
+      const maxLevel = id === 'apothecary' ? 8 : 4
+      if (currentLevel >= maxLevel) return state
+      const cost = (currentLevel + 1) * 15
+      if (state.ironScrap < cost) return state
+      return {
+        ironScrap: state.ironScrap - cost,
+        buildings: { ...state.buildings, [id]: currentLevel + 1 },
       }
     }),
 

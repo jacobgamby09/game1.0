@@ -49,8 +49,8 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Phantom Treads',        equipSlot: 'legs',     rarity: 'epic',     description: 'You move before your mind finishes thinking.',                      stats: { dodgeChance: 0.12, critChance: 0.03 } },
 
   // ── amulet ──────────────────────────────────────────────────────────────────
-  { name: 'Brass Ring',            equipSlot: 'amulet',   rarity: 'common',   description: 'A plain brass ring with a faint martial enchantment.',              stats: { damage: 2 } },
-  { name: 'Ring of Vigor',         equipSlot: 'amulet',   rarity: 'uncommon', description: 'Pulses gently against the skin, lending vitality.',                 stats: { hp: 12, lifesteal: 3 } },
+  { name: 'Brass Pendant',         equipSlot: 'amulet',   rarity: 'common',   description: 'A plain brass pendant with a faint martial enchantment.',          stats: { damage: 2 } },
+  { name: 'Amulet of Vigor',       equipSlot: 'amulet',   rarity: 'uncommon', description: 'Pulses gently against the skin, lending vitality.',                 stats: { hp: 12, lifesteal: 3 } },
   { name: 'Amulet of the Swift',   equipSlot: 'amulet',   rarity: 'rare',     description: 'Cool jade carved into a serpent devouring its tail.',               stats: { attackSpeed: 0.2, dodgeChance: 0.06 } },
   { name: 'Eye of the Void',       equipSlot: 'amulet',   rarity: 'epic',     description: 'A gem that stares back — and teaches you to strike first.',         stats: { critChance: 0.06, lifesteal: 6, damage: 4 } },
 

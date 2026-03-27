@@ -90,11 +90,10 @@ export default function ItemComparisonPanel({ item, onEquip }: ItemComparisonPan
     )
   }
 
-  const isDualRing   = item.equipSlot === 'ring1' || item.equipSlot === 'ring2'
-  const isDualWeapon = item.equipSlot === 'mainHand' || item.equipSlot === 'offHand'
-  const isDual       = isDualRing || isDualWeapon
-  const slotA: EquipSlot = isDualRing ? 'ring1' : isDualWeapon ? 'mainHand' : item.equipSlot as EquipSlot
-  const slotB: EquipSlot = isDualRing ? 'ring2' : 'offHand'
+  const isDualRing       = item.equipSlot === 'ring1' || item.equipSlot === 'ring2'
+  const isDual           = isDualRing
+  const slotA: EquipSlot = isDualRing ? 'ring1' : item.equipSlot as EquipSlot
+  const slotB: EquipSlot = 'ring2'  // only consumed when isDual (rings)
 
   const rc   = RARITY_COLORS[item.rarity]
   const Icon = SLOT_ICONS[item.equipSlot as EquipSlot] ?? FlaskConical
@@ -133,6 +132,13 @@ export default function ItemComparisonPanel({ item, onEquip }: ItemComparisonPan
                 <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Vs. {SLOT_LABELS[slot]}</p>
                 <p className="text-[10px] text-gray-400 truncate">{equipment[slot]?.name ?? '— Empty —'}</p>
               </div>
+              {item.name === equipment[slot]?.name && (
+                <span className="self-start text-[10px] font-bold uppercase tracking-widest
+                                 text-violet-300 bg-violet-900/40 border border-violet-600/50
+                                 px-2 py-0.5 rounded">
+                  Already Equipped
+                </span>
+              )}
               <StatRows item={item} equippedItem={equipment[slot]} />
               {onEquip && (
                 <button
@@ -151,6 +157,13 @@ export default function ItemComparisonPanel({ item, onEquip }: ItemComparisonPan
             <p className="text-[10px] text-gray-500">
               Equipped: <span className="text-gray-400">{equipment[slotA]!.name}</span>
             </p>
+          )}
+          {item.name === equipment[slotA]?.name && (
+            <span className="self-start text-[10px] font-bold uppercase tracking-widest
+                             text-violet-300 bg-violet-900/40 border border-violet-600/50
+                             px-2 py-0.5 rounded">
+              Already Equipped
+            </span>
           )}
           <StatRows item={item} equippedItem={equipment[slotA]} />
           {onEquip && (

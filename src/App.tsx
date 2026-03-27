@@ -4,15 +4,17 @@ import CombatView from './components/CombatView'
 import InventoryView from './components/InventoryView'
 import HubView from './components/HubView'
 import BlacksmithView from './components/BlacksmithView'
+import ApothecaryView from './components/ApothecaryView'
 import TalentTreeView from './components/TalentTreeView'
 import RunSummaryView from './components/RunSummaryView'
 
 const views = {
-  battle:     <CombatView />,
-  inventory:  <InventoryView />,
-  hub:        <HubView />,
-  blacksmith: <BlacksmithView />,
-  talents:    <TalentTreeView />,
+  battle:      <CombatView />,
+  inventory:   <InventoryView />,
+  hub:         <HubView />,
+  blacksmith:  <BlacksmithView />,
+  apothecary:  <ApothecaryView />,
+  talents:     <TalentTreeView />,
 }
 
 export default function App() {
