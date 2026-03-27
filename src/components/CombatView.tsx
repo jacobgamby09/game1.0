@@ -277,7 +277,7 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
   const atkFill = atkBarColor === 'amber' ? 'bg-amber-400' : 'bg-orange-500'
 
   return (
-    <div className="relative bg-gray-900 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
+    <div className="relative bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-4">
 
       {/* Floating damage numbers */}
       {damageIndicators?.map((d) => (
@@ -302,38 +302,25 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
       {isKillingBlow && (
         <div className="animate-killing-blow absolute inset-0 rounded-xl bg-red-500/20 pointer-events-none z-20" />
       )}
-      <div className="flex items-start gap-3">
-        {combatant.portraitUrl && (
-          <img
-            src={combatant.portraitUrl}
-            alt={combatant.name}
-            className={`w-16 h-16 rounded-md object-cover border-2 flex-shrink-0 ${
-              tier === 'boss'  ? 'border-fuchsia-600 shadow-sm shadow-fuchsia-600/50' :
-              tier === 'elite' ? 'border-red-500 shadow-sm shadow-red-500/50' :
-                                 'border-gray-600'
-            }`}
-          />
+      <div className="flex flex-col gap-1">
+        {tier === 'elite' && (
+          <span className="self-start text-[10px] font-bold tracking-widest uppercase
+                           text-red-400 bg-red-900/40 border border-red-700/50 px-2 py-0.5 rounded">
+            ⚡ ELITE
+          </span>
         )}
-        <div className="flex flex-col gap-1">
-          {tier === 'elite' && (
-            <span className="self-start text-[10px] font-bold tracking-widest uppercase
-                             text-red-400 bg-red-900/40 border border-red-700/50 px-2 py-0.5 rounded">
-              ⚡ ELITE
-            </span>
-          )}
-          {tier === 'boss' && (
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">BOSS</p>
-          )}
-          <div className="flex items-center gap-2">
-            <span className="text-amber-400">{icon}</span>
-            <h2 className={`font-bold tracking-widest uppercase ${
-              tier === 'boss'  ? 'text-2xl text-purple-300 drop-shadow-[0_0_12px_rgb(168_85_247)]' :
-              tier === 'elite' ? 'text-lg text-red-400 drop-shadow-[0_0_8px_rgb(239_68_68)]' :
-                                 'text-lg text-white'
-            }`}>
-              {combatant.name}
-            </h2>
-          </div>
+        {tier === 'boss' && (
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">BOSS</p>
+        )}
+        <div className="flex items-center gap-2">
+          <span className="text-amber-400">{icon}</span>
+          <h2 className={`font-bold tracking-widest uppercase ${
+            tier === 'boss'  ? 'text-2xl text-purple-300 drop-shadow-[0_0_12px_rgb(168_85_247)]' :
+            tier === 'elite' ? 'text-lg text-red-400 drop-shadow-[0_0_8px_rgb(239_68_68)]' :
+                               'text-lg text-white'
+          }`}>
+            {combatant.name}
+          </h2>
         </div>
       </div>
 
@@ -606,13 +593,41 @@ function CombatArena() {
   const isPrepPhase = !isCombatActive && player.currentHp > 0 && combatReward === null && !isKillingBlowActive
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-full p-4 gap-6">
-      <div className="flex items-center gap-3">
-        <Swords className="text-amber-400" size={28} />
-        <h1 className="text-2xl font-bold tracking-widest uppercase text-white">
-          Battle Arena
-        </h1>
-        <Swords className="text-amber-400 scale-x-[-1]" size={28} />
+    <div
+      className="relative flex flex-col items-center justify-center min-h-full p-4 gap-4"
+      style={{ background: 'radial-gradient(ellipse at 50% 0%, #1a0530 0%, #05050a 60%)' }}
+    >
+      {/* Arena View — face-to-face portraits */}
+      <div className="flex items-center justify-center gap-2 w-full">
+        {displayPlayer.portraitUrl && (
+          <img
+            src={displayPlayer.portraitUrl}
+            alt={displayPlayer.name}
+            className="w-36 h-36 rounded-lg border-4 border-gray-700 object-cover object-top flex-shrink-0"
+            style={{ transform: 'scaleX(-1)' }}
+          />
+        )}
+
+        <div className="flex flex-col items-center justify-center gap-0 flex-shrink-0 px-1">
+          <div className="w-[2px] h-9 bg-gradient-to-b from-transparent to-violet-500" />
+          <span className="text-sm font-black tracking-[0.25em] text-gray-200
+                           drop-shadow-[0_0_8px_rgb(139_92_246)] py-1 select-none">
+            VS
+          </span>
+          <div className="w-[2px] h-9 bg-gradient-to-b from-red-500 to-transparent" />
+        </div>
+
+        {currentMob.portraitUrl && (
+          <img
+            src={currentMob.portraitUrl}
+            alt={currentMob.name}
+            className={`w-36 h-36 rounded-lg border-4 object-cover object-top flex-shrink-0 ${
+              currentMob.tier === 'boss'  ? 'border-fuchsia-600 shadow-lg shadow-fuchsia-600/40' :
+              currentMob.tier === 'elite' ? 'border-red-500 shadow-lg shadow-red-500/40' :
+                                            'border-gray-700'
+            }`}
+          />
+        )}
       </div>
 
       {/* Combat event label */}
