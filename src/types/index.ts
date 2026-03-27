@@ -2,6 +2,16 @@
 
 export type View = 'battle' | 'inventory' | 'hub' | 'blacksmith' | 'talents'
 
+// ─── Boons ────────────────────────────────────────────────────────────────────
+
+export interface Boon {
+  id: string
+  name: string
+  description: string
+  icon?: string      // emoji used in VoidWhispersModal boon cards
+  iconUrl?: string   // webp portrait used in MapView header + BoonDetailsModal
+}
+
 // ─── Equipment ────────────────────────────────────────────────────────────────
 
 export type EquipSlot =

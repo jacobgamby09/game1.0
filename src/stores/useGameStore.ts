@@ -7,8 +7,9 @@ import type {
   Player, RunStats, RunSummary, Mob, MapNode,
   BuildingId, Buildings,
   SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
+  Boon,
 } from '../types'
-import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS } from '../data/constants'
+import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS } from '../data/constants'
 import { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot } from '../utils/gameHelpers'
 import { spawnMob, generateMarketItems, randomDrop, randomThreeDrops, buildMap } from '../utils/storeHelpers'
 
@@ -20,8 +21,9 @@ export type {
   Player, RunStats, RunSummary, Mob, MapNode,
   BuildingId, Buildings,
   SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
+  Boon,
 }
-export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS }
+export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS }
 export { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot }
 
 // ─── Balancing functions ──────────────────────────────────────────────────────
@@ -92,7 +94,7 @@ function calcMetaDrops(tier: MobTier): { scrapDrop: number; dustDrop: number } {
 // Calling it in one place ensures usePowerStrike, useEquippedSpell, and
 // tickCombat all produce the same victory transition.
 
-function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob | null; currentFloor: number; activeBuffs: ActiveBuff[]; playerXp: number }) {
+function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string | null; currentMob: Mob | null; currentFloor: number; activeBuffs: ActiveBuff[]; playerXp: number; activeBoon: string | null }) {
   const act1Map = state.act1Map.map((floor) =>
     floor.map((n) =>
       n.id === state.currentMapNodeId ? { ...n, isCompleted: true } : n
@@ -104,7 +106,8 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
     * (state.currentMob?.tier === 'elite' ? 2 : 1)
     * (hasMidas ? 3 : 1)
   const { scrapDrop, dustDrop } = calcMetaDrops(state.currentMob?.tier ?? 'normal')
-  const pendingXp    = calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss')
+  const scholarMult = state.activeBoon === 'scholar' ? 1.5 : 1
+  const pendingXp    = Math.round(calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss') * scholarMult)
   const levelBefore  = calculateLevelFromXp(state.playerXp).level
   const levelAfter   = calculateLevelFromXp(state.playerXp + pendingXp).level
   return {
@@ -201,6 +204,11 @@ interface GameStore {
   currentRunStats: RunStats
   runSummary: RunSummary | null
 
+  // Boon state
+  activeBoon: string | null
+  isChoosingBoon: boolean
+  selectBoon: (boonId: string) => void
+
   // Combat actions
   startCombat: () => void
   engageCombat: () => void
@@ -286,6 +294,8 @@ export const useGameStore = create<GameStore>()(
         usedUndyingThisRun: false,
         currentRunStats: { monstersKilled: 0, goldGathered: 0, ironScrapGathered: 0, voidDustGathered: 0 },
         runSummary: null,
+        activeBoon: null,
+        isChoosingBoon: true,
       }
     }),
 
@@ -366,6 +376,23 @@ export const useGameStore = create<GameStore>()(
   currentRunStats: { monstersKilled: 0, goldGathered: 0, ironScrapGathered: 0, voidDustGathered: 0 },
   runSummary: null,
 
+  // ── Boon state ──────────────────────────────────────────────────────────────
+  activeBoon: null,
+  isChoosingBoon: false,
+
+  selectBoon: (boonId) =>
+    set((state) => {
+      const patch: Partial<GameStore> = {
+        activeBoon: boonId,
+        isChoosingBoon: false,
+      }
+      if (boonId === 'thick-blood') {
+        const newMaxHp = state.player.maxHp + 30
+        patch.player = { ...state.player, maxHp: newMaxHp, currentHp: newMaxHp }
+      }
+      return patch
+    }),
+
   // ── Combat state ────────────────────────────────────────────────────────────
   player: { ...DEFAULT_PLAYER },
   currentMob: null,
@@ -435,7 +462,8 @@ export const useGameStore = create<GameStore>()(
 
       const now = Date.now()
       const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
-      const dmg = Math.floor(eff.damage * 1.5)
+      const glassBladeMult = state.activeBoon === 'glass-blade' ? 1.5 : 1
+      const dmg = Math.floor(eff.damage * 1.5 * glassBladeMult)
       const mob = { ...state.currentMob }
       mob.currentHp = Math.max(0, mob.currentHp - dmg)
 
@@ -534,6 +562,8 @@ export const useGameStore = create<GameStore>()(
         activeBuffs: [],
         runSummary: null,
         currentRunStats: { monstersKilled: 0, goldGathered: 0, ironScrapGathered: 0, voidDustGathered: 0 },
+        activeBoon: null,
+        isChoosingBoon: false,
       }
     }),
 
@@ -810,6 +840,8 @@ export const useGameStore = create<GameStore>()(
       const player = { ...state.player }
       const mob = { ...state.currentMob }
       const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
+      const glassBladeDmgMult      = state.activeBoon === 'glass-blade' ? 1.5 : 1
+      const glassBladeIncomingMult = state.activeBoon === 'glass-blade' ? 1.25 : 1
 
       // ── Boss phase (Void Warden) ──────────────────────────────────────────────
       let bossPhase = state.bossPhase
@@ -850,7 +882,7 @@ export const useGameStore = create<GameStore>()(
         const isCrit = eff.critChance > 0 && Math.random() < eff.critChance
         const giantMult = eff.eliteBonusMultiplier > 0 && (mob.tier === 'elite' || mob.tier === 'boss')
           ? 1 + eff.eliteBonusMultiplier : 1
-        const dmg = Math.floor((isCrit ? eff.damage * 2 : eff.damage) * giantMult * bossPhaseMultiplier)
+        const dmg = Math.floor((isCrit ? eff.damage * 2 : eff.damage) * giantMult * bossPhaseMultiplier * glassBladeDmgMult)
         mob.currentHp = Math.max(0, mob.currentHp - dmg)
         if (isCrit) newEventText = '⚡ Critical Hit!'
 
@@ -881,7 +913,7 @@ export const useGameStore = create<GameStore>()(
         mobAttackProgress -= 100
         const isDodged = eff.dodgeChance > 0 && Math.random() < eff.dodgeChance
         if (!isDodged) {
-          const dmgTaken = Math.max(0, Math.floor((mob.baseDamage - effectiveDR) * bossPhaseMultiplier))
+          const dmgTaken = Math.max(0, Math.floor((mob.baseDamage * glassBladeIncomingMult - effectiveDR) * bossPhaseMultiplier))
           player.currentHp = Math.max(0, player.currentHp - dmgTaken)
           if (dmgTaken > 0) {
             damageIndicators.push({ id: now + Math.random() + 1, value: dmgTaken, isCrit: false, isSkill: false, target: 'player', createdAt: now })

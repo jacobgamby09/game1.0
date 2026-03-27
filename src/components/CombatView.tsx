@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical, Hammer, Sparkles, ChevronsUp, ChevronRight, X } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel, calculateLevelFromXp } from '../stores/useGameStore'
+import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical, Hammer, Sparkles, ChevronsUp, ChevronRight, X, Map } from 'lucide-react'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel, calculateLevelFromXp, BOONS } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, ItemSlot, MobTier, MobTrait, DamageIndicator, ActiveBuff } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 import ItemComparisonPanel from './ItemComparisonPanel'
+import VoidWhispersModal from './VoidWhispersModal'
+import BoonDetailsModal from './BoonDetailsModal'
 
 // ─── Slot icon maps (shared by LootCard) ──────────────────────────────────────
 
@@ -64,7 +66,7 @@ function NodeIcon({ type, size = 16 }: { type: MapNode['type']; size?: number })
 // ─── PlayerStatsBar ───────────────────────────────────────────────────────────
 
 function PlayerStatsBar() {
-  const { player, equipment, playerXp, talents, slotUpgrades, ironScrap, voidDust } = useGameStore()
+  const { player, equipment, playerXp, talents, slotUpgrades, ironScrap, voidDust, currentFloor } = useGameStore()
   const eff = getEffectiveStats(player, equipment, talents, slotUpgrades)
   const unspentPoints = calculateLevelFromXp(playerXp).level - Object.values(talents).reduce((a, b) => a + b, 0)
   return (
@@ -80,6 +82,10 @@ function PlayerStatsBar() {
       <div className="flex items-center gap-1.5 text-purple-400">
         <Sparkles size={13} />
         <span>{voidDust}</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-sky-400">
+        <Map size={13} />
+        <span>{Math.min(currentFloor, 20)} / 20</span>
       </div>
       <div className="ml-auto flex items-center gap-3">
         {unspentPoints > 0 && (
@@ -101,7 +107,9 @@ function PlayerStatsBar() {
 // ─── MapView ──────────────────────────────────────────────────────────────────
 
 function MapView() {
-  const { act1Map, currentFloor, currentMapNodeId, playerXp, chooseNode } = useGameStore()
+  const { act1Map, currentFloor, currentMapNodeId, chooseNode, activeBoon } = useGameStore()
+  const [showBoonModal, setShowBoonModal] = useState(false)
+  const activeBoonData = activeBoon ? BOONS.find(b => b.id === activeBoon) ?? null : null
 
   const allNodes = act1Map.flat()
   const prevNode = allNodes.find((n) => n.id === currentMapNodeId) ?? null
@@ -138,17 +146,21 @@ function MapView() {
       <PlayerStatsBar />
 
       {/* Header */}
-      <div className="flex items-center justify-between w-full max-w-sm">
-        <div className="flex items-center gap-2">
-          <Swords className="text-amber-400" size={20} />
-          <h1 className="text-lg font-bold tracking-widest uppercase text-white">
-            Act 1: The Ascent
-          </h1>
-        </div>
-        <div className="flex items-center gap-3 text-xs font-semibold text-gray-400">
-          <span className="text-amber-400">⭐ {playerXp} XP</span>
-          <span>Floor {Math.min(currentFloor, 20)} / 20</span>
-        </div>
+      <div className="flex items-center w-full max-w-sm gap-2">
+        <Swords className="text-amber-400" size={20} />
+        <h1 className="text-lg font-bold tracking-widest uppercase text-white">
+          Act 1: The Ascent
+        </h1>
+        {activeBoonData?.iconUrl && (
+          <button onClick={() => setShowBoonModal(true)} className="flex-shrink-0 ml-1">
+            <img
+              src={activeBoonData.iconUrl}
+              alt={activeBoonData.name}
+              className="w-10 h-10 rounded-md border-2 border-gray-600 object-cover
+                         hover:border-violet-500 transition-colors"
+            />
+          </button>
+        )}
       </div>
 
       {actComplete && (
@@ -252,6 +264,10 @@ function MapView() {
           </span>
         ))}
       </div>
+
+      {showBoonModal && activeBoonData && (
+        <BoonDetailsModal boon={activeBoonData} onClose={() => setShowBoonModal(false)} />
+      )}
     </div>
   )
 }
@@ -1144,7 +1160,7 @@ function MarketOverlay() {
 // ─── CombatView (root) ────────────────────────────────────────────────────────
 
 export default function CombatView() {
-  const { act1Map, isMapVisible, generateMap } = useGameStore()
+  const { act1Map, isMapVisible, generateMap, isChoosingBoon } = useGameStore()
 
   // Generate map on first mount
   useEffect(() => {
@@ -1159,6 +1175,7 @@ export default function CombatView() {
       <InspectionModal />
       <CampOverlay />
       <MarketOverlay />
+      {isChoosingBoon && <VoidWhispersModal />}
     </>
   )
 }

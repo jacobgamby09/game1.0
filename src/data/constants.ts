@@ -1,4 +1,4 @@
-import type { Rarity, TalentNode, SlotRarityLevel, EquipmentSlotName } from '../types'
+import type { Rarity, TalentNode, SlotRarityLevel, EquipmentSlotName, Boon } from '../types'
 import {
   ShieldPlus, Shield, HeartPulse, Sparkles,
   Axe, Crosshair, Swords, Skull,
@@ -70,3 +70,29 @@ export const TALENT_TREE: TalentNode[] = [
 
 export const MAX_POTION_STACK = 1
 export const MAX_POTION_SLOTS = 1
+
+// ─── Boons ────────────────────────────────────────────────────────────────────
+
+export const BOONS: Boon[] = [
+  {
+    id: 'glass-blade',
+    name: 'Glass Blade',
+    description: '+50% Base Damage, but you take +25% more damage.',
+    icon: '🗡️',
+    iconUrl: '/boons/glass-blade.webp',
+  },
+  {
+    id: 'thick-blood',
+    name: 'Thick Blood',
+    description: '+30 Max HP for this run.',
+    icon: '🩸',
+    iconUrl: '/boons/thick-blood.webp',
+  },
+  {
+    id: 'scholar',
+    name: 'Scholar of the Void',
+    description: '+50% XP gained from all sources.',
+    icon: '📖',
+    iconUrl: '/boons/scholar.webp',
+  },
+]
