@@ -7,13 +7,13 @@ type MobBase  = Omit<Mob, 'tier' | 'currentHp'>
 type MobEntry = MobBase & { elitePortraitUrl?: string }
 
 const BESTIARY: MobEntry[] = [
-  { name: 'Goblin Rogue', maxHp: 20, baseDamage: 3, attackSpeed: 0.30, portraitUrl: '/portraits/goblin-rogue.webp', elitePortraitUrl: '/portraits/elite-goblin-warrior.webp' },
-  { name: 'Undead Brute', maxHp: 45, baseDamage: 9, attackSpeed: 0.90, portraitUrl: '/portraits/undead-brute.webp', elitePortraitUrl: '/portraits/elite-undead-brute.webp' },
-  { name: 'Orc Warrior',  maxHp: 40, baseDamage: 7, attackSpeed: 0.55, portraitUrl: '/portraits/orc-warrior.webp' },
+  { name: 'Goblin Rogue', maxHp: 50,  baseDamage: 2, attackSpeed: 0.30, portraitUrl: '/portraits/goblin-rogue.webp', elitePortraitUrl: '/portraits/elite-goblin-warrior.webp' },
+  { name: 'Undead Brute', maxHp: 110, baseDamage: 7, attackSpeed: 0.90, portraitUrl: '/portraits/undead-brute.webp', elitePortraitUrl: '/portraits/elite-undead-brute.webp' },
+  { name: 'Orc Warrior',  maxHp: 100, baseDamage: 5, attackSpeed: 0.55, portraitUrl: '/portraits/orc-warrior.webp' },
 ]
 
 const VOID_WARDEN_BASE: MobBase = {
-  name: 'The Void Warden', maxHp: 200, baseDamage: 15, attackSpeed: 0.65, portraitUrl: '/portraits/void-warden.webp',
+  name: 'The Void Warden', maxHp: 500, baseDamage: 12, attackSpeed: 0.65, portraitUrl: '/portraits/void-warden.webp',
 }
 
 // ─── Elite Traits ─────────────────────────────────────────────────────────────
@@ -37,7 +37,10 @@ const ELITE_TRAITS = [TRAIT_VAMPIRIC, TRAIT_FRENZIED]
 // ─── Mob spawning ─────────────────────────────────────────────────────────────
 
 export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob {
-  const floorMult = 1 + floor * 0.10
+  const tierMult = nodeType === 'boss' ? 1.0
+                 : floor <= 15         ? 0.8
+                 : floor <= 30         ? 1.5
+                 :                       2.5
 
   let base: MobBase
   let tier: MobTier
@@ -55,8 +58,8 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
     }
   }
 
-  const scaledHp  = Math.round(base.maxHp     * floorMult)
-  const scaledDmg = Math.round(base.baseDamage * floorMult)
+  const scaledHp  = Math.round(base.maxHp     * tierMult)
+  const scaledDmg = Math.round(base.baseDamage * tierMult)
 
   return {
     name:        base.name,
@@ -121,22 +124,21 @@ export function randomThreeDrops(floor: number): Item[] {
 // ─── Map generation ───────────────────────────────────────────────────────────
 
 const MID_FLOOR_TYPES: MapNode['type'][] = ['mob', 'mob', 'mob', 'mob', 'mob', 'mob', 'mob', 'rest', 'rest', 'chest']
-const MARKET_FLOORS = new Set([5, 12, 17])
+const MARKET_FLOORS = new Set([7, 14, 22, 29, 37])
 
 export function buildMap(): MapNode[][] {
   const floors: MapNode[][] = []
-  const eliteFloor2 = Math.floor(Math.random() * 4) + 15 // 15, 16, 17, or 18
 
-  for (let f = 1; f <= 20; f++) {
+  for (let f = 1; f <= 45; f++) {
     let types: MapNode['type'][]
 
     if (f === 1) {
       types = ['mob']
     } else if (MARKET_FLOORS.has(f)) {
       types = ['market']
-    } else if (f === 10 || f === eliteFloor2) {
+    } else if (f === 15 || f === 30) {
       types = ['elite']
-    } else if (f === 20) {
+    } else if (f === 45) {
       types = ['boss']
     } else {
       const count = Math.random() < 0.5 ? 2 : 3
@@ -156,7 +158,7 @@ export function buildMap(): MapNode[][] {
     )
   }
 
-  for (let fi = 0; fi < 19; fi++) {
+  for (let fi = 0; fi < 44; fi++) {
     const current = floors[fi]
     const next = floors[fi + 1]
 

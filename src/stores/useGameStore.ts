@@ -66,9 +66,9 @@ const XP_PER_CHEST = 25
 const DEFAULT_PLAYER: Player = {
   name: 'Fighter',
   playerClass: 'Fighter',
-  maxHp: 100,
-  currentHp: 100,
-  baseDamage: 12,
+  maxHp: 200,
+  currentHp: 200,
+  baseDamage: 8,
   attackSpeed: 0.45,
   gold: 0,
   portraitUrl: '/portraits/fighter.webp',

@@ -42,7 +42,7 @@ function nodeX(nodesOnFloor: number, index: number): number {
 }
 
 function nodeY(floor: number): number {
-  return (20 - floor) * FLOOR_H + FLOOR_H / 2
+  return (45 - floor) * FLOOR_H + FLOOR_H / 2
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ function PlayerStatsBar() {
       </div>
       <div className="flex items-center gap-1.5 text-sky-400">
         <Map size={13} />
-        <span>{Math.min(currentFloor, 20)} / 20</span>
+        <span>{Math.min(currentFloor, 45)} / 45</span>
       </div>
       <div className="ml-auto flex items-center gap-3">
         {unspentPoints > 0 && (
@@ -113,7 +113,7 @@ function MapView() {
 
   const allNodes = act1Map.flat()
   const prevNode = allNodes.find((n) => n.id === currentMapNodeId) ?? null
-  const totalH = 20 * FLOOR_H
+  const totalH = 45 * FLOOR_H
 
   const scrollRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -138,7 +138,7 @@ function MapView() {
     return '#374151' // gray-700 locked
   }
 
-  const actComplete = currentFloor > 20
+  const actComplete = currentFloor > 45
 
   return (
     <div className="flex flex-col items-center w-full h-full p-4 gap-3">

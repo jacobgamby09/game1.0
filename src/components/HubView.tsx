@@ -63,11 +63,20 @@ export default function HubView() {
           return (
             <button
               key={b.id}
-              onClick={() => setSelectedBuildingId(isSelected ? null : b.id)}
+              onClick={() => {
+                if (!isRuin) {
+                  if (b.id === 'blacksmith')   setActiveView('blacksmith')
+                  else if (b.id === 'apothecary') setActiveView('apothecary')
+                } else {
+                  setSelectedBuildingId(isSelected ? null : b.id)
+                }
+              }}
               style={{ backgroundImage: `url(${b.img})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
               className={`relative w-full h-32 rounded-xl overflow-hidden border-2 cursor-pointer transition-all shrink-0 text-left
                 ${isRuin ? 'border-gray-700 grayscale brightness-[0.4]' : 'border-amber-600'}
-                ${isSelected ? 'ring-2 ring-white/30' : 'hover:brightness-110'}`}
+                ${isRuin
+                  ? (isSelected ? 'ring-2 ring-white/30' : 'hover:brightness-110')
+                  : 'hover:ring-2 hover:ring-fuchsia-500/50 hover:-translate-y-1'}`}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent flex items-end p-3">
                 <p className="text-sm font-bold text-white drop-shadow">
@@ -78,10 +87,9 @@ export default function HubView() {
           )
         })}
 
-        {/* Building inspect panel */}
-        {selectedBuildingId && (() => {
+        {/* Building inspect panel — only for ruined buildings */}
+        {selectedBuildingId && buildings[selectedBuildingId] === 0 && (() => {
           const b         = TOWN_BUILDINGS.find(x => x.id === selectedBuildingId)!
-          const lvl       = buildings[selectedBuildingId]
           const canAfford = ironScrap >= b.cost
           return (
             <div className="rounded-xl border border-gray-700 bg-gray-800/60 p-4 flex flex-col gap-3">
@@ -89,38 +97,22 @@ export default function HubView() {
                 <p className="text-sm font-bold text-gray-200">{b.name}</p>
                 <p className="text-xs text-gray-400 leading-relaxed mt-1">{b.desc}</p>
               </div>
-              {lvl === 0 ? (
-                <>
-                  <div className="flex items-center justify-between text-[11px] text-gray-500">
-                    <span>Status</span>
-                    <span className="text-gray-600 font-bold">Ruined</span>
-                  </div>
-                  <button
-                    onClick={() => constructBuilding(selectedBuildingId)}
-                    disabled={!canAfford}
-                    className={`w-full py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-colors
-                      ${canAfford
-                        ? 'border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 cursor-pointer'
-                        : 'border-gray-700 bg-gray-800 text-gray-600 cursor-default'
-                      }`}
-                  >
-                    Rebuild — {b.cost} ⚙ Iron Scrap
-                    {!canAfford && <span className="text-red-900/80 ml-1">(need {b.cost - ironScrap} more)</span>}
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => {
-                    if (b.id === 'blacksmith') setActiveView('blacksmith')
-                    else if (b.id === 'apothecary') setActiveView('apothecary')
-                  }}
-                  className="w-full py-2 rounded-lg border border-amber-500 bg-amber-500/10
-                             text-amber-300 text-xs font-bold uppercase tracking-wider
-                             hover:bg-amber-500/20 cursor-pointer transition-colors"
-                >
-                  Enter {b.name}
-                </button>
-              )}
+              <div className="flex items-center justify-between text-[11px] text-gray-500">
+                <span>Status</span>
+                <span className="text-gray-600 font-bold">Ruined</span>
+              </div>
+              <button
+                onClick={() => constructBuilding(selectedBuildingId)}
+                disabled={!canAfford}
+                className={`w-full py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-colors
+                  ${canAfford
+                    ? 'border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 cursor-pointer'
+                    : 'border-gray-700 bg-gray-800 text-gray-600 cursor-default'
+                  }`}
+              >
+                Rebuild — {b.cost} ⚙ Iron Scrap
+                {!canAfford && <span className="text-red-900/80 ml-1">(need {b.cost - ironScrap} more)</span>}
+              </button>
             </div>
           )
         })()}
