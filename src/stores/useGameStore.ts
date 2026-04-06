@@ -66,8 +66,8 @@ const XP_PER_CHEST = 25
 const DEFAULT_PLAYER: Player = {
   name: 'Fighter',
   playerClass: 'Fighter',
-  maxHp: 200,
-  currentHp: 200,
+  maxHp: 150,
+  currentHp: 150,
   baseDamage: 8,
   attackSpeed: 0.45,
   gold: 0,

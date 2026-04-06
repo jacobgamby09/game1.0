@@ -37,10 +37,15 @@ const ELITE_TRAITS = [TRAIT_VAMPIRIC, TRAIT_FRENZIED]
 // ─── Mob spawning ─────────────────────────────────────────────────────────────
 
 export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob {
-  const tierMult = nodeType === 'boss' ? 1.0
-                 : floor <= 15         ? 0.8
-                 : floor <= 30         ? 1.5
-                 :                       2.5
+  const hpMult  = nodeType === 'boss' ? 1.0
+                : floor <= 15         ? 0.8
+                : floor <= 30         ? 1.5
+                :                       2.5
+
+  const dmgMult = nodeType === 'boss' ? 1.0
+                : floor <= 15         ? 1.2
+                : floor <= 30         ? 2.0
+                :                       2.5
 
   let base: MobBase
   let tier: MobTier
@@ -58,8 +63,8 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
     }
   }
 
-  const scaledHp  = Math.round(base.maxHp     * tierMult)
-  const scaledDmg = Math.round(base.baseDamage * tierMult)
+  const scaledHp  = Math.round(base.maxHp     * hpMult)
+  const scaledDmg = Math.round(base.baseDamage * dmgMult)
 
   return {
     name:        base.name,
