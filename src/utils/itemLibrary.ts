@@ -14,7 +14,7 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Rusty Sword',           equipSlot: 'mainHand', rarity: 'common',   description: 'A chipped blade found near the entrance.',                       stats: { damage: 5 } },
   { name: 'Iron Dagger',           equipSlot: 'mainHand', rarity: 'common',   description: 'Light and quick; preferred by scouts.',                          stats: { damage: 3, attackSpeed: 0.25 } },
   { name: 'Serrated Blade',        equipSlot: 'mainHand', rarity: 'uncommon', description: 'Jagged teeth catch armour and rend flesh.',                       stats: { damage: 4, critChance: 0.04 } },
-  { name: 'Heavy Mace',            equipSlot: 'mainHand', rarity: 'uncommon', description: 'Slow and brutal — each strike has real weight.',                  stats: { damage: 7, attackSpeed: -0.15, damageReduction: 2 } },
+  { name: 'Heavy Mace',            equipSlot: 'mainHand', rarity: 'uncommon', description: 'Slow and brutal — each strike has real weight.',                  stats: { damage: 7, attackSpeed: -0.15 } },
   { name: "Assassin's Kris",       equipSlot: 'mainHand', rarity: 'rare',     description: 'Wavy-bladed ritual dagger that finds every gap in armour.',       stats: { damage: 3, attackSpeed: 0.25, critChance: 0.07 } },
   { name: 'Blood-soaked Cleaver',  equipSlot: 'mainHand', rarity: 'rare',     description: 'The blade has tasted so much blood it practically heals itself.', stats: { damage: 6, lifesteal: 3 } },
   { name: 'Void Blade',            equipSlot: 'mainHand', rarity: 'epic',     description: 'A cursed edge that hungers for more.',                            stats: { damage: 9, lifesteal: 4, critChance: 0.05 } },
@@ -27,7 +27,7 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Iron Bulwark',          equipSlot: 'offHand',  rarity: 'uncommon', description: 'Iron-banded wood, heavier than it looks.',                        stats: { hp: 10, damageReduction: 2 } },
   { name: 'Tower Shield of the Bear',equipSlot:'offHand', rarity: 'rare',     description: 'Massive. Every hit that lands feels like it hit a wall.',          stats: { hp: 18, damageReduction: 2 } },
   { name: 'Bladed Gauntlet',       equipSlot: 'offHand',  rarity: 'rare',     description: 'Armoured fist lined with forward-facing spikes.',                  stats: { damage: 3, dodgeChance: 0.05 } },
-  { name: 'Aegis of the Ancients', equipSlot: 'offHand',  rarity: 'epic',     description: 'An artifact buckler older than the kingdom, still unbroken.',      stats: { hp: 25, damageReduction: 3, lifesteal: 2 } },
+  { name: 'Aegis of the Ancients', equipSlot: 'offHand',  rarity: 'epic',     description: 'An artifact buckler older than the kingdom, still unbroken.',      stats: { hp: 27, damageReduction: 3 } },
 
   // ── head ────────────────────────────────────────────────────────────────────
   { name: 'Padded Cap',            equipSlot: 'head',     rarity: 'common',   description: 'Cloth-padded leather cap; not glamorous but functional.',          stats: { hp: 8 } },
@@ -50,19 +50,19 @@ const ITEM_LIBRARY: ItemBase[] = [
 
   // ── amulet ──────────────────────────────────────────────────────────────────
   { name: 'Brass Pendant',         equipSlot: 'amulet',   rarity: 'common',   description: 'A plain brass pendant with a faint martial enchantment.',          stats: { damage: 2 } },
-  { name: 'Amulet of Vigor',       equipSlot: 'amulet',   rarity: 'uncommon', description: 'Pulses gently against the skin, lending vitality.',                 stats: { hp: 8, lifesteal: 3 } },
+  { name: 'Amulet of Vigor',       equipSlot: 'amulet',   rarity: 'uncommon', description: 'Pulses gently against the skin, lending vitality.',                 stats: { lifesteal: 3 } },
   { name: 'Amulet of the Swift',   equipSlot: 'amulet',   rarity: 'rare',     description: 'Cool jade carved into a serpent devouring its tail.',               stats: { attackSpeed: 0.2, dodgeChance: 0.06 } },
   { name: 'Eye of the Void',       equipSlot: 'amulet',   rarity: 'epic',     description: 'A gem that stares back — and teaches you to strike first.',         stats: { critChance: 0.06, lifesteal: 3, damage: 3 } },
 
   // ── ring1 ───────────────────────────────────────────────────────────────────
-  { name: 'Copper Band',           equipSlot: 'ring1',    rarity: 'common',   description: 'A plain ring of cold copper.',                                       stats: { hp: 6 } },
-  { name: 'Band of Fortitude',     equipSlot: 'ring1',    rarity: 'uncommon', description: 'Thick-set ring engraved with a shield rune.',                        stats: { hp: 7, damageReduction: 1 } },
+  { name: 'Copper Band',           equipSlot: 'ring1',    rarity: 'common',   description: 'A plain ring of cold copper.',                                       stats: { attackSpeed: 0.10 } },
+  { name: 'Band of Fortitude',     equipSlot: 'ring1',    rarity: 'uncommon', description: 'Thick-set ring engraved with a shield rune.',                        stats: { damage: 3, critChance: 0.03 } },
   { name: 'Ring of the Predator',  equipSlot: 'ring1',    rarity: 'rare',     description: 'Set with a fang — your strikes feel predatory.',                     stats: { critChance: 0.05, damage: 2 } },
   { name: 'Ouroboros Ring',        equipSlot: 'ring1',    rarity: 'epic',     description: 'A serpent swallowing its tail — you take, and it gives back.',       stats: { lifesteal: 3, critChance: 0.03, attackSpeed: 0.1 } },
 
   // ── ring2 ───────────────────────────────────────────────────────────────────
-  { name: 'Silver Ring',           equipSlot: 'ring2',    rarity: 'common',   description: 'Engraved with a small rune of warding.',                             stats: { hp: 6 } },
-  { name: 'Iron Signet',           equipSlot: 'ring2',    rarity: 'uncommon', description: 'A military signet stamped with a crossed-swords crest.',             stats: { damage: 2, damageReduction: 1 } },
+  { name: 'Silver Ring',           equipSlot: 'ring2',    rarity: 'common',   description: 'Engraved with a small rune of warding.',                             stats: { attackSpeed: 0.10 } },
+  { name: 'Iron Signet',           equipSlot: 'ring2',    rarity: 'uncommon', description: 'A military signet stamped with a crossed-swords crest.',             stats: { damage: 2, attackSpeed: 0.10 } },
   { name: 'Serpent Ring',          equipSlot: 'ring2',    rarity: 'rare',     description: 'A coiled serpent whose fangs bite the wearer\'s foe.',               stats: { critChance: 0.04, damage: 3 } },
   { name: 'Void Ring',             equipSlot: 'ring2',    rarity: 'epic',     description: 'Stares back at you when you look into its gem.',                     stats: { lifesteal: 3, critChance: 0.04, damage: 3 } },
 
@@ -78,6 +78,24 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: "Berserker's Brew",     equipSlot: 'potion', rarity: 'rare',     description: '2× Attack Speed for 5s, but Damage Reduction = 0.',   stats: {}, consumableEffect: { type: 'berserk',     durationMS: 5000                } },
   { name: "Vampire's Draught",    equipSlot: 'potion', rarity: 'rare',     description: '+15 Lifesteal for the next 5 successful attacks.',     stats: {}, consumableEffect: { type: 'lifestealBuff', charges: 5, value: 15        } },
   { name: 'Midas Elixir',         equipSlot: 'potion', rarity: 'epic',     description: 'Next enemy death within 4s drops 3× Gold.',           stats: {}, consumableEffect: { type: 'midas',       durationMS: 4000                } },
+
+  // ── Set Items — Vanguard (tank set) ─────────────────────────────────────────
+  { name: 'Vanguard Blade',     equipSlot: 'mainHand', rarity: 'rare', setName: 'vanguard',    description: 'A broad sword etched with warding runes.',                  stats: { damage: 7, critChance: 0.03 } },
+  { name: 'Vanguard Plate',     equipSlot: 'chest',    rarity: 'rare', setName: 'vanguard',    description: 'Thick iron plates layered with warding sigils.',             stats: { hp: 22, damageReduction: 3 } },
+  { name: 'Vanguard Helm',      equipSlot: 'head',     rarity: 'rare', setName: 'vanguard',    description: 'A full-face helm bearing the Vanguard seal.',               stats: { hp: 14, damageReduction: 2 } },
+  { name: 'Vanguard Signet',    equipSlot: 'ring1',    rarity: 'rare', setName: 'vanguard',    description: 'A wide iron band engraved with a tower crest.',             stats: { damage: 4, critChance: 0.04 } },
+
+  // ── Set Items — Assassin (crit/speed set) ────────────────────────────────────
+  { name: "Assassin's Fang",    equipSlot: 'mainHand', rarity: 'rare', setName: 'assassin',   description: "A slender blade whose edge vanishes in dim light.",           stats: { damage: 4, attackSpeed: 0.20, critChance: 0.06 } },
+  { name: "Assassin's Silks",   equipSlot: 'chest',    rarity: 'rare', setName: 'assassin',   description: "Near-weightless shadowsilk stitched for evasion.",            stats: { hp: 10, dodgeChance: 0.07 } },
+  { name: "Assassin's Cowl",    equipSlot: 'head',     rarity: 'rare', setName: 'assassin',   description: "A deep hood that hides both face and intent.",                stats: { critChance: 0.05, dodgeChance: 0.04 } },
+  { name: "Assassin's Band",    equipSlot: 'ring1',    rarity: 'rare', setName: 'assassin',   description: "A slim obsidian ring, balanced for quick hands.",             stats: { attackSpeed: 0.15, critChance: 0.04 } },
+
+  // ── Set Items — Bloodbound (lifesteal set) ───────────────────────────────────
+  { name: 'Bloodbound Reaper',  equipSlot: 'mainHand', rarity: 'rare', setName: 'bloodbound', description: 'A curved blade that hungers — and satisfies.',               stats: { damage: 6, lifesteal: 4 } },
+  { name: 'Bloodbound Hauberk', equipSlot: 'chest',    rarity: 'rare', setName: 'bloodbound', description: 'Crimson-stained chainmail pulsing with stolen life.',         stats: { hp: 18, damageReduction: 2 } },
+  { name: 'Bloodbound Mask',    equipSlot: 'head',     rarity: 'rare', setName: 'bloodbound', description: 'A bone mask painted with a bloodbound covenant.',            stats: { damage: 3, lifesteal: 2 } },
+  { name: 'Bloodbound Ring',    equipSlot: 'ring1',    rarity: 'rare', setName: 'bloodbound', description: 'A garnet ring that deepens in colour after each kill.',       stats: { lifesteal: 3, critChance: 0.03 } },
 ]
 
 // ─── Rarity weight helpers ────────────────────────────────────────────────────
@@ -106,6 +124,14 @@ export function getItemsByRarity(rarity: Rarity): ItemBase[] {
 }
 
 export function pickItem(rarity: Rarity): Item {
+  if (rarity === 'rare') {
+    const setPool    = ITEM_LIBRARY.filter(i => i.rarity === 'rare' && i.setName)
+    const normalPool = ITEM_LIBRARY.filter(i => i.rarity === 'rare' && !i.setName)
+    const useSet     = setPool.length > 0 && Math.random() < 0.60
+    const pool       = useSet ? setPool : normalPool
+    const base       = pool[Math.floor(Math.random() * pool.length)]
+    return { ...base, id: newItemId() }
+  }
   const pool = getItemsByRarity(rarity)
   const base = pool[Math.floor(Math.random() * pool.length)]
   return { ...base, id: newItemId() }

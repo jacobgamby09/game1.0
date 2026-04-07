@@ -60,6 +60,10 @@ export interface DamageIndicator {
   createdAt: number
 }
 
+// ─── Set Bonuses ──────────────────────────────────────────────────────────────
+
+export type SetName = 'vanguard' | 'assassin' | 'bloodbound'
+
 // ─── Items ────────────────────────────────────────────────────────────────────
 
 export interface ItemAbility {
@@ -90,6 +94,7 @@ export interface Item {
   equipSlot: ItemSlot
   rarity: Rarity
   description: string
+  setName?: SetName
   stats: {
     hp?:              number
     damage?:          number
@@ -98,6 +103,7 @@ export interface Item {
     dodgeChance?:     number
     lifesteal?:       number
     damageReduction?: number
+    thorns?:          number
   }
   ability?: ItemAbility
   consumableEffect?: ConsumableEffect
@@ -160,6 +166,7 @@ export interface Mob {
   currentHp: number
   baseDamage: number
   attackSpeed: number // attacks per second
+  dodgeChance?: number // innate mob evasion (e.g. Goblin Rogue)
   tier: MobTier
   traits?: MobTrait[]
   portraitUrl?: string

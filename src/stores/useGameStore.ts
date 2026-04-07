@@ -9,7 +9,7 @@ import type {
   SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
   Boon,
 } from '../types'
-import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS } from '../data/constants'
+import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES } from '../data/constants'
 import { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot } from '../utils/gameHelpers'
 import { spawnMob, generateMarketItems, randomDrop, randomThreeDrops, buildMap } from '../utils/storeHelpers'
 
@@ -21,9 +21,10 @@ export type {
   Player, RunStats, RunSummary, Mob, MapNode,
   BuildingId, Buildings,
   SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
-  Boon,
+  Boon, SetName,
 }
-export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS }
+export type { SetBonusTier } from '../data/constants'
+export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES }
 export { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot }
 
 // ─── Balancing functions ──────────────────────────────────────────────────────
@@ -900,26 +901,31 @@ export const useGameStore = create<GameStore>()(
 
       if (playerAttackProgress >= 100) {
         playerAttackProgress -= 100
-        const isCrit = eff.critChance > 0 && Math.random() < eff.critChance
-        const giantMult = eff.eliteBonusMultiplier > 0 && (mob.tier === 'elite' || mob.tier === 'boss')
-          ? 1 + eff.eliteBonusMultiplier : 1
-        const dmg = Math.floor((isCrit ? eff.damage * 2 : eff.damage) * giantMult * bossPhaseMultiplier * glassBladeDmgMult)
-        mob.currentHp = Math.max(0, mob.currentHp - dmg)
-        if (isCrit) newEventText = '⚡ Critical Hit!'
+        const mobDodged = (mob.dodgeChance ?? 0) > 0 && Math.random() < (mob.dodgeChance ?? 0)
+        if (mobDodged) {
+          newEventText = '✦ Evaded!'
+        } else {
+          const isCrit = eff.critChance > 0 && Math.random() < eff.critChance
+          const giantMult = eff.eliteBonusMultiplier > 0 && (mob.tier === 'elite' || mob.tier === 'boss')
+            ? 1 + eff.eliteBonusMultiplier : 1
+          const dmg = Math.floor((isCrit ? eff.damage * 2 : eff.damage) * giantMult * bossPhaseMultiplier * glassBladeDmgMult)
+          mob.currentHp = Math.max(0, mob.currentHp - dmg)
+          if (isCrit) newEventText = '⚡ Critical Hit!'
 
-        // Vampire: bonus lifesteal for next N hits
-        const effectiveLifesteal = eff.lifesteal + (vampBuff ? (vampBuff.value ?? 0) : 0)
-        if (effectiveLifesteal > 0) {
-          player.currentHp = Math.min(eff.maxHp, player.currentHp + effectiveLifesteal)
-        }
-        // Decrement vampire charges after a successful hit
-        if (vampBuff) {
-          activeBuffs = activeBuffs.map((b, i) =>
-            i === vampIdx ? { ...b, charges: (b.charges ?? 1) - 1 } : b
-          ).filter(b => b.type !== 'lifestealBuff' || (b.charges ?? 0) > 0)
-        }
+          // Vampire: bonus lifesteal for next N hits
+          const effectiveLifesteal = eff.lifesteal + (vampBuff ? (vampBuff.value ?? 0) : 0)
+          if (effectiveLifesteal > 0) {
+            player.currentHp = Math.min(eff.maxHp, player.currentHp + effectiveLifesteal)
+          }
+          // Decrement vampire charges after a successful hit
+          if (vampBuff) {
+            activeBuffs = activeBuffs.map((b, i) =>
+              i === vampIdx ? { ...b, charges: (b.charges ?? 1) - 1 } : b
+            ).filter(b => b.type !== 'lifestealBuff' || (b.charges ?? 0) > 0)
+          }
 
-        damageIndicators.push({ id: now + Math.random(), value: dmg, isCrit, isSkill: false, target: 'enemy', createdAt: now })
+          damageIndicators.push({ id: now + Math.random(), value: dmg, isCrit, isSkill: false, target: 'enemy', createdAt: now })
+        }
       }
 
       // Execution: instant kill below threshold
@@ -934,7 +940,7 @@ export const useGameStore = create<GameStore>()(
         mobAttackProgress -= 100
         const isDodged = eff.dodgeChance > 0 && Math.random() < eff.dodgeChance
         if (!isDodged) {
-          const dmgTaken = Math.max(0, Math.floor((mob.baseDamage * glassBladeIncomingMult - effectiveDR) * bossPhaseMultiplier))
+          const dmgTaken = Math.max(1, Math.floor((mob.baseDamage * glassBladeIncomingMult - effectiveDR) * bossPhaseMultiplier))
           player.currentHp = Math.max(0, player.currentHp - dmgTaken)
           if (dmgTaken > 0) {
             damageIndicators.push({ id: now + Math.random() + 1, value: dmgTaken, isCrit: false, isSkill: false, target: 'player', createdAt: now })
@@ -947,6 +953,11 @@ export const useGameStore = create<GameStore>()(
             if (healAmt > 0) {
               damageIndicators.push({ id: now + Math.random() + 2, value: healAmt, isCrit: false, isSkill: false, isHeal: true, target: 'enemy', createdAt: now })
             }
+          }
+          // Thorns: reflect flat damage back on every non-dodged hit
+          if (eff.thorns > 0) {
+            mob.currentHp = Math.max(0, mob.currentHp - eff.thorns)
+            damageIndicators.push({ id: now + Math.random() + 3, value: eff.thorns, isCrit: false, isSkill: true, target: 'enemy', createdAt: now })
           }
         } else {
           newEventText = '✦ Dodged!'

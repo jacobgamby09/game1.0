@@ -1,5 +1,5 @@
-import type { Rarity, Player, EquipSlot, Item, EquipmentSlotName, EquipmentSlotUpgrades } from '../types'
-import { TALENT_TREE, SLOT_TIER_BONUSES } from '../data/constants'
+import type { Rarity, Player, EquipSlot, Item, EquipmentSlotName, EquipmentSlotUpgrades, SetName } from '../types'
+import { TALENT_TREE, SLOT_TIER_BONUSES, SET_BONUSES } from '../data/constants'
 
 // ─── Item sell value ──────────────────────────────────────────────────────────
 
@@ -47,7 +47,7 @@ export function getEffectiveStats(
   talents: Record<string, number> = {},
   slotUpgrades?: EquipmentSlotUpgrades
 ) {
-  const items = Object.values(equipment).filter(Boolean) as Item[]
+  const equippedItems = Object.values(equipment).filter(Boolean) as Item[]
 
   let flatHp = 0, flatDmg = 0, flatSpd = 0
   let pctHp  = 0, pctDmg  = 0, pctSpd  = 0
@@ -78,13 +78,14 @@ export function getEffectiveStats(
     }
   }
 
-  let gearHp        = items.reduce((s, i) => s + (i.stats.hp              ?? 0), 0)
-  let gearDmg       = items.reduce((s, i) => s + (i.stats.damage          ?? 0), 0)
-  let gearSpd       = items.reduce((s, i) => s + (i.stats.attackSpeed     ?? 0), 0)
-  let gearCritRaw   = items.reduce((s, i) => s + (i.stats.critChance      ?? 0), 0)
-  let gearDodgeRaw  = items.reduce((s, i) => s + (i.stats.dodgeChance     ?? 0), 0)
-  let gearLifesteal = items.reduce((s, i) => s + (i.stats.lifesteal       ?? 0), 0)
-  let gearDr        = items.reduce((s, i) => s + (i.stats.damageReduction ?? 0), 0)
+  let gearHp        = equippedItems.reduce((s, i) => s + (i.stats.hp              ?? 0), 0)
+  let gearDmg       = equippedItems.reduce((s, i) => s + (i.stats.damage          ?? 0), 0)
+  let gearSpd       = equippedItems.reduce((s, i) => s + (i.stats.attackSpeed     ?? 0), 0)
+  let gearCritRaw   = equippedItems.reduce((s, i) => s + (i.stats.critChance      ?? 0), 0)
+  let gearDodgeRaw  = equippedItems.reduce((s, i) => s + (i.stats.dodgeChance     ?? 0), 0)
+  let gearLifesteal = equippedItems.reduce((s, i) => s + (i.stats.lifesteal       ?? 0), 0)
+  let gearDr        = equippedItems.reduce((s, i) => s + (i.stats.damageReduction ?? 0), 0)
+  let gearThorns    = equippedItems.reduce((s, i) => s + (i.stats.thorns          ?? 0), 0)
 
   // Apply slot upgrade bonuses (stacks with gear and talent %)
   if (slotUpgrades) {
@@ -106,6 +107,27 @@ export function getEffectiveStats(
   const gearCrit  = gearCritRaw  > 1 ? gearCritRaw  / 100 : gearCritRaw
   const gearDodge = gearDodgeRaw > 1 ? gearDodgeRaw / 100 : gearDodgeRaw
 
+  // ─── Set Bonuses ────────────────────────────────────────────────────────────
+  const setCounts: Partial<Record<SetName, number>> = {}
+  for (const equippedItem of equippedItems) {
+    if (equippedItem.setName) setCounts[equippedItem.setName] = (setCounts[equippedItem.setName] ?? 0) + 1
+  }
+  for (const [setKey, count] of Object.entries(setCounts) as [SetName, number][]) {
+    for (const tier of SET_BONUSES[setKey].tiers) {
+      if (count >= tier.pieces) {
+        if (tier.maxHp)             flatHp        += tier.maxHp
+        if (tier.damageReduction)   flatDr        += tier.damageReduction
+        if (tier.thorns)            gearThorns    += tier.thorns
+        if (tier.dodgeChance)       flatDodge     += tier.dodgeChance
+        if (tier.critChance)        flatCrit      += tier.critChance
+        if (tier.pctAttackSpeed)    pctSpd        += tier.pctAttackSpeed
+        if (tier.damage)            flatDmg       += tier.damage
+        if (tier.lifesteal)         flatLifesteal += tier.lifesteal
+        if (tier.postCombatHealPct) flatHealPct   += tier.postCombatHealPct
+      }
+    }
+  }
+
   return {
     maxHp:                Math.floor((player.maxHp      + flatHp  + gearHp)  * (1 + pctHp)),
     damage:               Math.floor((player.baseDamage + flatDmg + gearDmg) * (1 + pctDmg)),
@@ -114,6 +136,7 @@ export function getEffectiveStats(
     critChance:           flatCrit + gearCrit,
     dodgeChance:          flatDodge + gearDodge,
     lifesteal:            Math.floor(flatLifesteal + gearLifesteal),
+    thorns:               Math.floor(gearThorns),
     postCombatHealPct:    flatHealPct,
     eliteBonusMultiplier: flatEliteBonus,
     executionThreshold:   flatExecution,

@@ -1,4 +1,4 @@
-import type { Rarity, TalentNode, SlotRarityLevel, EquipmentSlotName, Boon } from '../types'
+import type { Rarity, TalentNode, SlotRarityLevel, EquipmentSlotName, Boon, SetName } from '../types'
 import {
   ShieldPlus, Shield, HeartPulse, Sparkles,
   Axe, Crosshair, Swords, Skull,
@@ -49,7 +49,7 @@ export const SLOT_TIER_BONUSES: Record<EquipmentSlotName, Record<1 | 2 | 3 | 4, 
 export const TALENT_TREE: TalentNode[] = [
   // ── Vitality ──────────────────────────────────────────────────────────────
   { id:'vit_1', branch:'vitality', tier:1, name:'Fortitude',    icon:ShieldPlus,  description:'+8 Max HP per point',               maxRank:3, costPerRank:1, effect:{type:'flat',    stat:'hp',                   valuePerRank:8    }},
-  { id:'vit_2', branch:'vitality', tier:2, name:'Thick Skin',   icon:Shield,      description:'+2 Damage Reduction per point',     maxRank:3, costPerRank:1, effect:{type:'flat',    stat:'damageReduction',       valuePerRank:2    }},
+  { id:'vit_2', branch:'vitality', tier:2, name:'Thick Skin',   icon:Shield,      description:'+1 Damage Reduction per point',     maxRank:3, costPerRank:1, effect:{type:'flat',    stat:'damageReduction',       valuePerRank:1    }},
   { id:'vit_3', branch:'vitality', tier:3, name:'Field Medic',  icon:HeartPulse,  description:'Heal 5% Max HP after combat/point', maxRank:3, costPerRank:2, effect:{type:'flat',    stat:'postCombatHealPct',     valuePerRank:0.05 }},
   { id:'vit_4', branch:'vitality', tier:4, name:'Undying',      icon:Sparkles,    description:'Revive once per run at 30% HP',     maxRank:1, costPerRank:3, effect:{type:'flat',    stat:'undying',               valuePerRank:1    }},
 
@@ -96,3 +96,43 @@ export const BOONS: Boon[] = [
     iconUrl: '/boons/scholar.webp',
   },
 ]
+
+// ─── Set Bonus Descriptors ────────────────────────────────────────────────────
+
+export type SetBonusTier = {
+  pieces: 2 | 4
+  description: string
+  maxHp?: number
+  damageReduction?: number
+  thorns?: number
+  dodgeChance?: number
+  critChance?: number
+  pctAttackSpeed?: number
+  damage?: number
+  lifesteal?: number
+  postCombatHealPct?: number
+}
+
+export const SET_BONUSES: Record<SetName, { name: string; color: string; tiers: SetBonusTier[] }> = {
+  vanguard: {
+    name: 'Vanguard', color: 'text-amber-400',
+    tiers: [
+      { pieces: 2, description: '+20 Max HP',          maxHp: 20 },
+      { pieces: 4, description: '+2 DR & +5 Thorns',   damageReduction: 2, thorns: 5 },
+    ],
+  },
+  assassin: {
+    name: 'Assassin', color: 'text-yellow-300',
+    tiers: [
+      { pieces: 2, description: '+10% Dodge',                  dodgeChance: 0.10 },
+      { pieces: 4, description: '+20% Crit & +20% Atk Spd',    critChance: 0.20, pctAttackSpeed: 0.20 },
+    ],
+  },
+  bloodbound: {
+    name: 'Bloodbound', color: 'text-rose-400',
+    tiers: [
+      { pieces: 2, description: '+3 Lifesteal',                         lifesteal: 3 },
+      { pieces: 4, description: '+10 Damage & +15% Post-Combat Heal',   damage: 10, postCombatHealPct: 0.15 },
+    ],
+  },
+}

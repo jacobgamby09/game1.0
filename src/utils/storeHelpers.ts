@@ -7,7 +7,7 @@ type MobBase  = Omit<Mob, 'tier' | 'currentHp'>
 type MobEntry = MobBase & { elitePortraitUrl?: string }
 
 const BESTIARY: MobEntry[] = [
-  { name: 'Goblin Rogue', maxHp: 50,  baseDamage: 2, attackSpeed: 0.30, portraitUrl: '/portraits/goblin-rogue.webp', elitePortraitUrl: '/portraits/elite-goblin-warrior.webp' },
+  { name: 'Goblin Rogue', maxHp: 50,  baseDamage: 6, attackSpeed: 0.30, dodgeChance: 0.18, portraitUrl: '/portraits/goblin-rogue.webp', elitePortraitUrl: '/portraits/elite-goblin-warrior.webp' },
   { name: 'Undead Brute', maxHp: 110, baseDamage: 7, attackSpeed: 0.90, portraitUrl: '/portraits/undead-brute.webp', elitePortraitUrl: '/portraits/elite-undead-brute.webp' },
   { name: 'Orc Warrior',  maxHp: 100, baseDamage: 5, attackSpeed: 0.55, portraitUrl: '/portraits/orc-warrior.webp' },
 ]
@@ -72,6 +72,7 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
     currentHp:   scaledHp,
     baseDamage:  scaledDmg,
     attackSpeed: base.attackSpeed,
+    dodgeChance: (base as MobEntry).dodgeChance,
     portraitUrl: tier === 'elite'
       ? ((base as MobEntry).elitePortraitUrl ?? base.portraitUrl)
       : base.portraitUrl,

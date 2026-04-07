@@ -2,8 +2,8 @@ import { useState } from 'react'
 import {
   Crown, Shirt, Layers, Swords, Shield, Award, Circle, Zap, Coins, FlaskConical,
 } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES } from '../stores/useGameStore'
-import type { Item, EquipSlot, ItemSlot, EquipmentSlotName, EquipmentSlotUpgrades, SlotRarityLevel } from '../stores/useGameStore'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SET_BONUSES } from '../stores/useGameStore'
+import type { Item, EquipSlot, ItemSlot, EquipmentSlotName, EquipmentSlotUpgrades, SlotRarityLevel, SetName } from '../stores/useGameStore'
 import ItemComparisonPanel from './ItemComparisonPanel'
 
 // ─── Slot icon map ────────────────────────────────────────────────────────────
@@ -303,10 +303,8 @@ function ItemDetails({
           {selectedFrom === 'backpack' && (
             <ItemComparisonPanel
               item={selectedItem}
-              onEquip={(slot) => {
-                if (selectedItem.equipSlot === 'potion') {
-                  onEquipPotion(selectedItem)
-                } else if (slot) {
+              onEquip={selectedItem.equipSlot === 'potion' ? undefined : (slot) => {
+                if (slot) {
                   onEquipToSlot(selectedItem, slot)
                 } else {
                   onEquip(selectedItem)
@@ -418,6 +416,46 @@ function ItemDetails({
   )
 }
 
+// ─── ActiveSetBonuses ─────────────────────────────────────────────────────────
+
+function ActiveSetBonuses({ equipment }: { equipment: Record<EquipSlot, Item | null> }) {
+  const items = Object.values(equipment).filter(Boolean) as Item[]
+  const setCounts: Partial<Record<SetName, number>> = {}
+  for (const item of items) {
+    if (item.setName) setCounts[item.setName] = (setCounts[item.setName] ?? 0) + 1
+  }
+  const activeSets = Object.entries(setCounts) as [SetName, number][]
+  if (activeSets.length === 0) return null
+
+  return (
+    <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-3">
+      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">Active Set Bonuses</p>
+      {activeSets.map(([setKey, count]) => {
+        const def = SET_BONUSES[setKey]
+        return (
+          <div key={setKey} className="flex flex-col gap-1">
+            <p className={`text-xs font-bold uppercase tracking-wide ${def.color}`}>
+              {def.name}
+              <span className="text-gray-500 font-normal normal-case tracking-normal ml-1">({count}/4)</span>
+            </p>
+            {def.tiers.map(tier => {
+              const active = count >= tier.pieces
+              return (
+                <p key={tier.pieces} className={`text-xs pl-2 ${active ? 'text-gray-200' : 'text-gray-600'}`}>
+                  <span className={`font-bold mr-1 ${active ? def.color : 'text-gray-600'}`}>
+                    {active ? '✔' : '🔒'}
+                  </span>
+                  {tier.pieces}-Piece: {tier.description}
+                </p>
+              )
+            })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── InventoryView ────────────────────────────────────────────────────────────
 
 export default function InventoryView() {
@@ -482,7 +520,9 @@ export default function InventoryView() {
           {eff.dodgeChance     > 0 && <p className="text-cyan-400 text-sm font-semibold">💨 {(eff.dodgeChance * 100).toFixed(0)}% Dodge</p>}
           {eff.lifesteal       > 0 && <p className="text-emerald-400 text-sm font-semibold">🩸 {eff.lifesteal} Lifesteal</p>}
           {eff.damageReduction > 0 && <p className="text-orange-400 text-sm font-semibold">🛡 {eff.damageReduction} DR</p>}
+          {eff.thorns         > 0 && <p className="text-pink-400 text-sm font-semibold">🔺 {eff.thorns} Thorns</p>}
         </div>
+        <ActiveSetBonuses equipment={equipment} />
       </div>
 
       {/* Section 2: Backpack */}
