@@ -107,6 +107,7 @@ export interface Item {
   }
   ability?: ItemAbility
   consumableEffect?: ConsumableEffect
+  icon?: LucideIcon
 }
 
 // ─── Player ───────────────────────────────────────────────────────────────────
