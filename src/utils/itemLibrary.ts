@@ -21,10 +21,10 @@ const ITEM_LIBRARY: ItemBase[] = [
 
   // ── mainHand (weapons) ──────────────────────────────────────────────────────
   { name: 'Rusty Sword', equipSlot: 'mainHand', rarity: 'common', icon: Sword, description: 'A chipped blade found near the entrance.', stats: { damage: 5 } },
-  { name: 'Iron Dagger', equipSlot: 'mainHand', rarity: 'common', icon: Knife, description: 'Light and quick; preferred by scouts.', stats: { damage: 3, attackSpeed: 0.25 } },
+  { name: 'Iron Dagger', equipSlot: 'mainHand', rarity: 'common', icon: Sword, description: 'Light and quick; preferred by scouts.', stats: { damage: 3, attackSpeed: 0.25 } },
   { name: 'Serrated Blade', equipSlot: 'mainHand', rarity: 'uncommon', icon: Sword, description: 'Jagged teeth catch armour and rend flesh.', stats: { damage: 4, critChance: 0.04 } },
   { name: 'Heavy Mace', equipSlot: 'mainHand', rarity: 'uncommon', icon: Hammer, description: 'Slow and brutal — each strike has real weight.', stats: { damage: 7, attackSpeed: -0.15 } },
-  { name: "Assassin's Kris", equipSlot: 'mainHand', rarity: 'rare', icon: Knife, description: 'Wavy-bladed ritual dagger that finds every gap in armour.', stats: { damage: 3, attackSpeed: 0.25, critChance: 0.07 } },
+  { name: "Assassin's Kris", equipSlot: 'mainHand', rarity: 'rare', icon: Sword, description: 'Wavy-bladed ritual dagger that finds every gap in armour.', stats: { damage: 3, attackSpeed: 0.25, critChance: 0.07 } },
   { name: 'Blood-soaked Cleaver', equipSlot: 'mainHand', rarity: 'rare', icon: Axe, description: 'The blade has tasted so much blood it practically heals itself.', stats: { damage: 6, lifesteal: 3 } },
   { name: 'Void Blade', equipSlot: 'mainHand', rarity: 'epic', icon: Sword, description: 'A cursed edge that hungers for more.', stats: { damage: 9, lifesteal: 4, critChance: 0.05 } },
   { name: 'Thunderous Warhammer', equipSlot: 'mainHand', rarity: 'epic', icon: Hammer, description: 'Hits like a siege weapon — and swings about as fast.', stats: { damage: 15, attackSpeed: -0.3 } },
@@ -32,7 +32,7 @@ const ITEM_LIBRARY: ItemBase[] = [
   // ── offHand (shields) ───────────────────────────────────────────────────────
   { name: 'Wooden Buckler', equipSlot: 'offHand', rarity: 'common', icon: Shield, description: 'A simple disc of hardwood; better than a bare arm.', stats: { hp: 10 } },
   { name: 'Cracked Kite Shield', equipSlot: 'offHand', rarity: 'common', icon: Shield, description: 'Reliable protection despite the fault lines running through it.', stats: { hp: 8, damageReduction: 1 } },
-  { name: "Duelist's Parry Dagger", equipSlot: 'offHand', rarity: 'uncommon', icon: Knife, description: 'A nimble blade held reversed — perfect for deflecting blows.', stats: { dodgeChance: 0.05 } },
+  { name: "Duelist's Parry Dagger", equipSlot: 'offHand', rarity: 'uncommon', icon: Sword, description: 'A nimble blade held reversed — perfect for deflecting blows.', stats: { dodgeChance: 0.05 } },
   { name: 'Iron Bulwark', equipSlot: 'offHand', rarity: 'uncommon', icon: ShieldHalf, description: 'Iron-banded wood, heavier than it looks.', stats: { hp: 10, damageReduction: 2 } },
   { name: 'Tower Shield of the Bear', equipSlot: 'offHand', rarity: 'rare', icon: Shield, description: 'Massive. Every hit that lands feels like it hit a wall.', stats: { hp: 18, damageReduction: 2 } },
   { name: 'Bladed Gauntlet', equipSlot: 'offHand', rarity: 'rare', icon: Shield, description: 'Armoured fist lined with forward-facing spikes.', stats: { damage: 3, dodgeChance: 0.05 } },
@@ -89,7 +89,7 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Vanguard Signet', equipSlot: 'ring1', rarity: 'set', setName: 'vanguard', icon: Shield, description: 'A wide iron band engraved with a tower crest.', stats: { damage: 4, critChance: 0.04 } },
 
   // ── Set Items — Assassin (crit/speed set) ────────────────────────────────────
-  { name: "Assassin's Fang", equipSlot: 'mainHand', rarity: 'set', setName: 'assassin', icon: Knife, description: "A slender blade whose edge vanishes in dim light.", stats: { damage: 4, attackSpeed: 0.20, critChance: 0.06 } },
+  { name: "Assassin's Fang", equipSlot: 'mainHand', rarity: 'set', setName: 'assassin', icon: Sword, description: "A slender blade whose edge vanishes in dim light.", stats: { damage: 4, attackSpeed: 0.20, critChance: 0.06 } },
   { name: "Assassin's Silks", equipSlot: 'chest', rarity: 'set', setName: 'assassin', icon: Shirt, description: "Near-weightless shadowsilk stitched for evasion.", stats: { hp: 10, dodgeChance: 0.07 } },
   { name: "Assassin's Cowl", equipSlot: 'head', rarity: 'set', setName: 'assassin', icon: Eye, description: "A deep hood that hides both face and intent.", stats: { critChance: 0.05, dodgeChance: 0.04 } },
   { name: "Assassin's Band", equipSlot: 'ring1', rarity: 'set', setName: 'assassin', icon: Target, description: "A slim obsidian ring, balanced for quick hands.", stats: { attackSpeed: 0.15, critChance: 0.04 } },
