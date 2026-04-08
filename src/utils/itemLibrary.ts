@@ -61,7 +61,7 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Ouroboros Ring',        equipSlot: 'ring1',    rarity: 'epic',     description: 'A serpent swallowing its tail — you take, and it gives back.',       stats: { lifesteal: 3, critChance: 0.03, attackSpeed: 0.1 } },
 
   // ── ring2 ───────────────────────────────────────────────────────────────────
-  { name: 'Silver Ring',           equipSlot: 'ring2',    rarity: 'common',   description: 'Engraved with a small rune of warding.',                             stats: { attackSpeed: 0.10 } },
+  { name: 'Silver Ring',           equipSlot: 'ring2',    rarity: 'common',   description: 'A light silver ring that makes your hands feel swifter.',            stats: { attackSpeed: 0.05 } },
   { name: 'Iron Signet',           equipSlot: 'ring2',    rarity: 'uncommon', description: 'A military signet stamped with a crossed-swords crest.',             stats: { damage: 2, attackSpeed: 0.10 } },
   { name: 'Serpent Ring',          equipSlot: 'ring2',    rarity: 'rare',     description: 'A coiled serpent whose fangs bite the wearer\'s foe.',               stats: { critChance: 0.04, damage: 3 } },
   { name: 'Void Ring',             equipSlot: 'ring2',    rarity: 'epic',     description: 'Stares back at you when you look into its gem.',                     stats: { lifesteal: 3, critChance: 0.04, damage: 3 } },

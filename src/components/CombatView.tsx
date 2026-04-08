@@ -1080,6 +1080,7 @@ function MarketOverlay() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-3xl">
         {marketItems.map(({ item, price }) => {
           const canAfford = player.gold >= price
+          const isEquipped = Object.values(equipment).some(e => e?.name === item.name)
           const rc = RARITY_COLORS[item.rarity]
           const Icon = getSlotIcon(item.equipSlot)
           const diff = getStatDiff(item, item.equipSlot === 'potion' ? null : equipment[item.equipSlot as EquipSlot])
@@ -1087,10 +1088,15 @@ function MarketOverlay() {
             <div key={item.id} className={`bg-gray-900 border rounded-xl p-3 flex flex-col gap-2 ${rc.border} ${rc.glow}`}>
               <div className="flex items-center gap-2">
                 <Icon size={18} className="text-amber-400 shrink-0" />
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className={`font-bold text-sm leading-tight ${rc.text}`}>{item.name}</p>
                   <p className={`text-[10px] font-bold uppercase tracking-widest ${rc.text}`}>{item.rarity}</p>
                 </div>
+                {isEquipped && (
+                  <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-slate-400 bg-slate-800 border border-slate-600 px-1.5 py-0.5 rounded">
+                    Equipped
+                  </span>
+                )}
               </div>
               <p className="text-gray-400 text-xs italic leading-snug flex-1">{item.description}</p>
               <div className="flex flex-col gap-0.5 text-xs font-semibold">
@@ -1124,15 +1130,16 @@ function MarketOverlay() {
               </div>
               <button
                 onClick={() => buyItem(item, price)}
-                disabled={!canAfford}
+                disabled={!canAfford || isEquipped}
                 className={`mt-auto w-full py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1
-                  ${canAfford
-                    ? 'border border-yellow-500 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20'
-                    : 'border border-gray-700 bg-gray-800 text-gray-600 cursor-not-allowed opacity-60'
+                  ${isEquipped
+                    ? 'border border-slate-700 bg-slate-800/60 text-slate-500 cursor-not-allowed'
+                    : canAfford
+                      ? 'border border-yellow-500 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20'
+                      : 'border border-gray-700 bg-gray-800 text-gray-600 cursor-not-allowed opacity-60'
                   }`}
               >
-                <Coins size={11} />
-                {price}g
+                {isEquipped ? 'Already Owned' : <><Coins size={11} />{price}g</>}
               </button>
             </div>
           )

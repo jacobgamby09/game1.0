@@ -13,7 +13,7 @@ const BESTIARY: MobEntry[] = [
 ]
 
 const VOID_WARDEN_BASE: MobBase = {
-  name: 'The Void Warden', maxHp: 500, baseDamage: 12, attackSpeed: 0.65, portraitUrl: '/portraits/void-warden.webp',
+  name: 'The Void Warden', maxHp: 1500, baseDamage: 25, attackSpeed: 0.50, portraitUrl: '/portraits/void-warden.webp',
 }
 
 // ─── Elite Traits ─────────────────────────────────────────────────────────────
@@ -44,8 +44,8 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
 
   const dmgMult = nodeType === 'boss' ? 1.0
                 : floor <= 15         ? 1.2
-                : floor <= 30         ? 2.0
-                :                       2.5
+                : floor <= 30         ? 2.4
+                :                       3.2
 
   let base: MobBase
   let tier: MobTier
@@ -66,12 +66,16 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
   const scaledHp  = Math.round(base.maxHp     * hpMult)
   const scaledDmg = Math.round(base.baseDamage * dmgMult)
 
+  const finalSpeed = (floor > 15 && nodeType !== 'boss')
+    ? base.attackSpeed * 0.85
+    : base.attackSpeed
+
   return {
     name:        base.name,
     maxHp:       scaledHp,
     currentHp:   scaledHp,
     baseDamage:  scaledDmg,
-    attackSpeed: base.attackSpeed,
+    attackSpeed: finalSpeed,
     dodgeChance: (base as MobEntry).dodgeChance,
     portraitUrl: tier === 'elite'
       ? ((base as MobEntry).elitePortraitUrl ?? base.portraitUrl)
