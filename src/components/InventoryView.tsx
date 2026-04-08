@@ -216,7 +216,7 @@ function BackpackGrid({ backpack, selectedItem, onSelect }: BackpackGridProps) {
               />
             )
           }
-          const Icon = getSlotIcon(item.equipSlot)
+          const Icon = item.icon ?? getSlotIcon(item.equipSlot)
           const isSelected = selectedItem?.id === item.id
           const rarityBorder = RARITY_COLORS[item.rarity].border
           return (
@@ -282,7 +282,7 @@ function ItemDetails({
           {/* Name + icon */}
           <div className="flex items-center gap-2 border-b border-gray-700 pb-3">
             {(() => {
-              const Icon = getSlotIcon(selectedItem.equipSlot)
+              const Icon = selectedItem.icon ?? getSlotIcon(selectedItem.equipSlot)
               return <Icon className="text-amber-400 shrink-0" size={22} />
             })()}
             <div>

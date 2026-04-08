@@ -827,7 +827,7 @@ function CombatArena() {
 // ─── LootCard ─────────────────────────────────────────────────────────────────
 
 function LootCard({ item, onSelect, equipment }: { item: Item; onSelect: () => void; equipment: Record<EquipSlot, Item | null> }) {
-  const Icon = getSlotIcon(item.equipSlot)
+  const Icon = item.icon ?? getSlotIcon(item.equipSlot)
   const rc = RARITY_COLORS[item.rarity]
   const diff = getStatDiff(item, item.equipSlot === 'potion' ? null : equipment[item.equipSlot as EquipSlot])
   return (
@@ -1100,7 +1100,7 @@ function MarketOverlay() {
           const canAfford = player.gold >= price
           const isEquipped = Object.values(equipment).some(e => e?.name === item.name)
           const rc = RARITY_COLORS[item.rarity]
-          const Icon = getSlotIcon(item.equipSlot)
+          const Icon = item.icon ?? getSlotIcon(item.equipSlot)
           const diff = getStatDiff(item, item.equipSlot === 'potion' ? null : equipment[item.equipSlot as EquipSlot])
           return (
             <div key={item.id} className={`bg-gray-900 border rounded-xl p-3 flex flex-col gap-2 ${rc.border} ${rc.glow}`}>

@@ -96,7 +96,7 @@ export default function ItemComparisonPanel({ item, onEquip }: ItemComparisonPan
   const slotB: EquipSlot = 'ring2'  // only consumed when isDual (rings)
 
   const rc   = RARITY_COLORS[item.rarity]
-  const Icon = SLOT_ICONS[item.equipSlot as EquipSlot] ?? FlaskConical
+  const Icon = item.icon ?? SLOT_ICONS[item.equipSlot as EquipSlot] ?? FlaskConical
 
   return (
     <div className="flex flex-col gap-3">
