@@ -1,11 +1,12 @@
 import type { Item, Rarity } from '../types'
 import {
-  Sword, Knife, Hammer, Axe,
+  Sword, Hammer, Axe,
   Shield, ShieldHalf, ShieldCheck,
   HardHat, Crown, Eye, Ghost, Skull,
   Shirt, Layers, Footprints, Wind,
   Award, Heart, Zap, Circle, Gem, Target, Infinity, Droplets,
   Flame, Snowflake, Sparkles, Coins,
+  GemIcon,
 } from 'lucide-react'
 
 type ItemBase = Omit<Item, 'id'>
@@ -63,7 +64,7 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Eye of the Void', equipSlot: 'amulet', rarity: 'epic', icon: Eye, description: 'A gem that stares back — and teaches you to strike first.', stats: { critChance: 0.06, lifesteal: 3, damage: 3 } },
 
   // ── ring1 ───────────────────────────────────────────────────────────────────
-  { name: 'Copper Band', equipSlot: 'ring1', rarity: 'common', icon: Circle, description: 'A plain ring of cold copper.', stats: { attackSpeed: 0.10 } },
+  { name: 'Copper Band', equipSlot: 'ring1', rarity: 'common', icon: Gem, description: 'A plain ring of cold copper.', stats: { attackSpeed: 0.10 } },
   { name: 'Band of Fortitude', equipSlot: 'ring1', rarity: 'uncommon', icon: Gem, description: 'Thick-set ring engraved with a shield rune.', stats: { damage: 3, critChance: 0.03 } },
   { name: 'Ring of the Predator', equipSlot: 'ring1', rarity: 'rare', icon: Target, description: 'Set with a fang — your strikes feel predatory.', stats: { critChance: 0.05, damage: 2 } },
   { name: 'Ouroboros Ring', equipSlot: 'ring1', rarity: 'epic', icon: Infinity, description: 'A serpent swallowing its tail — you take, and it gives back.', stats: { lifesteal: 3, critChance: 0.03, attackSpeed: 0.1 } },
