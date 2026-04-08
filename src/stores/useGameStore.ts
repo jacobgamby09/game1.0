@@ -80,7 +80,6 @@ const EMPTY_EQUIPMENT: Record<EquipSlot, Item | null> = {
   head: null, chest: null, legs: null,
   mainHand: null, offHand: null,
   amulet: null, ring1: null, ring2: null,
-  spell: null,
 }
 
 // ─── Meta-resource drop helper ───────────────────────────────────────────────
@@ -172,7 +171,7 @@ interface GameStore {
 
   // Skills state
   powerStrikeCooldown: number
-  equippedSpellCooldown: number
+  secondWindCooldown: number
 
   // Inventory state
   backpack: Item[]
@@ -216,7 +215,7 @@ interface GameStore {
   engageCombat: () => void
   tickCombat: () => void
   usePowerStrike: () => void
-  useEquippedSpell: () => void
+  useSecondWind: () => void
   collectCombatReward: () => void
   resetRun: () => void
 
@@ -407,7 +406,7 @@ export const useGameStore = create<GameStore>()(
 
   // ── Skills state ────────────────────────────────────────────────────────────
   powerStrikeCooldown: 0,
-  equippedSpellCooldown: 0,
+  secondWindCooldown: 0,
 
   // ── Inventory state ─────────────────────────────────────────────────────────
   backpack: [],
@@ -494,37 +493,20 @@ export const useGameStore = create<GameStore>()(
       }
     }),
 
-  // ── useEquippedSpell ────────────────────────────────────────────────────────
-  useEquippedSpell: () =>
+  // ── useSecondWind ───────────────────────────────────────────────────────────
+  useSecondWind: () =>
     set((state) => {
-      const spell = state.equipment.spell
-      if (!state.isCombatActive || !spell?.ability || state.equippedSpellCooldown > 0) return state
-      if (!state.currentMob) return state
-
-      const { ability } = spell
-      const mob = { ...state.currentMob }
+      if (!state.isCombatActive || state.secondWindCooldown > 0) return state
+      const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
+      const healAmount = Math.round(eff.maxHp * 0.15)
       const now = Date.now()
-      const damageIndicators = [...state.damageIndicators]
-
-      if (ability.effectType === 'damageEnemy') {
-        mob.currentHp = Math.max(0, mob.currentHp - ability.value)
-        damageIndicators.push({ id: now + Math.random(), value: ability.value, isCrit: false, isSkill: true, target: 'enemy', createdAt: now })
-      }
-
-      if (mob.currentHp <= 0) {
-        return {
-          damageIndicators,
-          equippedSpellCooldown: ability.cooldown,
-          ...triggerEnemyDeath(state, mob),
-          currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
-        }
-      }
-
       return {
-        currentMob: mob,
-        equippedSpellCooldown: ability.cooldown,
-        isCombatActive: true,
-        damageIndicators,
+        player: { ...state.player, currentHp: Math.min(eff.maxHp, state.player.currentHp + healAmount) },
+        secondWindCooldown: 15000,
+        activeBuffs: [
+          ...state.activeBuffs,
+          { type: 'ironWill' as const, expiresAt: now + 3000 },
+        ],
       }
     }),
 
@@ -548,7 +530,7 @@ export const useGameStore = create<GameStore>()(
         playerAttackProgress: 0,
         mobAttackProgress: 0,
         powerStrikeCooldown: 0,
-        equippedSpellCooldown: 0,
+        secondWindCooldown: 0,
         isCombatActive: false,
         usedUndyingThisRun: false,
         backpack: [],
@@ -885,8 +867,9 @@ export const useGameStore = create<GameStore>()(
         : eff.attackSpeed
       const effectiveAttackSpeed = baseSpeed * (hasBerserk ? 2 : 1)
 
-      // ── Berserk: damage reduction = 0 ────────────────────────────────────────
-      const effectiveDR = hasBerserk ? 0 : eff.damageReduction
+      // ── Berserk: damage reduction = 0; Iron Will: +10 DR ────────────────────
+      const hasIronWill  = activeBuffs.some(b => b.type === 'ironWill')
+      const effectiveDR  = hasBerserk ? 0 : eff.damageReduction + (hasIronWill ? 10 : 0)
 
       playerAttackProgress += effectiveAttackSpeed * (TICK_MS / 1000) * 100
       // Freeze: skip mob progress; Frenzied: double speed below 30% HP
@@ -966,7 +949,7 @@ export const useGameStore = create<GameStore>()(
       }
 
       const powerStrikeCooldown = Math.max(0, state.powerStrikeCooldown - TICK_MS)
-      const equippedSpellCooldown = Math.max(0, state.equippedSpellCooldown - TICK_MS)
+      const secondWindCooldown  = Math.max(0, state.secondWindCooldown  - TICK_MS)
 
       // Undying: revive at 30% HP once per run
       if (player.currentHp <= 0 && eff.hasUndying && !state.usedUndyingThisRun) {
@@ -977,7 +960,7 @@ export const useGameStore = create<GameStore>()(
           playerAttackProgress,
           mobAttackProgress,
           powerStrikeCooldown,
-          equippedSpellCooldown,
+          secondWindCooldown,
           isCombatActive: true,
           usedUndyingThisRun: true,
           damageIndicators,
@@ -996,7 +979,7 @@ export const useGameStore = create<GameStore>()(
           playerAttackProgress,
           mobAttackProgress,
           powerStrikeCooldown,
-          equippedSpellCooldown,
+          secondWindCooldown,
           damageIndicators,
           bossPhase,
           bossPhaseTimerMs,
@@ -1017,7 +1000,7 @@ export const useGameStore = create<GameStore>()(
           playerAttackProgress,
           mobAttackProgress,
           powerStrikeCooldown,
-          equippedSpellCooldown,
+          secondWindCooldown,
           isCombatActive,
           damageIndicators,
           activeBuffs: [],
@@ -1039,7 +1022,7 @@ export const useGameStore = create<GameStore>()(
         playerAttackProgress,
         mobAttackProgress,
         powerStrikeCooldown,
-        equippedSpellCooldown,
+        secondWindCooldown,
         isCombatActive,
         damageIndicators,
         activeBuffs,

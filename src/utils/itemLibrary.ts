@@ -66,12 +66,6 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Serpent Ring',          equipSlot: 'ring2',    rarity: 'rare',     description: 'A coiled serpent whose fangs bite the wearer\'s foe.',               stats: { critChance: 0.04, damage: 3 } },
   { name: 'Void Ring',             equipSlot: 'ring2',    rarity: 'epic',     description: 'Stares back at you when you look into its gem.',                     stats: { lifesteal: 3, critChance: 0.04, damage: 3 } },
 
-  // ── spell ───────────────────────────────────────────────────────────────────
-  { name: 'Flame Scroll',          equipSlot: 'spell',    rarity: 'common',   description: 'A tattered scroll pulsing with heat.',           stats: { damage: 1 }, ability: { name: 'Fireball',         description: 'Deals 25 damage.',  cooldown: 12000, effectType: 'damageEnemy', value: 25 } },
-  { name: 'Frost Tome',            equipSlot: 'spell',    rarity: 'rare',     description: 'Pages inscribed in permafrost runes.',           stats: { damage: 3 }, ability: { name: 'Ice Lance',         description: 'Deals 30 damage.',  cooldown: 10000, effectType: 'damageEnemy', value: 30 } },
-  { name: 'Thunder Codex',         equipSlot: 'spell',    rarity: 'epic',     description: 'Lightning trapped between two pages.',           stats: { damage: 5 }, ability: { name: 'Lightning Strike',  description: 'Deals 50 damage.',  cooldown: 15000, effectType: 'damageEnemy', value: 50 } },
-  { name: 'Arcane Grimoire',       equipSlot: 'spell',    rarity: 'uncommon', description: 'A scholar\'s notebook rewritten with power.',    stats: { hp: 5 },    ability: { name: 'Arcane Bolt',       description: 'Deals 20 damage.',  cooldown:  8000, effectType: 'damageEnemy', value: 20 } },
-
   // ── potions ─────────────────────────────────────────────────────────────────
   { name: 'Minor Health Potion',  equipSlot: 'potion', rarity: 'common',   description: 'Heals 30% of your Max HP instantly.',                 stats: {}, consumableEffect: { type: 'heal',         value: 0.3                      } },
   { name: 'Glacial Flask',        equipSlot: 'potion', rarity: 'uncommon', description: 'Freezes the enemy for 4 seconds.',                    stats: {}, consumableEffect: { type: 'freezeEnemy', durationMS: 4000                } },

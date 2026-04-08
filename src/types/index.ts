@@ -18,7 +18,6 @@ export type EquipSlot =
   | 'head' | 'chest' | 'legs'
   | 'mainHand' | 'offHand'
   | 'amulet' | 'ring1' | 'ring2'
-  | 'spell'
 
 export type ItemSlot = EquipSlot | 'potion'
 
@@ -82,7 +81,7 @@ export interface ConsumableEffect {
 }
 
 export interface ActiveBuff {
-  type: 'freezeEnemy' | 'berserk' | 'lifestealBuff' | 'midas'
+  type: 'freezeEnemy' | 'berserk' | 'lifestealBuff' | 'midas' | 'ironWill'
   expiresAt?: number    // Date.now() + durationMS
   charges?: number
   value?: number

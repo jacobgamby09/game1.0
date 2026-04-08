@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Crown, Shirt, Layers, Swords, Shield, Award, Circle, Zap, Coins, FlaskConical,
+  Crown, Shirt, Layers, Swords, Shield, Award, Gem, Coins, FlaskConical,
 } from 'lucide-react'
 import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SET_BONUSES, SET_BONUS_TEXT } from '../stores/useGameStore'
 import type { Item, EquipSlot, ItemSlot, EquipmentSlotName, EquipmentSlotUpgrades, SlotRarityLevel, SetName } from '../stores/useGameStore'
@@ -15,16 +15,14 @@ const SLOT_ICONS: Record<EquipSlot, React.ElementType> = {
   mainHand: Swords,
   offHand:  Shield,
   amulet:   Award,
-  ring1:    Circle,
-  ring2:    Circle,
-  spell:    Zap,
+  ring1:    Gem,
+  ring2:    Gem,
 }
 
 const SLOT_LABELS: Record<EquipSlot, string> = {
   head: 'Head', chest: 'Chest', legs: 'Legs',
   mainHand: 'Main Hand', offHand: 'Off Hand',
   amulet: 'Amulet', ring1: 'Ring 1', ring2: 'Ring 2',
-  spell: 'Spell',
 }
 
 function getSlotIcon(slot: ItemSlot): React.ElementType {
@@ -91,7 +89,7 @@ interface PaperDollProps {
 
 function PaperDoll({ equipment, selectedItem, slotUpgrades, onSelect }: PaperDollProps) {
   function slotBtn(key: EquipSlot) {
-    const tier: SlotRarityLevel = key === 'spell' ? 0 : (slotUpgrades[key as EquipmentSlotName] ?? 0) as SlotRarityLevel
+    const tier: SlotRarityLevel = (slotUpgrades[key as EquipmentSlotName] ?? 0) as SlotRarityLevel
     return (
       <SlotButton
         key={key}
@@ -135,8 +133,6 @@ function PaperDoll({ equipment, selectedItem, slotUpgrades, onSelect }: PaperDol
         {slotBtn('ring2')}
       </div>
 
-      {/* SPELL */}
-      <div className="flex justify-center">{slotBtn('spell')}</div>
     </div>
   )
 }

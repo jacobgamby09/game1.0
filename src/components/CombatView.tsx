@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical, Hammer, Sparkles, ChevronsUp, ChevronRight, X, Map } from 'lucide-react'
+import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Gem, Zap, Heart, Coins, ShoppingCart, FlaskConical, Hammer, Sparkles, ChevronsUp, ChevronRight, X, Map, Lock } from 'lucide-react'
 import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel, calculateLevelFromXp, BOONS, SET_BONUSES, SET_BONUS_TEXT } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, ItemSlot, MobTier, MobTrait, DamageIndicator, ActiveBuff } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
@@ -12,13 +12,13 @@ import BoonDetailsModal from './BoonDetailsModal'
 const SLOT_ICONS: Record<EquipSlot, React.ElementType> = {
   head: Crown, chest: Shirt, legs: Layers,
   mainHand: Swords, offHand: Shield,
-  amulet: Award, ring1: Circle, ring2: Circle, spell: Zap,
+  amulet: Award, ring1: Gem, ring2: Gem,
 }
 
 const SLOT_LABELS: Record<EquipSlot, string> = {
   head: 'Head', chest: 'Chest', legs: 'Legs',
   mainHand: 'Main Hand', offHand: 'Off Hand',
-  amulet: 'Amulet', ring1: 'Ring 1', ring2: 'Ring 2', spell: 'Spell',
+  amulet: 'Amulet', ring1: 'Ring 1', ring2: 'Ring 2',
 }
 
 function getSlotIcon(slot: ItemSlot): React.ElementType {
@@ -426,92 +426,105 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
 interface ActiveSkillsProps {
   powerStrikeCooldown: number
   onPowerStrike: () => void
+  secondWindCooldown: number
+  onSecondWind: () => void
   isCombatActive: boolean
-  spellItem: Item | null
-  equippedSpellCooldown: number
-  onUseSpell: () => void
   potionBelt: { item: Item; count: number }[]
   onUsePotion: (index: number) => void
+  apothecaryLevel: number
 }
 
-function ActiveSkills({ powerStrikeCooldown, onPowerStrike, isCombatActive, spellItem, equippedSpellCooldown, onUseSpell, potionBelt, onUsePotion }: ActiveSkillsProps) {
-  const bashReady = powerStrikeCooldown <= 0
-  const bashDisabled = !isCombatActive || !bashReady
-
-  const spellReady = equippedSpellCooldown <= 0
-  const spellDisabled = !isCombatActive || !spellReady
+function ActiveSkills({ powerStrikeCooldown, onPowerStrike, secondWindCooldown, onSecondWind, isCombatActive, potionBelt, onUsePotion, apothecaryLevel }: ActiveSkillsProps) {
+  const bashReady     = powerStrikeCooldown <= 0
+  const swReady       = secondWindCooldown  <= 0
+  const potion1       = potionBelt[0] ?? null
+  const potion2       = potionBelt[1] ?? null
+  const slot2Unlocked = apothecaryLevel >= 6
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-3">
-      <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">
-        Active Skills
-      </p>
-      <div className="flex w-full justify-between items-center gap-4">
-        {/* LEFT — Healing */}
-        <div className="flex gap-2 items-center">
-          {potionBelt.length > 0 ? potionBelt.map((slot, i) => (
-            <button
-              key={i}
-              onClick={() => onUsePotion(i)}
-              disabled={!isCombatActive}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
-                ${isCombatActive
-                  ? 'border border-purple-500 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 ring-1 ring-purple-400/50'
-                  : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
-                }`}
-            >
-              <FlaskConical size={16} />
-              {slot.item.name.split(' ')[0]} ×{slot.count}
-            </button>
-          )) : (
-            <div className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-600 bg-gray-800/50
-                            flex flex-col items-center justify-center opacity-50 select-none">
-              <FlaskConical size={14} className="text-gray-500" />
-              <span className="text-[9px] text-gray-500 mt-0.5">No Potion</span>
-            </div>
-          )}
-        </div>
+    <div className="bg-gray-900 border border-gray-700 rounded-xl p-3">
+      <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest mb-2">Active Skills</p>
+      <div className="grid grid-cols-4 gap-2">
 
-        {/* RIGHT — Attack Skills */}
-        <div className="flex gap-2 items-center justify-end flex-wrap">
+        {/* Slot 1 — Power Strike */}
+        <button
+          onClick={onPowerStrike}
+          disabled={!isCombatActive || !bashReady}
+          className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg text-xs font-bold transition-colors
+            ${bashReady && isCombatActive
+              ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+              : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
+            }`}
+        >
+          <Swords size={18} />
+          <span>{bashReady ? 'Power Strike' : `${(powerStrikeCooldown / 1000).toFixed(1)}s`}</span>
+        </button>
+
+        {/* Slot 2 — Second Wind */}
+        <button
+          onClick={onSecondWind}
+          disabled={!isCombatActive || !swReady}
+          className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg text-xs font-bold transition-colors
+            ${swReady && isCombatActive
+              ? 'border border-teal-500 bg-teal-500/10 text-teal-300 hover:bg-teal-500/20'
+              : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
+            }`}
+        >
+          <Heart size={18} />
+          <span>{swReady ? 'Second Wind' : `${(secondWindCooldown / 1000).toFixed(1)}s`}</span>
+        </button>
+
+        {/* Slot 3 — Potion 1 */}
+        {potion1 ? (
           <button
-            onClick={onPowerStrike}
-            disabled={bashDisabled}
-            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors min-w-[130px]
-              ${bashReady && isCombatActive
-                ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 ring-1 ring-amber-400/50'
+            onClick={() => onUsePotion(0)}
+            disabled={!isCombatActive}
+            className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg text-xs font-bold transition-colors
+              ${isCombatActive
+                ? 'border border-purple-500 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20'
                 : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
               }`}
           >
-            <Swords size={16} />
-            {bashReady ? 'Power Strike' : `${(powerStrikeCooldown / 1000).toFixed(1)}s`}
+            <FlaskConical size={18} />
+            <span className="truncate w-full text-center px-1">{potion1.item.name.split(' ')[0]}</span>
+            <span className="text-[10px] opacity-70">×{potion1.count}</span>
           </button>
+        ) : (
+          <div className="h-16 rounded-lg border-2 border-dashed border-gray-600 bg-gray-800/50 flex flex-col items-center justify-center opacity-40 select-none">
+            <FlaskConical size={14} className="text-gray-500" />
+            <span className="text-[9px] text-gray-500 mt-0.5">Empty</span>
+          </div>
+        )}
 
-          {spellItem?.ability ? (
+        {/* Slot 4 — Potion 2 */}
+        {slot2Unlocked ? (
+          potion2 ? (
             <button
-              onClick={onUseSpell}
-              disabled={spellDisabled}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors min-w-[130px]
-                ${spellReady && isCombatActive
-                  ? 'border border-orange-500 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 ring-1 ring-orange-400/50'
+              onClick={() => onUsePotion(1)}
+              disabled={!isCombatActive}
+              className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg text-xs font-bold transition-colors
+                ${isCombatActive
+                  ? 'border border-purple-500 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20'
                   : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
                 }`}
             >
-              <Flame size={16} />
-              <span className="flex flex-col items-start leading-tight">
-                <span>{spellReady ? spellItem.ability.name : `${(equippedSpellCooldown / 1000).toFixed(1)}s`}</span>
-                {spellReady && (
-                  <span className="text-[10px] opacity-70">{spellItem.ability.value} Dmg</span>
-                )}
-              </span>
+              <FlaskConical size={18} />
+              <span className="truncate w-full text-center px-1">{potion2.item.name.split(' ')[0]}</span>
+              <span className="text-[10px] opacity-70">×{potion2.count}</span>
             </button>
           ) : (
-            <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-dashed border-gray-700 text-gray-600 opacity-40 cursor-not-allowed select-none min-w-[130px]">
-              <Plus size={16} />
-              Empty Slot
+            <div className="h-16 rounded-lg border-2 border-dashed border-gray-600 bg-gray-800/50 flex flex-col items-center justify-center opacity-40 select-none">
+              <FlaskConical size={14} className="text-gray-500" />
+              <span className="text-[9px] text-gray-500 mt-0.5">Empty</span>
             </div>
-          )}
-        </div>
+          )
+        ) : (
+          <div className="h-16 rounded-lg border border-gray-800 bg-gray-900 flex flex-col items-center justify-center opacity-30 select-none cursor-not-allowed">
+            <Lock size={14} className="text-gray-600" />
+            <span className="text-[9px] text-gray-600 mt-0.5">Locked</span>
+          </div>
+        )}
+
       </div>
     </div>
   )
@@ -541,6 +554,10 @@ function ActiveBuffsBar({ activeBuffs }: { activeBuffs: ActiveBuff[] }) {
           const secs = b.expiresAt ? Math.max(0, Math.ceil((b.expiresAt - Date.now()) / 1000)) : 0
           label = `💰 Midas (${secs}s)`
           color = 'text-yellow-300 bg-yellow-900/40 border-yellow-700/50'
+        } else if (b.type === 'ironWill') {
+          const secs = b.expiresAt ? Math.max(0, Math.ceil((b.expiresAt - Date.now()) / 1000)) : 0
+          label = `🛡 Iron Will (${secs}s)`
+          color = 'text-teal-300 bg-teal-900/40 border-teal-700/50'
         }
         return (
           <span key={i} className={`text-[11px] font-bold px-2 py-0.5 rounded border ${color}`}>
@@ -563,9 +580,10 @@ function CombatArena() {
     mobAttackProgress,
     isCombatActive,
     powerStrikeCooldown,
-    equippedSpellCooldown,
+    secondWindCooldown,
     usePowerStrike,
-    useEquippedSpell,
+    useSecondWind,
+    buildings,
     resetRun,
     talents,
     combatReward,
@@ -678,12 +696,12 @@ function CombatArena() {
           <ActiveSkills
             powerStrikeCooldown={powerStrikeCooldown}
             onPowerStrike={usePowerStrike}
+            secondWindCooldown={secondWindCooldown}
+            onSecondWind={useSecondWind}
             isCombatActive={isCombatActive}
-            spellItem={equipment.spell}
-            equippedSpellCooldown={equippedSpellCooldown}
-            onUseSpell={useEquippedSpell}
             potionBelt={potionBelt}
             onUsePotion={usePotion}
+            apothecaryLevel={buildings.apothecary}
           />
         </div>
 
