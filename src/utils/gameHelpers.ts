@@ -4,7 +4,7 @@ import { TALENT_TREE, SLOT_TIER_BONUSES, SET_BONUSES } from '../data/constants'
 // ─── Item sell value ──────────────────────────────────────────────────────────
 
 export function getItemSellValue(rarity: Rarity): number {
-  const VALUES: Record<Rarity, number> = { common: 5, uncommon: 12, rare: 25, epic: 55 }
+  const VALUES: Record<Rarity, number> = { common: 5, uncommon: 12, rare: 25, epic: 55, set: 90 }
   return VALUES[rarity]
 }
 

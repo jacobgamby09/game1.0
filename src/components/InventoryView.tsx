@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Crown, Shirt, Layers, Swords, Shield, Award, Circle, Zap, Coins, FlaskConical,
 } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SET_BONUSES } from '../stores/useGameStore'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SET_BONUSES, SET_BONUS_TEXT } from '../stores/useGameStore'
 import type { Item, EquipSlot, ItemSlot, EquipmentSlotName, EquipmentSlotUpgrades, SlotRarityLevel, SetName } from '../stores/useGameStore'
 import ItemComparisonPanel from './ItemComparisonPanel'
 
@@ -354,6 +354,17 @@ function ItemDetails({
               </div>
             )
           })()}
+
+          {/* Set bonus info (shown when item is equipped or in backpack) */}
+          {selectedItem.setName && selectedFrom !== 'backpack' && (
+            <div className="border border-lime-900/60 bg-lime-950/20 rounded p-1.5 flex flex-col gap-0.5">
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${SET_BONUSES[selectedItem.setName].color}`}>
+                Set: {SET_BONUSES[selectedItem.setName].name}
+              </p>
+              <p className="text-[10px] text-lime-300">2-Piece: {SET_BONUS_TEXT[selectedItem.setName][2]}</p>
+              <p className="text-[10px] text-lime-300">4-Piece: {SET_BONUS_TEXT[selectedItem.setName][4]}</p>
+            </div>
+          )}
 
           {/* Ability */}
           {selectedItem.ability && selectedFrom !== 'backpack' && (

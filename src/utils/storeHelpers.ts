@@ -86,9 +86,10 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
 // ─── Loot helpers ─────────────────────────────────────────────────────────────
 
 function itemPrice(rarity: Rarity): number {
-  const [lo, hi] = rarity === 'common'   ? [20,  30]
-                 : rarity === 'uncommon' ? [45,  65]
+  const [lo, hi] = rarity === 'common'   ? [ 20,  30]
+                 : rarity === 'uncommon' ? [ 45,  65]
                  : rarity === 'rare'     ? [100, 140]
+                 : rarity === 'set'      ? [300, 400]
                  :                         [220, 280]
   return Math.floor(Math.random() * (hi - lo + 1)) + lo
 }

@@ -12,6 +12,7 @@ export const RARITY_COLORS: Record<Rarity, { text: string; border: string; glow:
   uncommon: { text: 'text-teal-400',   border: 'border-teal-500',   glow: 'ring-1 ring-teal-500/40' },
   rare:     { text: 'text-blue-400',   border: 'border-blue-500',   glow: 'ring-1 ring-blue-500/40' },
   epic:     { text: 'text-purple-400', border: 'border-purple-500', glow: 'ring-1 ring-purple-500/40' },
+  set:      { text: 'text-lime-400',   border: 'border-lime-500',   glow: 'ring-1 ring-lime-500/40' },
 }
 
 // ─── Slot upgrade config ──────────────────────────────────────────────────────
@@ -135,4 +136,12 @@ export const SET_BONUSES: Record<SetName, { name: string; color: string; tiers: 
       { pieces: 4, description: '+10 Damage & +15% Post-Combat Heal',   damage: 10, postCombatHealPct: 0.15 },
     ],
   },
+}
+
+// ─── Set Bonus inline text (for item cards) ───────────────────────────────────
+
+export const SET_BONUS_TEXT: Record<string, Record<2 | 4, string>> = {
+  vanguard:   { 2: '+20 Max HP', 4: '+2 DR & +5 Thorns' },
+  assassin:   { 2: '+10% Dodge', 4: '+20% Crit & +20% Atk Spd' },
+  bloodbound: { 2: '+3 Lifesteal', 4: '+10 Base Dmg & +15% Heal' },
 }

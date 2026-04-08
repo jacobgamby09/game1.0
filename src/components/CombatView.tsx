@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Swords, Shield, Plus, Skull, Tent, Archive, Flame, Crown, Shirt, Layers, Award, Circle, Zap, Heart, Coins, ShoppingCart, FlaskConical, Hammer, Sparkles, ChevronsUp, ChevronRight, X, Map } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel, calculateLevelFromXp, BOONS } from '../stores/useGameStore'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, computePlayerLevel, calculateLevelFromXp, BOONS, SET_BONUSES, SET_BONUS_TEXT } from '../stores/useGameStore'
 import type { Player, Mob, MapNode, Item, EquipSlot, ItemSlot, MobTier, MobTrait, DamageIndicator, ActiveBuff } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 import ItemComparisonPanel from './ItemComparisonPanel'
@@ -854,6 +854,15 @@ function LootCard({ item, onSelect, equipment }: { item: Item; onSelect: () => v
         {item.stats.lifesteal       === undefined && (equipment[item.equipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50 text-sm font-semibold">Lifesteal <DiffBadge diff={diff.lifesteal} /></p>}
         {item.stats.damageReduction === undefined && (equipment[item.equipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50 text-sm font-semibold">DR <DiffBadge diff={diff.damageReduction} /></p>}
         {item.ability && <p className="text-orange-400 text-sm font-semibold">✦ {item.ability.name}: {item.ability.description}</p>}
+        {item.setName && (
+          <div className="border border-lime-900/60 bg-lime-950/20 rounded p-1.5 flex flex-col gap-0.5 mt-1">
+            <p className={`text-[10px] font-bold uppercase tracking-widest ${SET_BONUSES[item.setName].color}`}>
+              Set: {SET_BONUSES[item.setName].name}
+            </p>
+            <p className="text-[10px] text-lime-300">2-Piece: {SET_BONUS_TEXT[item.setName][2]}</p>
+            <p className="text-[10px] text-lime-300">4-Piece: {SET_BONUS_TEXT[item.setName][4]}</p>
+          </div>
+        )}
       </div>
 
       <button className="mt-auto w-full bg-amber-500/20 border border-amber-500 text-amber-300
@@ -1103,6 +1112,15 @@ function MarketOverlay() {
                 {item.stats.lifesteal       === undefined && (equipment[item.equipSlot]?.stats.lifesteal       ?? 0) > 0   && <p className="text-emerald-400/50">LS <DiffBadge diff={diff.lifesteal} /></p>}
                 {item.stats.damageReduction === undefined && (equipment[item.equipSlot]?.stats.damageReduction ?? 0) > 0   && <p className="text-orange-400/50">DR <DiffBadge diff={diff.damageReduction} /></p>}
                 {item.ability && <p className="text-orange-400">✦ {item.ability.name}</p>}
+                {item.setName && (
+                  <div className="border border-lime-900/60 bg-lime-950/20 rounded p-1 flex flex-col gap-0.5 mt-0.5">
+                    <p className={`text-[9px] font-bold uppercase tracking-widest ${SET_BONUSES[item.setName].color}`}>
+                      Set: {SET_BONUSES[item.setName].name}
+                    </p>
+                    <p className="text-[9px] text-lime-300">2pc: {SET_BONUS_TEXT[item.setName][2]}</p>
+                    <p className="text-[9px] text-lime-300">4pc: {SET_BONUS_TEXT[item.setName][4]}</p>
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => buyItem(item, price)}

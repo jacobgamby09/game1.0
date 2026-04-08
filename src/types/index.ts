@@ -22,7 +22,7 @@ export type EquipSlot =
 
 export type ItemSlot = EquipSlot | 'potion'
 
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic'
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'set'
 
 // ─── Talent System ────────────────────────────────────────────────────────────
 

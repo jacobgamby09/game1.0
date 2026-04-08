@@ -80,41 +80,42 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Midas Elixir',         equipSlot: 'potion', rarity: 'epic',     description: 'Next enemy death within 4s drops 3× Gold.',           stats: {}, consumableEffect: { type: 'midas',       durationMS: 4000                } },
 
   // ── Set Items — Vanguard (tank set) ─────────────────────────────────────────
-  { name: 'Vanguard Blade',     equipSlot: 'mainHand', rarity: 'rare', setName: 'vanguard',    description: 'A broad sword etched with warding runes.',                  stats: { damage: 7, critChance: 0.03 } },
-  { name: 'Vanguard Plate',     equipSlot: 'chest',    rarity: 'rare', setName: 'vanguard',    description: 'Thick iron plates layered with warding sigils.',             stats: { hp: 22, damageReduction: 3 } },
-  { name: 'Vanguard Helm',      equipSlot: 'head',     rarity: 'rare', setName: 'vanguard',    description: 'A full-face helm bearing the Vanguard seal.',               stats: { hp: 14, damageReduction: 2 } },
-  { name: 'Vanguard Signet',    equipSlot: 'ring1',    rarity: 'rare', setName: 'vanguard',    description: 'A wide iron band engraved with a tower crest.',             stats: { damage: 4, critChance: 0.04 } },
+  { name: 'Vanguard Blade',     equipSlot: 'mainHand', rarity: 'set', setName: 'vanguard',    description: 'A broad sword etched with warding runes.',                  stats: { damage: 7, critChance: 0.03 } },
+  { name: 'Vanguard Plate',     equipSlot: 'chest',    rarity: 'set', setName: 'vanguard',    description: 'Thick iron plates layered with warding sigils.',             stats: { hp: 22, damageReduction: 3 } },
+  { name: 'Vanguard Helm',      equipSlot: 'head',     rarity: 'set', setName: 'vanguard',    description: 'A full-face helm bearing the Vanguard seal.',               stats: { hp: 14, damageReduction: 2 } },
+  { name: 'Vanguard Signet',    equipSlot: 'ring1',    rarity: 'set', setName: 'vanguard',    description: 'A wide iron band engraved with a tower crest.',             stats: { damage: 4, critChance: 0.04 } },
 
   // ── Set Items — Assassin (crit/speed set) ────────────────────────────────────
-  { name: "Assassin's Fang",    equipSlot: 'mainHand', rarity: 'rare', setName: 'assassin',   description: "A slender blade whose edge vanishes in dim light.",           stats: { damage: 4, attackSpeed: 0.20, critChance: 0.06 } },
-  { name: "Assassin's Silks",   equipSlot: 'chest',    rarity: 'rare', setName: 'assassin',   description: "Near-weightless shadowsilk stitched for evasion.",            stats: { hp: 10, dodgeChance: 0.07 } },
-  { name: "Assassin's Cowl",    equipSlot: 'head',     rarity: 'rare', setName: 'assassin',   description: "A deep hood that hides both face and intent.",                stats: { critChance: 0.05, dodgeChance: 0.04 } },
-  { name: "Assassin's Band",    equipSlot: 'ring1',    rarity: 'rare', setName: 'assassin',   description: "A slim obsidian ring, balanced for quick hands.",             stats: { attackSpeed: 0.15, critChance: 0.04 } },
+  { name: "Assassin's Fang",    equipSlot: 'mainHand', rarity: 'set', setName: 'assassin',   description: "A slender blade whose edge vanishes in dim light.",           stats: { damage: 4, attackSpeed: 0.20, critChance: 0.06 } },
+  { name: "Assassin's Silks",   equipSlot: 'chest',    rarity: 'set', setName: 'assassin',   description: "Near-weightless shadowsilk stitched for evasion.",            stats: { hp: 10, dodgeChance: 0.07 } },
+  { name: "Assassin's Cowl",    equipSlot: 'head',     rarity: 'set', setName: 'assassin',   description: "A deep hood that hides both face and intent.",                stats: { critChance: 0.05, dodgeChance: 0.04 } },
+  { name: "Assassin's Band",    equipSlot: 'ring1',    rarity: 'set', setName: 'assassin',   description: "A slim obsidian ring, balanced for quick hands.",             stats: { attackSpeed: 0.15, critChance: 0.04 } },
 
   // ── Set Items — Bloodbound (lifesteal set) ───────────────────────────────────
-  { name: 'Bloodbound Reaper',  equipSlot: 'mainHand', rarity: 'rare', setName: 'bloodbound', description: 'A curved blade that hungers — and satisfies.',               stats: { damage: 6, lifesteal: 4 } },
-  { name: 'Bloodbound Hauberk', equipSlot: 'chest',    rarity: 'rare', setName: 'bloodbound', description: 'Crimson-stained chainmail pulsing with stolen life.',         stats: { hp: 18, damageReduction: 2 } },
-  { name: 'Bloodbound Mask',    equipSlot: 'head',     rarity: 'rare', setName: 'bloodbound', description: 'A bone mask painted with a bloodbound covenant.',            stats: { damage: 3, lifesteal: 2 } },
-  { name: 'Bloodbound Ring',    equipSlot: 'ring1',    rarity: 'rare', setName: 'bloodbound', description: 'A garnet ring that deepens in colour after each kill.',       stats: { lifesteal: 3, critChance: 0.03 } },
+  { name: 'Bloodbound Reaper',  equipSlot: 'mainHand', rarity: 'set', setName: 'bloodbound', description: 'A curved blade that hungers — and satisfies.',               stats: { damage: 6, lifesteal: 4 } },
+  { name: 'Bloodbound Hauberk', equipSlot: 'chest',    rarity: 'set', setName: 'bloodbound', description: 'Crimson-stained chainmail pulsing with stolen life.',         stats: { hp: 18, damageReduction: 2 } },
+  { name: 'Bloodbound Mask',    equipSlot: 'head',     rarity: 'set', setName: 'bloodbound', description: 'A bone mask painted with a bloodbound covenant.',            stats: { damage: 3, lifesteal: 2 } },
+  { name: 'Bloodbound Ring',    equipSlot: 'ring1',    rarity: 'set', setName: 'bloodbound', description: 'A garnet ring that deepens in colour after each kill.',       stats: { lifesteal: 3, critChance: 0.03 } },
 ]
 
 // ─── Rarity weight helpers ────────────────────────────────────────────────────
 
-function rarityWeights(floor: number): [number, number, number, number] {
-  // [common, uncommon, rare, epic] — sums to 100
-  if (floor <= 12) return [75, 25,  0,  0]
-  if (floor <= 24) return [40, 45, 15,  0]
-  if (floor <= 36) return [10, 50, 35,  5]
-  return                  [ 0, 20, 55, 25]
+function rarityWeights(floor: number): [number, number, number, number, number] {
+  // [common, uncommon, rare, epic, set] — sums to 100
+  if (floor <= 12) return [75, 25,  0,  0,  0]
+  if (floor <= 24) return [35, 40, 15,  0, 10]
+  if (floor <= 36) return [ 5, 40, 28,  5, 22]
+  return                  [ 0, 15, 38, 20, 27]
 }
 
 function rollRarity(floor: number): Rarity {
-  const [w0, w1, w2] = rarityWeights(floor)
+  const [w0, w1, w2, w3] = rarityWeights(floor)
   const roll = Math.random() * 100
-  if (roll < w0)           return 'common'
-  if (roll < w0 + w1)      return 'uncommon'
-  if (roll < w0 + w1 + w2) return 'rare'
-  return 'epic'
+  if (roll < w0)                   return 'common'
+  if (roll < w0 + w1)              return 'uncommon'
+  if (roll < w0 + w1 + w2)         return 'rare'
+  if (roll < w0 + w1 + w2 + w3)    return 'epic'
+  return 'set'
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -124,14 +125,6 @@ export function getItemsByRarity(rarity: Rarity): ItemBase[] {
 }
 
 export function pickItem(rarity: Rarity): Item {
-  if (rarity === 'rare') {
-    const setPool    = ITEM_LIBRARY.filter(i => i.rarity === 'rare' && i.setName)
-    const normalPool = ITEM_LIBRARY.filter(i => i.rarity === 'rare' && !i.setName)
-    const useSet     = setPool.length > 0 && Math.random() < 0.60
-    const pool       = useSet ? setPool : normalPool
-    const base       = pool[Math.floor(Math.random() * pool.length)]
-    return { ...base, id: newItemId() }
-  }
   const pool = getItemsByRarity(rarity)
   const base = pool[Math.floor(Math.random() * pool.length)]
   return { ...base, id: newItemId() }

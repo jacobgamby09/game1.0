@@ -1,5 +1,5 @@
 import { Crown, Shirt, Layers, Swords, Shield, Award, Circle, Zap, FlaskConical } from 'lucide-react'
-import { useGameStore, RARITY_COLORS, SET_BONUSES } from '../stores/useGameStore'
+import { useGameStore, RARITY_COLORS, SET_BONUSES, SET_BONUS_TEXT } from '../stores/useGameStore'
 import type { Item, EquipSlot } from '../stores/useGameStore'
 import { getStatDiff, DiffBadge, DiffBadgeF } from '../utils/statDiff'
 
@@ -108,9 +108,13 @@ export default function ItemComparisonPanel({ item, onEquip }: ItemComparisonPan
           <p className="text-gray-500 text-xs">{SLOT_LABELS[item.equipSlot as EquipSlot]}</p>
           <p className={`text-xs font-semibold uppercase tracking-widest ${rc.text}`}>{item.rarity}</p>
           {item.setName && (
-            <span className={`text-[11px] font-bold uppercase tracking-widest ${SET_BONUSES[item.setName].color}`}>
-              Set: {SET_BONUSES[item.setName].name}
-            </span>
+            <div className="border border-lime-900/60 bg-lime-950/20 rounded p-1.5 flex flex-col gap-0.5 mt-0.5">
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${SET_BONUSES[item.setName].color}`}>
+                Set: {SET_BONUSES[item.setName].name}
+              </p>
+              <p className="text-[10px] text-lime-300">2-Piece: {SET_BONUS_TEXT[item.setName][2]}</p>
+              <p className="text-[10px] text-lime-300">4-Piece: {SET_BONUS_TEXT[item.setName][4]}</p>
+            </div>
           )}
         </div>
       </div>

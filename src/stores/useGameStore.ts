@@ -9,7 +9,7 @@ import type {
   SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
   Boon,
 } from '../types'
-import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES } from '../data/constants'
+import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES, SET_BONUS_TEXT } from '../data/constants'
 import { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot } from '../utils/gameHelpers'
 import { spawnMob, generateMarketItems, randomDrop, randomThreeDrops, buildMap } from '../utils/storeHelpers'
 
@@ -21,10 +21,11 @@ export type {
   Player, RunStats, RunSummary, Mob, MapNode,
   BuildingId, Buildings,
   SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
-  Boon, SetName,
+  Boon,
 }
+export type { SetName } from '../types'
 export type { SetBonusTier } from '../data/constants'
-export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES }
+export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES, SET_BONUS_TEXT }
 export { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot }
 
 // ─── Balancing functions ──────────────────────────────────────────────────────
