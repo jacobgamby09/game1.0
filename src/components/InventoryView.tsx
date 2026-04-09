@@ -3,7 +3,7 @@ import {
   Crown, Shirt, Layers, Swords, Shield, Award, Gem, Coins, FlaskConical,
 } from 'lucide-react'
 import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SET_BONUSES, SET_BONUS_TEXT } from '../stores/useGameStore'
-import type { Item, EquipSlot, ItemSlot, EquipmentSlotName, EquipmentSlotUpgrades, SlotRarityLevel, SetName } from '../stores/useGameStore'
+import type { Item, EquipSlot, ItemSlot, EquipmentSlotName, EquipmentSlotUpgrades, SlotRarityLevel, SetName, Upgrades, Player } from '../stores/useGameStore'
 import ItemComparisonPanel from './ItemComparisonPanel'
 
 // ─── Slot icon map ────────────────────────────────────────────────────────────
@@ -258,12 +258,15 @@ interface ItemDetailsProps {
   onSell: () => void
   sellValue: number
   onClear: () => void
+  upgrades: Upgrades
+  player: Player
+  onForge: (itemId: string, action: 'enchant' | 'reinforce') => void
 }
 
 function ItemDetails({
   selectedItem, selectedFrom, beltIndex, equipment, slotUpgrades,
   onEquip, onEquipToSlot, onEquipPotion, onUnequip, onUnequipBelt,
-  onSell, sellValue, onClear,
+  onSell, sellValue, onClear, upgrades, player, onForge,
 }: ItemDetailsProps) {
   const isEmpty = selectedItem === null
 
@@ -377,6 +380,54 @@ function ItemDetails({
             </div>
           )}
 
+          {/* Master Smith forge */}
+          {upgrades.blacksmithServices && selectedFrom !== 'belt' && selectedItem.equipSlot !== 'potion' && (
+            <div className="border border-amber-800/40 bg-amber-950/10 rounded-lg p-3 flex flex-col gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600/70">⚒ Master Smith</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(() => {
+                  const alreadyEnchanted = !!selectedItem.hasSuffix
+                  const epicOrSet = selectedItem.rarity === 'epic' || selectedItem.rarity === 'set'
+                  const canEnchant = !alreadyEnchanted && !epicOrSet && player.gold >= 50
+                  return (
+                    <button
+                      onClick={() => onForge(selectedItem.id, 'enchant')}
+                      disabled={!canEnchant}
+                      className={`py-2 rounded-lg border text-xs font-bold leading-snug transition-colors
+                        ${alreadyEnchanted || epicOrSet
+                          ? 'border-amber-800/40 bg-amber-950/20 text-amber-700 cursor-default'
+                          : canEnchant
+                            ? 'border-purple-600 bg-purple-900/20 text-purple-300 hover:bg-purple-900/40 cursor-pointer'
+                            : 'border-gray-700 bg-gray-800/50 text-gray-600 cursor-default'
+                        }`}
+                    >
+                      {alreadyEnchanted ? 'Enchanted ✓' : epicOrSet ? 'N/A' : 'Enchant Item'}<br />
+                      <span className="text-[10px] font-normal opacity-70">
+                        {alreadyEnchanted || epicOrSet ? '—' : '50g'}
+                      </span>
+                    </button>
+                  )
+                })()}
+                <button
+                  onClick={() => onForge(selectedItem.id, 'reinforce')}
+                  disabled={player.gold < 100 || (selectedItem.upgradeLevel ?? 0) >= 1}
+                  className={`py-2 rounded-lg border text-xs font-bold leading-snug transition-colors
+                    ${(selectedItem.upgradeLevel ?? 0) >= 1
+                      ? 'border-amber-800/40 bg-amber-950/20 text-amber-700 cursor-default'
+                      : player.gold >= 100
+                        ? 'border-amber-500 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40 cursor-pointer'
+                        : 'border-gray-700 bg-gray-800/50 text-gray-600 cursor-default'
+                    }`}
+                >
+                  {(selectedItem.upgradeLevel ?? 0) >= 1 ? 'Reinforced ✓' : 'Reinforce +1'}<br />
+                  <span className="text-[10px] font-normal opacity-70">
+                    {(selectedItem.upgradeLevel ?? 0) >= 1 ? '—' : '100g'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Action button */}
           <div className="mt-auto pt-2 flex flex-col gap-2">
             {selectedFrom === 'backpack' ? (
@@ -470,7 +521,7 @@ function ActiveSetBonuses({ equipment }: { equipment: Record<EquipSlot, Item | n
 export default function InventoryView() {
   const {
     backpack, equipment, equipItem, equipItemToSlot, unequipItem, sellItem, player, talents, slotUpgrades,
-    potionBelt, equipPotion, unequipPotion,
+    potionBelt, equipPotion, unequipPotion, upgrades, forgeItem,
   } = useGameStore()
   const eff = getEffectiveStats(player, equipment, talents, slotUpgrades)
 
@@ -556,6 +607,17 @@ export default function InventoryView() {
         onSell={() => { sellItem(selectedItem!.id); clearSelection() }}
         sellValue={sellValue}
         onClear={clearSelection}
+        upgrades={upgrades}
+        player={player}
+        onForge={(id, action) => {
+          forgeItem(id, action)
+          // Refresh selectedItem from store so the panel reflects the forged item immediately
+          const s = useGameStore.getState()
+          const fresh = s.backpack.find(i => i.id === id)
+            ?? (Object.values(s.equipment) as (Item | null)[]).find(i => i?.id === id)
+            ?? null
+          if (fresh) setSelectedItem(fresh)
+        }}
       />
     </div>
   )

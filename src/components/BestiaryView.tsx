@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useGameStore } from '../stores/useGameStore'
-import { BESTIARY_MASTER } from '../utils/storeHelpers'
+import { BESTIARY_MASTER, type BestiaryEntry } from '../utils/storeHelpers'
 
 export default function BestiaryView() {
   const { encounteredMobs, killCounters, setActiveView } = useGameStore()
+  const [selected, setSelected] = useState<BestiaryEntry | null>(null)
 
   return (
     <div className="flex flex-col h-full w-full max-w-lg bg-gray-950">
@@ -33,7 +35,7 @@ export default function BestiaryView() {
 
       {/* Grid */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-6">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {BESTIARY_MASTER.map(entry => {
             const discovered = encounteredMobs.includes(entry.id)
 
@@ -43,102 +45,159 @@ export default function BestiaryView() {
                   key={entry.id}
                   className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden flex flex-col"
                 >
-                  {/* Silhouette portrait */}
-                  <div className="relative h-28 bg-gray-900 overflow-hidden">
+                  <div className="relative aspect-square bg-gray-900 overflow-hidden">
                     <img
                       src={entry.portraitUrl}
                       alt="???"
                       className="w-full h-full object-cover"
-                      style={{ filter: 'brightness(0)', opacity: 0.15 }}
+                      style={{ filter: 'brightness(0)', opacity: 0.12 }}
                     />
                   </div>
-                  {/* Locked info */}
-                  <div className="p-3 flex flex-col gap-1">
-                    <p className="text-sm font-bold text-gray-700 tracking-widest">???</p>
-                    <p className="text-[10px] text-gray-800 uppercase tracking-wider">Undiscovered</p>
+                  <div className="px-2 py-2">
+                    <p className="text-xs font-bold text-gray-700 tracking-widest text-center">???</p>
                   </div>
                 </div>
               )
             }
 
             return (
-              <div
+              <button
                 key={entry.id}
-                className={`rounded-xl border overflow-hidden flex flex-col
+                onClick={() => setSelected(entry)}
+                className={`rounded-xl border overflow-hidden flex flex-col text-left transition-all duration-150
+                  hover:scale-[1.03] hover:brightness-110 active:scale-[0.98]
                   ${entry.isBoss
-                    ? 'border-amber-600/50 bg-amber-950/20'
-                    : 'border-gray-700/60 bg-gray-900/80'
+                    ? 'border-amber-600/50 bg-amber-950/20 hover:ring-1 hover:ring-amber-500/40'
+                    : entry.isElite
+                      ? 'border-red-700/50 bg-red-950/20 hover:ring-1 hover:ring-red-500/40'
+                      : 'border-gray-700/60 bg-gray-900/80 hover:ring-1 hover:ring-gray-500/40'
                   }`}
               >
-                {/* Portrait */}
-                <div className="relative h-28 overflow-hidden">
+                <div className="relative aspect-square overflow-hidden">
                   <img
-                    src={entry.elitePortraitUrl ?? entry.portraitUrl}
+                    src={entry.portraitUrl}
                     alt={entry.name}
                     className="w-full h-full object-cover"
                   />
-                  {/* Boss badge */}
                   {entry.isBoss && (
-                    <span className="absolute top-1.5 right-1.5 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-900/80 text-amber-300 border border-amber-600/40">
+                    <span className="absolute top-1 right-1 text-[8px] font-bold uppercase tracking-widest px-1 py-0.5 rounded bg-amber-900/90 text-amber-300 border border-amber-600/40">
                       BOSS
                     </span>
                   )}
+                  {entry.isElite && (
+                    <span className="absolute top-1 right-1 text-[8px] font-bold uppercase tracking-widest px-1 py-0.5 rounded bg-red-900/90 text-red-300 border border-red-700/40">
+                      ELITE
+                    </span>
+                  )}
                 </div>
-
-                {/* Details */}
-                <div className="p-3 flex flex-col gap-2">
-                  <p className={`text-sm font-bold leading-tight ${entry.isBoss ? 'text-amber-300' : 'text-gray-100'}`}>
+                <div className="px-2 py-2">
+                  <p className={`text-[11px] font-bold leading-tight text-center truncate
+                    ${entry.isBoss ? 'text-amber-300' : entry.isElite ? 'text-red-300' : 'text-gray-200'}`}>
                     {entry.name}
                   </p>
-
-                  {/* Stat rows */}
-                  <div className="flex flex-col gap-0.5">
-                    <StatRow label="HP"        value={String(entry.maxHp)} />
-                    <StatRow label="DMG"       value={String(entry.baseDamage)} />
-                    <StatRow label="SPD"       value={`${entry.attackSpeed}/s`} />
-                    <StatRow
-                      label="DODGE"
-                      value={entry.dodgeChance ? `${(entry.dodgeChance * 100).toFixed(0)}%` : '—'}
-                    />
-                  </div>
-
-                  {/* Possible traits */}
-                  {entry.possibleTraits && entry.possibleTraits.length > 0 && (
-                    <div className="mt-1 flex flex-col gap-1.5 border-t border-gray-700/40 pt-2">
-                      <p className="text-[9px] uppercase tracking-widest text-gray-600">Elite Traits</p>
-                      {entry.possibleTraits.map(trait => (
-                        <div key={trait.id} className="flex items-start gap-1.5">
-                          <span className="text-sm leading-none mt-px">{trait.icon}</span>
-                          <div>
-                            <p className="text-[10px] font-semibold text-red-300/80">{trait.name}</p>
-                            <p className="text-[9px] text-gray-500 leading-snug">{trait.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Kill counter */}
-                  <div className="flex items-center justify-between border-t border-gray-700/30 pt-2 mt-1">
-                    <span className="text-[9px] uppercase tracking-widest text-gray-600">Total Kills</span>
-                    <span className="text-[11px] font-bold text-yellow-500/70">{killCounters[entry.id] ?? 0}</span>
-                  </div>
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>
       </div>
 
+      {/* Detail Modal */}
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 px-4 pb-4 sm:pb-0"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className={`relative w-full max-w-sm bg-gray-900 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col border
+              ${selected.isBoss ? 'border-amber-700/50' : selected.isElite ? 'border-red-700/50' : 'border-gray-700/60'}`}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Portrait — uncropped, object-contain */}
+            <div className={`relative bg-gray-950 flex items-center justify-center border-b
+              ${selected.isBoss ? 'border-amber-700/40' : selected.isElite ? 'border-red-800/40' : 'border-gray-800'}`}
+              style={{ maxHeight: '240px', minHeight: '180px' }}
+            >
+              <img
+                src={selected.portraitUrl}
+                alt={selected.name}
+                className="w-full object-contain"
+                style={{ maxHeight: '240px' }}
+              />
+              {selected.isBoss && (
+                <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-amber-900/90 text-amber-300 border border-amber-600/40">
+                  BOSS
+                </span>
+              )}
+              {selected.isElite && (
+                <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-red-900/90 text-red-300 border border-red-700/40">
+                  ELITE
+                </span>
+              )}
+              <button
+                onClick={() => setSelected(null)}
+                className="absolute top-3 left-3 text-[10px] text-gray-400 hover:text-white uppercase tracking-widest bg-black/60 px-2 py-1 rounded cursor-pointer transition-colors"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
+
+              {/* Name + kills */}
+              <div className="flex items-start justify-between gap-3">
+                <h2 className={`text-xl font-bold leading-tight ${selected.isBoss ? 'text-amber-300' : selected.isElite ? 'text-red-300' : 'text-white'}`}>
+                  {selected.name}
+                </h2>
+                <div className="shrink-0 text-right">
+                  <p className="text-[9px] uppercase tracking-widest text-gray-600">Total Kills</p>
+                  <p className="text-lg font-bold text-yellow-500">{killCounters[selected.id] ?? 0}</p>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="flex flex-col gap-0 rounded-xl border border-gray-800 overflow-hidden">
+                <StatRow label="Max HP"       value={String(selected.maxHp)} />
+                <StatRow label="Base Damage"  value={String(selected.baseDamage)} border />
+                <StatRow label="Attack Speed" value={`${selected.attackSpeed}/s`} border />
+                <StatRow
+                  label="Dodge Chance"
+                  value={selected.dodgeChance ? `${(selected.dodgeChance * 100).toFixed(0)}%` : '—'}
+                  border
+                />
+              </div>
+
+              {/* Traits */}
+              {selected.traits && selected.traits.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[10px] uppercase tracking-widest text-gray-600">Traits</p>
+                  {selected.traits.map(trait => (
+                    <div key={trait.id} className="flex items-start gap-3 bg-gray-800/50 rounded-xl px-3 py-3 border border-gray-700/40">
+                      <span className="text-xl leading-none mt-0.5">{trait.icon}</span>
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-sm font-bold text-red-300/90">{trait.name}</p>
+                        <p className="text-xs text-gray-400 leading-snug">{trait.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
 
-function StatRow({ label, value }: { label: string; value: string }) {
+function StatRow({ label, value, border }: { label: string; value: string; border?: boolean }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-[9px] uppercase tracking-widest text-gray-600">{label}</span>
-      <span className="text-[11px] font-semibold text-gray-300">{value}</span>
+    <div className={`flex items-center justify-between px-4 py-2.5 ${border ? 'border-t border-gray-800' : ''}`}>
+      <span className="text-xs text-gray-500">{label}</span>
+      <span className="text-sm font-semibold text-gray-200">{value}</span>
     </div>
   )
 }

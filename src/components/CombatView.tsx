@@ -285,12 +285,16 @@ interface PanelProps {
   traits?: MobTrait[]
   bossPhase?: 'void' | 'exposed'
   bossPhaseTimerMs?: number
+  poisonStacks?: number
 }
 
-function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, damageIndicators, isKillingBlow, traits, bossPhase, bossPhaseTimerMs }: PanelProps) {
+function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, damageIndicators, isKillingBlow, traits, bossPhase, bossPhaseTimerMs, poisonStacks = 0 }: PanelProps) {
   const hpPct = Math.max(0, (combatant.currentHp / combatant.maxHp) * 100)
   const atkPct = Math.min(100, attackProgress)
   const atkFill = atkBarColor === 'amber' ? 'bg-amber-400' : 'bg-orange-500'
+  const hpBarClass = poisonStacks > 0
+    ? 'bg-gradient-to-r from-green-700 to-green-400 animate-pulse'
+    : hpColor(hpPct)
 
   return (
     <div className="relative bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-4">
@@ -300,7 +304,9 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
         <span
           key={d.id}
           className={`animate-float-up absolute select-none font-extrabold tabular-nums z-10
-            ${d.isHeal
+            ${d.isPoison
+              ? 'text-base text-green-400 font-bold drop-shadow-[0_0_6px_rgb(134_239_172)] top-0'
+              : d.isHeal
               ? 'text-base text-green-400 top-0'
               : d.isSkill
               ? 'text-lg text-blue-300 drop-shadow-[0_0_6px_rgb(147_197_253)] top-0'
@@ -310,7 +316,7 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
             }`}
           style={{ left: `${(Math.floor(d.id) * 37 % 50) + 20}%` }}
         >
-          {d.isHeal ? `+${d.value}` : d.isSkill ? `✦${d.value}` : d.isCrit ? `⚡${d.value}` : `-${d.value}`}
+          {d.isPoison ? `☠${d.value}` : d.isHeal ? `+${d.value}` : d.isSkill ? `✦${d.value}` : d.isCrit ? `⚡${d.value}` : `-${d.value}`}
         </span>
       ))}
 
@@ -342,12 +348,25 @@ function CombatantPanel({ combatant, attackProgress, atkBarColor, icon, tier, da
 
       <div className="flex flex-col gap-1">
         <div className="flex justify-between text-xs text-gray-400 font-semibold uppercase tracking-wider">
-          <span>HP</span>
+          <div className="flex items-center gap-1.5">
+            <span>HP</span>
+            {poisonStacks > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="relative inline-flex">
+                  <Skull size={11} className="text-green-500" />
+                  <span className="absolute -top-1.5 -right-2 text-[8px] font-bold text-green-400 leading-none bg-gray-900 px-0.5 rounded">
+                    {poisonStacks}
+                  </span>
+                </div>
+                <span className="text-[9px] text-green-500/80 font-bold normal-case tracking-normal">Poisoned</span>
+              </div>
+            )}
+          </div>
           <span>{combatant.currentHp} / {combatant.maxHp}</span>
         </div>
         <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-300 ${hpColor(hpPct)}`}
+            className={`h-full rounded-full transition-all duration-300 ${hpBarClass}`}
             style={{ width: `${hpPct}%` }}
           />
         </div>
@@ -600,6 +619,7 @@ function CombatArena() {
     bossPhase,
     bossPhaseTimerMs,
     slotUpgrades,
+    playerPoison,
   } = useGameStore()
 
   if (!currentMob) return null
@@ -690,6 +710,7 @@ function CombatArena() {
               atkBarColor="amber"
               icon={<Swords size={20} />}
               damageIndicators={damageIndicators.filter(d => d.target === 'player')}
+              poisonStacks={playerPoison}
             />
           </div>
           <ActiveBuffsBar activeBuffs={activeBuffs} />

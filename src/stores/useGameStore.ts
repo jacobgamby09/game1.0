@@ -65,6 +65,14 @@ const TICK_MS = 50
 const POWER_STRIKE_COOLDOWN_MS = 5600
 const XP_PER_CHEST = 25
 
+const SUFFIXES: { name: string; stat: keyof Item['stats']; bonus: Record<Rarity, number> }[] = [
+  { name: 'of the Bear',  stat: 'hp',              bonus: { common: 8,    uncommon: 16,   rare: 24,   epic: 0, set: 0 } },
+  { name: 'of Striking',  stat: 'damage',          bonus: { common: 2,    uncommon: 4,    rare: 6,    epic: 0, set: 0 } },
+  { name: 'of Warding',   stat: 'damageReduction', bonus: { common: 2,    uncommon: 4,    rare: 6,    epic: 0, set: 0 } },
+  { name: 'of Swiftness', stat: 'attackSpeed',     bonus: { common: 0.05, uncommon: 0.08, rare: 0.12, epic: 0, set: 0 } },
+  { name: 'of Fortune',   stat: 'critChance',      bonus: { common: 0.03, uncommon: 0.05, rare: 0.08, epic: 0, set: 0 } },
+]
+
 // ─── Internal defaults ────────────────────────────────────────────────────────
 
 const DEFAULT_PLAYER: Player = {
@@ -170,6 +178,8 @@ interface GameStore {
   isCombatActive: boolean
   bossPhase: 'void' | 'exposed'
   bossPhaseTimerMs: number
+  playerPoison:       number
+  playerPoisonTickAt: number
 
   // Skills state
   powerStrikeCooldown: number
@@ -263,6 +273,8 @@ interface GameStore {
   encounteredMobs:            string[]
   killCounters:               Record<string, number>
   markMobAsEncountered:       (mobName: string) => void
+  purchaseBlacksmithServices: () => void
+  forgeItem:                  (itemId: string, action: 'enchant' | 'reinforce') => void
   hardResetGame:              () => void
 }
 
@@ -417,6 +429,8 @@ export const useGameStore = create<GameStore>()(
   isCombatActive: false,
   bossPhase: 'void' as const,
   bossPhaseTimerMs: 8000,
+  playerPoison:       0,
+  playerPoisonTickAt: 0,
 
   // ── Skills state ────────────────────────────────────────────────────────────
   powerStrikeCooldown: 0,
@@ -459,6 +473,8 @@ export const useGameStore = create<GameStore>()(
       activeBuffs: [],
       bossPhase: 'void' as const,
       bossPhaseTimerMs: 8000,
+      playerPoison: 0,
+      playerPoisonTickAt: 0,
     }),
 
   // ── engageCombat ────────────────────────────────────────────────────────────
@@ -468,6 +484,8 @@ export const useGameStore = create<GameStore>()(
     combatEventText: null,
     damageIndicators: [],
     isKillingBlowActive: false,
+    playerPoison: 0,
+    playerPoisonTickAt: 0,
   }),
 
   // ── usePowerStrike ───────────────────────────────────────────────────────────
@@ -787,7 +805,7 @@ export const useGameStore = create<GameStore>()(
   ironScrap: 0,
   voidDust:  0,
   buildings:       { apothecary: 0, blacksmith: 0, tavern: 0 },
-  upgrades:        { voidRiftMutations: false, blacksmithReroll: false, apothecaryFreePotion: false },
+  upgrades:        { voidRiftMutations: false, blacksmithReroll: false, apothecaryFreePotion: false, blacksmithServices: false },
   slotUpgrades:    { head: 0, chest: 0, legs: 0, mainHand: 0, offHand: 0, amulet: 0, ring1: 0, ring2: 0 },
   encounteredMobs: [],
   killCounters:    {},
@@ -829,6 +847,67 @@ export const useGameStore = create<GameStore>()(
     set((state) => {
       if (state.encounteredMobs.includes(mobName)) return state
       return { encounteredMobs: [...state.encounteredMobs, mobName] }
+    }),
+
+  purchaseBlacksmithServices: () =>
+    set((state) => {
+      if (state.upgrades.blacksmithServices || state.voidDust < 50) return state
+      return {
+        voidDust: state.voidDust - 50,
+        upgrades: { ...state.upgrades, blacksmithServices: true },
+      }
+    }),
+
+  forgeItem: (itemId, action) =>
+    set((state) => {
+      if (!state.upgrades.blacksmithServices) return state
+      let target: Item | null = null
+      let loc: 'backpack' | EquipSlot | null = null
+      let bIdx = -1
+      bIdx = state.backpack.findIndex(i => i.id === itemId)
+      if (bIdx >= 0) { target = state.backpack[bIdx]; loc = 'backpack' }
+      else {
+        for (const slot of Object.keys(state.equipment) as EquipSlot[]) {
+          if (state.equipment[slot]?.id === itemId) { target = state.equipment[slot]!; loc = slot; break }
+        }
+      }
+      if (!target) return state
+
+      if (action === 'enchant') {
+        const cost = 50
+        if (state.player.gold < cost) return state
+        if (target.hasSuffix) return state
+        if (target.rarity === 'epic' || target.rarity === 'set') return state
+        const suffix = SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)]
+        const bonusValue = suffix.bonus[target.rarity]
+        const newStats = { ...target.stats }
+        const existing = (newStats[suffix.stat] as number | undefined) ?? 0
+        ;(newStats as Record<string, number>)[suffix.stat] = +(existing + bonusValue).toFixed(3)
+        const enchanted: Item = { ...target, name: `${target.name} ${suffix.name}`, stats: newStats, hasSuffix: true }
+        const updatedPlayer = { ...state.player, gold: state.player.gold - cost }
+        if (loc === 'backpack')
+          return { player: updatedPlayer, backpack: state.backpack.map((i, idx) => idx === bIdx ? enchanted : i) }
+        return { player: updatedPlayer, equipment: { ...state.equipment, [loc!]: enchanted } }
+      }
+
+      if (action === 'reinforce') {
+        const cost = 100
+        if (state.player.gold < cost) return state
+        if ((target.upgradeLevel ?? 0) >= 1) return state
+        const newStats = { ...target.stats }
+        if (newStats.damage          != null) newStats.damage          = Math.ceil(newStats.damage          * 1.10)
+        if (newStats.hp              != null) newStats.hp              = Math.ceil(newStats.hp              * 1.10)
+        if (newStats.attackSpeed     != null) newStats.attackSpeed     = +(newStats.attackSpeed             * 1.10).toFixed(2)
+        if (newStats.damageReduction != null) newStats.damageReduction = Math.ceil(newStats.damageReduction * 1.10)
+        if (newStats.critChance      != null) newStats.critChance      = +(newStats.critChance              * 1.10).toFixed(3)
+        const reinforced: Item = { ...target, name: `${target.name} (+1)`, stats: newStats, upgradeLevel: 1 }
+        const updatedPlayer = { ...state.player, gold: state.player.gold - cost }
+        if (loc === 'backpack')
+          return { player: updatedPlayer, backpack: state.backpack.map((i, idx) => idx === bIdx ? reinforced : i) }
+        return { player: updatedPlayer, equipment: { ...state.equipment, [loc!]: reinforced } }
+      }
+
+      return state
     }),
 
   rerollVariant: (itemId) =>
@@ -935,6 +1014,8 @@ export const useGameStore = create<GameStore>()(
 
       let playerAttackProgress = state.playerAttackProgress
       let mobAttackProgress = state.mobAttackProgress
+      let playerPoison       = state.playerPoison
+      let playerPoisonTickAt = state.playerPoisonTickAt
       const player = { ...state.player }
       const mob = { ...state.currentMob }
       const eff = getEffectiveStats(state.player, state.equipment, state.talents, state.slotUpgrades)
@@ -963,6 +1044,19 @@ export const useGameStore = create<GameStore>()(
       // ── Berserk: damage reduction = 0; Iron Will: +10 DR ────────────────────
       const hasIronWill  = activeBuffs.some(b => b.type === 'ironWill')
       const effectiveDR  = hasBerserk ? 0 : eff.damageReduction + (hasIronWill ? 10 : 0)
+
+      // ── Poison tick: every 1s, deal 3 dmg per stack, decrement stacks ──────────
+      if (playerPoison > 0 && now >= playerPoisonTickAt) {
+        const poisonDmg = playerPoison * 3
+        player.currentHp = Math.max(0, player.currentHp - poisonDmg)
+        damageIndicators.push({
+          id: now + Math.random() + 0.5, value: poisonDmg,
+          isCrit: false, isSkill: false, isPoison: true,
+          target: 'player', createdAt: now,
+        })
+        playerPoison      -= 1
+        playerPoisonTickAt = now + 1000
+      }
 
       playerAttackProgress += effectiveAttackSpeed * (TICK_MS / 1000) * 100
       // Freeze: skip mob progress; Frenzied: double speed below 30% HP
@@ -1036,6 +1130,12 @@ export const useGameStore = create<GameStore>()(
             mob.currentHp = Math.max(0, mob.currentHp - eff.thorns)
             damageIndicators.push({ id: now + Math.random() + 3, value: eff.thorns, isCrit: false, isSkill: true, target: 'enemy', createdAt: now })
           }
+          // Poison Blades: 40% chance to apply a poison stack
+          const hasPoisonBlades = mob.traits?.some(t => t.id === 'poison_blades') ?? false
+          if (hasPoisonBlades && Math.random() < 0.40) {
+            playerPoison += 1
+            if (playerPoison === 1) playerPoisonTickAt = now + 1000
+          }
         } else {
           newEventText = '✦ Dodged!'
         }
@@ -1060,6 +1160,8 @@ export const useGameStore = create<GameStore>()(
           activeBuffs,
           bossPhase,
           bossPhaseTimerMs,
+          playerPoison,
+          playerPoisonTickAt,
         }
       }
 
@@ -1076,6 +1178,8 @@ export const useGameStore = create<GameStore>()(
           damageIndicators,
           bossPhase,
           bossPhaseTimerMs,
+          playerPoison: 0,
+          playerPoisonTickAt: 0,
           ...triggerEnemyDeath(state, mob),  // mobDeathPatch clears activeBuffs
           currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
           killCounters: { ...state.killCounters, [mob.name]: (state.killCounters[mob.name] ?? 0) + 1 },
@@ -1100,6 +1204,8 @@ export const useGameStore = create<GameStore>()(
           activeBuffs: [],
           bossPhase,
           bossPhaseTimerMs,
+          playerPoison: 0,
+          playerPoisonTickAt: 0,
           ...eventUpdate,
           runSummary: state.runSummary ?? {
             active: true,
@@ -1122,6 +1228,8 @@ export const useGameStore = create<GameStore>()(
         activeBuffs,
         bossPhase,
         bossPhaseTimerMs,
+        playerPoison,
+        playerPoisonTickAt,
         ...eventUpdate,
       }
     }),

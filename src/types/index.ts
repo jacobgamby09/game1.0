@@ -55,6 +55,7 @@ export interface DamageIndicator {
   isCrit: boolean
   isSkill: boolean      // true for Shield Bash / spell damage
   isHeal?: boolean      // true for vampiric mob self-healing
+  isPoison?: boolean    // true for poison tick damage
   target: 'player' | 'enemy'
   createdAt: number
 }
@@ -104,9 +105,11 @@ export interface Item {
   rarity: Rarity
   description: string
   setName?: SetName
-  variant?:   ItemVariant
-  isMutated?: boolean
-  sharpened?: boolean
+  variant?:      ItemVariant
+  isMutated?:    boolean
+  sharpened?:    boolean
+  upgradeLevel?: number
+  hasSuffix?:    boolean
   stats: {
     hp?:              number
     damage?:          number
@@ -144,6 +147,7 @@ export interface Upgrades {
   voidRiftMutations:    boolean
   blacksmithReroll:     boolean
   apothecaryFreePotion: boolean
+  blacksmithServices:   boolean
 }
 
 // ─── Slot upgrades ────────────────────────────────────────────────────────────

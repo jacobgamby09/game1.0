@@ -7,9 +7,9 @@ type MobBase  = Omit<Mob, 'tier' | 'currentHp'>
 type MobEntry = MobBase & { elitePortraitUrl?: string }
 
 const BESTIARY: MobEntry[] = [
-  { name: 'Goblin Rogue', maxHp: 65,  baseDamage: 7, attackSpeed: 0.35, dodgeChance: 0.22, portraitUrl: '/portraits/goblin-rogue.webp', elitePortraitUrl: '/portraits/elite-goblin-warrior.webp' },
-  { name: 'Undead Brute', maxHp: 110, baseDamage: 7, attackSpeed: 0.90, portraitUrl: '/portraits/undead-brute.webp', elitePortraitUrl: '/portraits/elite-undead-brute.webp' },
-  { name: 'Orc Warrior',  maxHp: 100, baseDamage: 5, attackSpeed: 0.55, portraitUrl: '/portraits/orc-warrior.webp' },
+  { name: 'Goblin Rogue', maxHp: 65,  baseDamage: 6, attackSpeed: 0.80, dodgeChance: 0.22, portraitUrl: '/portraits/goblin-rogue.webp', elitePortraitUrl: '/portraits/elite-goblin-warrior.webp' },
+  { name: 'Undead Brute', maxHp: 110, baseDamage: 9, attackSpeed: 0.38, portraitUrl: '/portraits/undead-brute.webp', elitePortraitUrl: '/portraits/elite-undead-brute.webp' },
+  { name: 'Orc Warrior',  maxHp: 100, baseDamage: 7, attackSpeed: 0.55, portraitUrl: '/portraits/orc-warrior.webp' },
 ]
 
 const VOID_WARDEN_BASE: MobBase = {
@@ -32,7 +32,41 @@ const TRAIT_FRENZIED: MobTrait = {
   icon: '💢',
 }
 
+const TRAIT_POISON_BLADES: MobTrait = {
+  id: 'poison_blades',
+  name: 'Poison Blades',
+  description: 'Each hit has a 40% chance to apply a stacking poison, dealing 3 damage per tick.',
+  icon: '🗡️',
+}
+
+const TRAIT_UNSTOPPABLE: MobTrait = {
+  id: 'unstoppable',
+  name: 'Unstoppable Force',
+  description: 'Ignores the first 3 points of damage reduction on every hit.',
+  icon: '🪨',
+}
+
 export const ELITE_TRAITS = [TRAIT_VAMPIRIC, TRAIT_FRENZIED]
+
+// ─── Elite Bestiary ───────────────────────────────────────────────────────────
+// Standalone elite entries — spawned directly, no stat multipliers.
+
+type EliteEntry = MobBase & { traits: MobTrait[] }
+
+const ELITE_BESTIARY: EliteEntry[] = [
+  {
+    name: 'Elite Goblin Warrior',
+    maxHp: 160, baseDamage: 10, attackSpeed: 0.90, dodgeChance: 0.28,
+    portraitUrl: '/portraits/elite-goblin-warrior.webp',
+    traits: [TRAIT_POISON_BLADES, TRAIT_FRENZIED],
+  },
+  {
+    name: 'Elite Undead Brute',
+    maxHp: 280, baseDamage: 20, attackSpeed: 0.32,
+    portraitUrl: '/portraits/elite-undead-brute.webp',
+    traits: [TRAIT_UNSTOPPABLE, TRAIT_VAMPIRIC],
+  },
+]
 
 // ─── Bestiary Master List ─────────────────────────────────────────────────────
 
@@ -44,32 +78,44 @@ export interface BestiaryEntry {
   attackSpeed:      number
   dodgeChance?:     number
   portraitUrl:      string
-  elitePortraitUrl?: string
   isBoss?:          boolean
-  possibleTraits?:  MobTrait[]
+  isElite?:         boolean
+  traits?:          MobTrait[]
 }
 
 export const BESTIARY_MASTER: BestiaryEntry[] = [
+  // Normal mobs
   {
     id: 'Goblin Rogue', name: 'Goblin Rogue',
-    maxHp: 65, baseDamage: 7, attackSpeed: 0.35, dodgeChance: 0.22,
+    maxHp: 65, baseDamage: 6, attackSpeed: 0.80, dodgeChance: 0.22,
     portraitUrl: '/portraits/goblin-rogue.webp',
-    elitePortraitUrl: '/portraits/elite-goblin-warrior.webp',
-    possibleTraits: ELITE_TRAITS,
   },
   {
     id: 'Undead Brute', name: 'Undead Brute',
-    maxHp: 110, baseDamage: 7, attackSpeed: 0.90,
+    maxHp: 110, baseDamage: 9, attackSpeed: 0.38,
     portraitUrl: '/portraits/undead-brute.webp',
-    elitePortraitUrl: '/portraits/elite-undead-brute.webp',
-    possibleTraits: ELITE_TRAITS,
   },
   {
     id: 'Orc Warrior', name: 'Orc Warrior',
-    maxHp: 100, baseDamage: 5, attackSpeed: 0.55,
+    maxHp: 100, baseDamage: 7, attackSpeed: 0.55,
     portraitUrl: '/portraits/orc-warrior.webp',
-    possibleTraits: ELITE_TRAITS,
   },
+  // Elite mobs
+  {
+    id: 'Elite Goblin Warrior', name: 'Elite Goblin Warrior',
+    maxHp: 160, baseDamage: 10, attackSpeed: 0.90, dodgeChance: 0.28,
+    portraitUrl: '/portraits/elite-goblin-warrior.webp',
+    isElite: true,
+    traits: [TRAIT_POISON_BLADES, TRAIT_FRENZIED],
+  },
+  {
+    id: 'Elite Undead Brute', name: 'Elite Undead Brute',
+    maxHp: 280, baseDamage: 20, attackSpeed: 0.32,
+    portraitUrl: '/portraits/elite-undead-brute.webp',
+    isElite: true,
+    traits: [TRAIT_UNSTOPPABLE, TRAIT_VAMPIRIC],
+  },
+  // Boss
   {
     id: 'The Void Warden', name: 'The Void Warden',
     maxHp: 1500, baseDamage: 25, attackSpeed: 0.50,
@@ -94,17 +140,19 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
   let base: MobBase
   let tier: MobTier
 
+  let eliteTraits: MobTrait[] | undefined
+
   if (nodeType === 'boss') {
     base = { ...VOID_WARDEN_BASE }
     tier = 'boss'
+  } else if (nodeType === 'elite') {
+    const entry = ELITE_BESTIARY[Math.floor(Math.random() * ELITE_BESTIARY.length)]
+    base = { ...entry }
+    eliteTraits = entry.traits
+    tier = 'elite'
   } else {
     base = { ...BESTIARY[Math.floor(Math.random() * BESTIARY.length)] }
-    if (nodeType === 'elite') {
-      base = { ...base, maxHp: base.maxHp * 2, baseDamage: base.baseDamage * 2 }
-      tier = 'elite'
-    } else {
-      tier = 'normal'
-    }
+    tier = 'normal'
   }
 
   const scaledHp  = Math.round(base.maxHp     * hpMult)
@@ -121,13 +169,9 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
     baseDamage:  scaledDmg,
     attackSpeed: finalSpeed,
     dodgeChance: (base as MobEntry).dodgeChance,
-    portraitUrl: tier === 'elite'
-      ? ((base as MobEntry).elitePortraitUrl ?? base.portraitUrl)
-      : base.portraitUrl,
+    portraitUrl: base.portraitUrl,
     tier,
-    traits: tier === 'elite'
-      ? [ELITE_TRAITS[Math.floor(Math.random() * ELITE_TRAITS.length)]]
-      : undefined,
+    traits:      eliteTraits,
   }
 }
 

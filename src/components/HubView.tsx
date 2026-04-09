@@ -87,6 +87,13 @@ export default function HubView() {
         >
           [DEV] +1000
         </button>
+        <span className="text-gray-800 text-[10px]">·</span>
+        <button
+          onClick={() => useGameStore.setState(s => ({ player: { ...s.player, gold: s.player.gold + 1000 } }))}
+          className="text-[10px] text-yellow-600/50 hover:text-yellow-400 uppercase tracking-widest transition-colors cursor-pointer"
+        >
+          [DEV] +1000g
+        </button>
       </div>
 
     </div>

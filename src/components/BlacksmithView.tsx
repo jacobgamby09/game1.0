@@ -76,8 +76,8 @@ function SlotSquare({ slotKey, label, Icon, tier, isSelected, onSelect }: SlotSq
 
 export default function BlacksmithView() {
   const {
-    ironScrap, slotUpgrades, upgradeEquipmentSlot, setActiveView,
-    upgrades, equipment, player, rerollVariant, sharpenItem,
+    ironScrap, voidDust, slotUpgrades, upgradeEquipmentSlot, setActiveView,
+    upgrades, equipment, player, rerollVariant, sharpenItem, purchaseBlacksmithServices,
   } = useGameStore()
 
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlotName | null>(null)
@@ -320,6 +320,35 @@ export default function BlacksmithView() {
               </div>
             )
           })()}
+
+          {/* ── Master's Anvil ─────────────────────────────────────────── */}
+          <div className="mt-4 border-t border-gray-700/50 pt-3 flex flex-col gap-2">
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest">Master Smith</p>
+            {upgrades.blacksmithServices ? (
+              <div className="flex items-center gap-2 py-2 px-3 rounded-lg border border-amber-700/40 bg-amber-950/20">
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">⚒ Active</span>
+                <span className="text-[10px] text-gray-500">Reroll & Reinforce available in Inventory.</span>
+              </div>
+            ) : (
+              <>
+                <p className="text-[11px] text-gray-400 leading-relaxed">
+                  The Master's Anvil — Unlock Reroll (50g) and Reinforce +1 (100g) on any item during a run.
+                </p>
+                <button
+                  onClick={purchaseBlacksmithServices}
+                  disabled={voidDust < 50}
+                  className={`w-full py-2.5 rounded-lg border text-xs font-bold uppercase tracking-wider transition-colors
+                    ${voidDust >= 50
+                      ? 'border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 cursor-pointer'
+                      : 'border-gray-700 bg-gray-800/50 text-gray-600 cursor-default'
+                    }`}
+                >
+                  Unlock — 50 ✦ Void Dust
+                  {voidDust < 50 && <span className="text-red-900/70 ml-1">(need {50 - voidDust} more)</span>}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
       </div>
