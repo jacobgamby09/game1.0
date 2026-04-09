@@ -288,7 +288,9 @@ function ItemDetails({
             <div>
               <p className={`font-bold leading-tight ${RARITY_COLORS[selectedItem.rarity].text}`}>{selectedItem.name}</p>
               <p className="text-gray-500 text-xs">{getSlotLabel(selectedItem.equipSlot)}</p>
-              <p className={`text-xs font-semibold uppercase tracking-widest ${RARITY_COLORS[selectedItem.rarity].text}`}>{selectedItem.rarity}</p>
+              <p className={`text-xs font-semibold uppercase tracking-widest ${RARITY_COLORS[selectedItem.rarity].text}`}>
+                {selectedItem.rarity}{selectedItem.isMutated && <span className="text-purple-400"> · Mutated</span>}
+              </p>
             </div>
           </div>
 

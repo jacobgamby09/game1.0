@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Crown, Shirt, Layers, Swords, Shield, Award, Circle } from 'lucide-react'
+import { Crown, Shirt, Layers, Swords, Shield, Award, Gem } from 'lucide-react'
 import {
   useGameStore,
   SLOT_TIER_COLORS,
@@ -7,6 +7,7 @@ import {
   SLOT_UPGRADE_COSTS,
   type EquipmentSlotName,
   type SlotRarityLevel,
+  type Rarity,
 } from '../stores/useGameStore'
 
 // ─── Slot config ──────────────────────────────────────────────────────────────
@@ -18,8 +19,8 @@ const SLOT_META: { key: EquipmentSlotName; label: string; Icon: React.ElementTyp
   { key: 'mainHand', label: 'Main Hand', Icon: Swords  },
   { key: 'offHand',  label: 'Off Hand',  Icon: Shield  },
   { key: 'amulet',   label: 'Amulet',    Icon: Award   },
-  { key: 'ring1',    label: 'Ring 1',    Icon: Circle  },
-  { key: 'ring2',    label: 'Ring 2',    Icon: Circle  },
+  { key: 'ring1',    label: 'Ring 1',    Icon: Gem     },
+  { key: 'ring2',    label: 'Ring 2',    Icon: Gem     },
 ]
 
 // ─── Stat label helpers ───────────────────────────────────────────────────────
@@ -74,7 +75,10 @@ function SlotSquare({ slotKey, label, Icon, tier, isSelected, onSelect }: SlotSq
 // ─── BlacksmithView ───────────────────────────────────────────────────────────
 
 export default function BlacksmithView() {
-  const { ironScrap, slotUpgrades, upgradeEquipmentSlot, setActiveView } = useGameStore()
+  const {
+    ironScrap, slotUpgrades, upgradeEquipmentSlot, setActiveView,
+    upgrades, equipment, player, rerollVariant, sharpenItem,
+  } = useGameStore()
 
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlotName | null>(null)
 
@@ -177,6 +181,27 @@ export default function BlacksmithView() {
                   </span>
                 </div>
 
+                {/* Equipped item variant / sharpened badges */}
+                {(() => {
+                  const eq = equipment[selectedSlot]
+                  if (!eq) return null
+                  return (
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="text-[10px] text-gray-500 self-center">{eq.name}</span>
+                      {eq.variant && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-purple-600/50 bg-purple-900/30 text-purple-300">
+                          ✦ {eq.variant.name}
+                        </span>
+                      )}
+                      {eq.sharpened && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-teal-600/50 bg-teal-900/30 text-teal-300">
+                          ⚔ Sharpened
+                        </span>
+                      )}
+                    </div>
+                  )
+                })()}
+
                 {/* Current bonuses */}
                 {currentBonus && Object.entries(currentBonus).length > 0 ? (
                   <div className="flex flex-col gap-0.5">
@@ -244,6 +269,54 @@ export default function BlacksmithView() {
                     {!canAfford && <span className="text-red-900/70 ml-1">(need {cost - ironScrap} more)</span>}
                   </button>
                 )}
+
+                {/* Forge Services — only when Void Rift is built */}
+                {upgrades.voidRiftMutations && (() => {
+                  const eq = equipment[selectedSlot]
+                  if (!eq) return (
+                    <div className="mt-2 border-t border-gray-700/50 pt-3">
+                      <p className="text-[10px] text-gray-600 uppercase tracking-widest mb-1">Forge Services</p>
+                      <p className="text-xs text-gray-600 italic">No item equipped in this slot.</p>
+                    </div>
+                  )
+                  const rerollCostMap: Record<Rarity, number> = { common: 50, uncommon: 50, rare: 100, epic: 150, set: 150 }
+                  const rerollCost = rerollCostMap[eq.rarity]
+                  const canReroll  = player.gold >= rerollCost
+                  const canSharpen = !eq.sharpened && player.gold >= 75
+                  return (
+                    <div className="mt-2 border-t border-gray-700/50 pt-3 flex flex-col gap-2">
+                      <p className="text-[10px] text-gray-600 uppercase tracking-widest">Forge Services</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => rerollVariant(eq.id)}
+                          disabled={!canReroll}
+                          className={`py-2 rounded-lg border text-xs font-bold transition-colors leading-snug
+                            ${canReroll
+                              ? 'border-purple-500 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 cursor-pointer'
+                              : 'border-gray-700 bg-gray-800/50 text-gray-600 cursor-default'
+                            }`}
+                        >
+                          Reroll Variant<br />
+                          <span className="text-[10px] font-normal opacity-70">{rerollCost}g</span>
+                        </button>
+                        <button
+                          onClick={() => sharpenItem(eq.id)}
+                          disabled={!canSharpen}
+                          className={`py-2 rounded-lg border text-xs font-bold transition-colors leading-snug
+                            ${eq.sharpened
+                              ? 'border-teal-700/40 bg-teal-900/10 text-teal-600 cursor-default'
+                              : canSharpen
+                                ? 'border-teal-500 bg-teal-500/10 text-teal-300 hover:bg-teal-500/20 cursor-pointer'
+                                : 'border-gray-700 bg-gray-800/50 text-gray-600 cursor-default'
+                            }`}
+                        >
+                          {eq.sharpened ? 'Sharpened ✓' : 'Sharpen +10%'}<br />
+                          <span className="text-[10px] font-normal opacity-70">{eq.sharpened ? '—' : '75g'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )
           })()}

@@ -5,10 +5,11 @@ import type {
   View, EquipSlot, ItemSlot, Rarity, TalentBranch, MobTier, MobTrait, TalentNode,
   DamageIndicator, ItemAbility, ConsumableEffect, ActiveBuff, Item,
   Player, RunStats, RunSummary, Mob, MapNode,
-  BuildingId, Buildings,
+  BuildingId, Buildings, Upgrades,
   SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
   Boon,
 } from '../types'
+import { VARIANTS, applyVariantToItem, getMinorHealthPotion, ITEM_LIBRARY } from '../utils/itemLibrary'
 import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES, SET_BONUS_TEXT } from '../data/constants'
 import { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot } from '../utils/gameHelpers'
 import { spawnMob, generateMarketItems, randomDrop, randomThreeDrops, buildMap } from '../utils/storeHelpers'
@@ -19,10 +20,11 @@ export type {
   View, EquipSlot, ItemSlot, Rarity, TalentBranch, MobTier, MobTrait, TalentNode,
   DamageIndicator, ItemAbility, ConsumableEffect, ActiveBuff, Item,
   Player, RunStats, RunSummary, Mob, MapNode,
-  BuildingId, Buildings,
+  BuildingId, Buildings, Upgrades,
   SlotRarityLevel, EquipmentSlotName, EquipmentSlotUpgrades,
   Boon,
 }
+export type { ItemVariant } from '../types'
 export type { SetName } from '../types'
 export type { SetBonusTier } from '../data/constants'
 export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES, SET_BONUS_TEXT }
@@ -249,12 +251,19 @@ interface GameStore {
   ironScrap: number
   voidDust:  number
   buildings:    Buildings
+  upgrades:     Upgrades
   slotUpgrades: EquipmentSlotUpgrades
-  upgradeTalent:         (nodeId: string) => void
-  constructBuilding:     (id: BuildingId) => void
-  upgradeBuilding:       (id: BuildingId) => void
-  upgradeEquipmentSlot:  (slotName: EquipmentSlotName) => void
-  hardResetGame:         () => void
+  upgradeTalent:              (nodeId: string) => void
+  constructBuilding:          (id: BuildingId) => void
+  upgradeBuilding:            (id: BuildingId) => void
+  upgradeEquipmentSlot:       (slotName: EquipmentSlotName) => void
+  purchaseVoidRiftMutation:   () => void
+  rerollVariant:              (itemId: string) => void
+  sharpenItem:                (itemId: string) => void
+  encounteredMobs:            string[]
+  killCounters:               Record<string, number>
+  markMobAsEncountered:       (mobName: string) => void
+  hardResetGame:              () => void
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -298,6 +307,9 @@ export const useGameStore = create<GameStore>()(
         runSummary: null,
         activeBoon: null,
         isChoosingBoon: true,
+        potionBelt: state.buildings.apothecary >= 1
+          ? [{ item: getMinorHealthPotion(), count: 1 }]
+          : [],
       }
     }),
 
@@ -322,10 +334,12 @@ export const useGameStore = create<GameStore>()(
         )
 
       if (node.type === 'mob' || node.type === 'elite' || node.type === 'boss') {
+        const mob = spawnMob(node.floor, node.type)
+        useGameStore.getState().markMobAsEncountered(mob.name)
         return {
           currentMapNodeId: nodeId,
           isMapVisible: false,
-          currentMob: spawnMob(node.floor, node.type),
+          currentMob: mob,
           playerAttackProgress: 0,
           mobAttackProgress: 0,
           powerStrikeCooldown: 0,
@@ -366,7 +380,7 @@ export const useGameStore = create<GameStore>()(
           currentMapNodeId: nodeId,
           currentFloor: state.currentFloor + 1,
           act1Map: markComplete(state.act1Map),
-          marketItems: generateMarketItems(state.currentFloor),
+          marketItems: generateMarketItems(state.currentFloor, state.upgrades.voidRiftMutations),
         }
       }
 
@@ -481,6 +495,7 @@ export const useGameStore = create<GameStore>()(
           powerStrikeCooldown: POWER_STRIKE_COOLDOWN_MS,
           ...triggerEnemyDeath(state, mob),
           currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
+          killCounters: { ...state.killCounters, [mob.name]: (state.killCounters[mob.name] ?? 0) + 1 },
         }
       }
 
@@ -543,7 +558,9 @@ export const useGameStore = create<GameStore>()(
         marketItems: null,
         damageIndicators: [],
         isKillingBlowActive: false,
-        potionBelt: [],
+        potionBelt: state.buildings.apothecary >= 1
+          ? [{ item: getMinorHealthPotion(), count: 1 }]
+          : [],
         activeBuffs: [],
         runSummary: null,
         currentRunStats: { monstersKilled: 0, goldGathered: 0, ironScrapGathered: 0, voidDustGathered: 0 },
@@ -753,7 +770,7 @@ export const useGameStore = create<GameStore>()(
       if (!state.marketItems || state.player.gold < 15) return state
       return {
         player: { ...state.player, gold: state.player.gold - 15 },
-        marketItems: generateMarketItems(),
+        marketItems: generateMarketItems(undefined, state.upgrades.voidRiftMutations),
       }
     }),
 
@@ -769,8 +786,11 @@ export const useGameStore = create<GameStore>()(
   talents:   {},
   ironScrap: 0,
   voidDust:  0,
-  buildings:    { apothecary: 0, blacksmith: 0, tavern: 0 },
-  slotUpgrades: { head: 0, chest: 0, legs: 0, mainHand: 0, offHand: 0, amulet: 0, ring1: 0, ring2: 0 },
+  buildings:       { apothecary: 0, blacksmith: 0, tavern: 0 },
+  upgrades:        { voidRiftMutations: false, blacksmithReroll: false, apothecaryFreePotion: false },
+  slotUpgrades:    { head: 0, chest: 0, legs: 0, mainHand: 0, offHand: 0, amulet: 0, ring1: 0, ring2: 0 },
+  encounteredMobs: [],
+  killCounters:    {},
 
   upgradeTalent: (nodeId) =>
     set((state) => {
@@ -794,6 +814,79 @@ export const useGameStore = create<GameStore>()(
         ironScrap: state.ironScrap - 10,
         buildings: { ...state.buildings, [id]: (state.buildings[id] ?? 0) + 1 },
       }
+    }),
+
+  purchaseVoidRiftMutation: () =>
+    set((state) => {
+      if (state.upgrades.voidRiftMutations || state.voidDust < 25) return state
+      return {
+        voidDust: state.voidDust - 25,
+        upgrades: { ...state.upgrades, voidRiftMutations: true },
+      }
+    }),
+
+  markMobAsEncountered: (mobName) =>
+    set((state) => {
+      if (state.encounteredMobs.includes(mobName)) return state
+      return { encounteredMobs: [...state.encounteredMobs, mobName] }
+    }),
+
+  rerollVariant: (itemId) =>
+    set((state) => {
+      if (!state.upgrades.voidRiftMutations) return state
+      let target: Item | null = null
+      let loc: 'backpack' | EquipSlot | null = null
+      let bIdx = -1
+      bIdx = state.backpack.findIndex(i => i.id === itemId)
+      if (bIdx >= 0) { target = state.backpack[bIdx]; loc = 'backpack' }
+      else {
+        for (const slot of Object.keys(state.equipment) as EquipSlot[]) {
+          if (state.equipment[slot]?.id === itemId) { target = state.equipment[slot]; loc = slot; break }
+        }
+      }
+      if (!target) return state
+      const costMap: Record<Rarity, number> = { common: 50, uncommon: 50, rare: 100, epic: 150, set: 150 }
+      const cost = costMap[target.rarity]
+      if (state.player.gold < cost) return state
+      const baseName = target.variant
+        ? target.name.slice(target.variant.name.length + 1)
+        : target.name
+      const baseTemplate = ITEM_LIBRARY.find(i => i.name === baseName)
+      if (!baseTemplate) return state
+      const baseItem: Item = { ...baseTemplate, id: target.id, sharpened: target.sharpened }
+      const newVariant = VARIANTS[Math.floor(Math.random() * VARIANTS.length)]
+      const rerolled = applyVariantToItem(baseItem, newVariant)
+      const updatedPlayer = { ...state.player, gold: state.player.gold - cost }
+      if (loc === 'backpack')
+        return { player: updatedPlayer, backpack: state.backpack.map((i, idx) => idx === bIdx ? rerolled : i) }
+      return { player: updatedPlayer, equipment: { ...state.equipment, [loc!]: rerolled } }
+    }),
+
+  sharpenItem: (itemId) =>
+    set((state) => {
+      if (!state.upgrades.voidRiftMutations) return state
+      let target: Item | null = null
+      let loc: 'backpack' | EquipSlot | null = null
+      let bIdx = -1
+      bIdx = state.backpack.findIndex(i => i.id === itemId)
+      if (bIdx >= 0) { target = state.backpack[bIdx]; loc = 'backpack' }
+      else {
+        for (const slot of Object.keys(state.equipment) as EquipSlot[]) {
+          if (state.equipment[slot]?.id === itemId) { target = state.equipment[slot]; loc = slot; break }
+        }
+      }
+      if (!target || target.sharpened) return state
+      const cost = 75
+      if (state.player.gold < cost) return state
+      const s = { ...target.stats }
+      if (s.damage      !== undefined) s.damage      = Math.round(s.damage      * 1.10)
+      if (s.hp          !== undefined) s.hp          = Math.round(s.hp          * 1.10)
+      if (s.attackSpeed !== undefined) s.attackSpeed = Math.round(s.attackSpeed * 1.10 * 100) / 100
+      const sharpened: Item = { ...target, stats: s, sharpened: true }
+      const updatedPlayer = { ...state.player, gold: state.player.gold - cost }
+      if (loc === 'backpack')
+        return { player: updatedPlayer, backpack: state.backpack.map((i, idx) => idx === bIdx ? sharpened : i) }
+      return { player: updatedPlayer, equipment: { ...state.equipment, [loc!]: sharpened } }
     }),
 
   upgradeBuilding: (id) =>
@@ -985,6 +1078,7 @@ export const useGameStore = create<GameStore>()(
           bossPhaseTimerMs,
           ...triggerEnemyDeath(state, mob),  // mobDeathPatch clears activeBuffs
           currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
+          killCounters: { ...state.killCounters, [mob.name]: (state.killCounters[mob.name] ?? 0) + 1 },
         }
       }
 
@@ -1040,10 +1134,13 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'tactical-roguelite-storage',
       partialize: (state) => ({
-        ironScrap:    state.ironScrap,
-        voidDust:     state.voidDust,
-        buildings:    state.buildings,
-        slotUpgrades: state.slotUpgrades,
+        ironScrap:       state.ironScrap,
+        voidDust:        state.voidDust,
+        buildings:       state.buildings,
+        upgrades:        state.upgrades,
+        slotUpgrades:    state.slotUpgrades,
+        encounteredMobs: state.encounteredMobs,
+        killCounters:    state.killCounters,
       }),
     }
   )

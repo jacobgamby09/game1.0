@@ -1,6 +1,6 @@
 // ─── Navigation ───────────────────────────────────────────────────────────────
 
-export type View = 'battle' | 'inventory' | 'hub' | 'blacksmith' | 'apothecary' | 'talents'
+export type View = 'battle' | 'inventory' | 'hub' | 'blacksmith' | 'apothecary' | 'talents' | 'voidRift' | 'bestiary'
 
 // ─── Boons ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +87,16 @@ export interface ActiveBuff {
   value?: number
 }
 
+export interface ItemVariant {
+  name: string
+  damageMult?: number
+  attackSpeedMult?: number
+  hpBonus?: number
+  drBonus?: number
+  critBonus?: number
+  valueMult?: number
+}
+
 export interface Item {
   id: string
   name: string
@@ -94,6 +104,9 @@ export interface Item {
   rarity: Rarity
   description: string
   setName?: SetName
+  variant?:   ItemVariant
+  isMutated?: boolean
+  sharpened?: boolean
   stats: {
     hp?:              number
     damage?:          number
@@ -126,6 +139,12 @@ export interface Player {
 
 export type BuildingId = 'apothecary' | 'blacksmith' | 'tavern'
 export type Buildings  = Record<BuildingId, number>
+
+export interface Upgrades {
+  voidRiftMutations:    boolean
+  blacksmithReroll:     boolean
+  apothecaryFreePotion: boolean
+}
 
 // ─── Slot upgrades ────────────────────────────────────────────────────────────
 

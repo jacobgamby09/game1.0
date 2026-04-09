@@ -847,7 +847,9 @@ function LootCard({ item, onSelect, equipment }: { item: Item; onSelect: () => v
 
       <div className="text-center">
         <p className={`font-bold text-lg leading-tight ${rc.text}`}>{item.name}</p>
-        <p className="text-gray-500 text-xs">{getSlotLabel(item.equipSlot)}</p>
+        <p className="text-gray-500 text-xs">
+          {getSlotLabel(item.equipSlot)}{item.isMutated && <span className="text-purple-400"> (Mutated)</span>}
+        </p>
         <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${rc.text}`}>{item.rarity}</p>
       </div>
 
@@ -1024,7 +1026,9 @@ function VictoryOverlay() {
                   <Icon size={24} className={`${rc.text} shrink-0`} />
                   <div className="min-w-0 flex-1">
                     <p className={`font-bold text-sm leading-tight ${rc.text}`}>{item.name}</p>
-                    <p className="text-gray-500 text-xs mt-0.5">{SLOT_LABELS[item.equipSlot as EquipSlot]} · {item.rarity}</p>
+                    <p className="text-gray-500 text-xs mt-0.5">
+                      {SLOT_LABELS[item.equipSlot as EquipSlot]} · {item.rarity}{item.isMutated && <span className="text-purple-400"> · Mutated</span>}
+                    </p>
                   </div>
                   <ChevronRight size={16} className="text-gray-600 shrink-0" />
                 </>
@@ -1108,7 +1112,9 @@ function MarketOverlay() {
                 <Icon size={18} className="text-amber-400 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className={`font-bold text-sm leading-tight ${rc.text}`}>{item.name}</p>
-                  <p className={`text-[10px] font-bold uppercase tracking-widest ${rc.text}`}>{item.rarity}</p>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest ${rc.text}`}>
+                    {item.rarity}{item.isMutated && <span className="text-purple-400"> · Mutated</span>}
+                  </p>
                 </div>
                 {isEquipped && (
                   <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-slate-400 bg-slate-800 border border-slate-600 px-1.5 py-0.5 rounded">

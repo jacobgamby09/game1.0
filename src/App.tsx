@@ -7,6 +7,8 @@ import BlacksmithView from './components/BlacksmithView'
 import ApothecaryView from './components/ApothecaryView'
 import TalentTreeView from './components/TalentTreeView'
 import RunSummaryView from './components/RunSummaryView'
+import VoidRiftView from './components/VoidRiftView'
+import BestiaryView from './components/BestiaryView'
 
 const views = {
   battle:      <CombatView />,
@@ -15,6 +17,8 @@ const views = {
   blacksmith:  <BlacksmithView />,
   apothecary:  <ApothecaryView />,
   talents:     <TalentTreeView />,
+  voidRift:    <VoidRiftView />,
+  bestiary:    <BestiaryView />,
 }
 
 export default function App() {

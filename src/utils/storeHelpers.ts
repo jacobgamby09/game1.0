@@ -1,5 +1,5 @@
 import type { Mob, MobTier, MobTrait, Item, MapNode, Rarity } from '../types'
-import { pickItemForFloor } from './itemLibrary'
+import { pickItemForFloor, VARIANTS, applyVariantToItem } from './itemLibrary'
 
 // ─── Bestiary ─────────────────────────────────────────────────────────────────
 
@@ -7,7 +7,7 @@ type MobBase  = Omit<Mob, 'tier' | 'currentHp'>
 type MobEntry = MobBase & { elitePortraitUrl?: string }
 
 const BESTIARY: MobEntry[] = [
-  { name: 'Goblin Rogue', maxHp: 50,  baseDamage: 6, attackSpeed: 0.30, dodgeChance: 0.18, portraitUrl: '/portraits/goblin-rogue.webp', elitePortraitUrl: '/portraits/elite-goblin-warrior.webp' },
+  { name: 'Goblin Rogue', maxHp: 65,  baseDamage: 7, attackSpeed: 0.35, dodgeChance: 0.22, portraitUrl: '/portraits/goblin-rogue.webp', elitePortraitUrl: '/portraits/elite-goblin-warrior.webp' },
   { name: 'Undead Brute', maxHp: 110, baseDamage: 7, attackSpeed: 0.90, portraitUrl: '/portraits/undead-brute.webp', elitePortraitUrl: '/portraits/elite-undead-brute.webp' },
   { name: 'Orc Warrior',  maxHp: 100, baseDamage: 5, attackSpeed: 0.55, portraitUrl: '/portraits/orc-warrior.webp' },
 ]
@@ -32,7 +32,51 @@ const TRAIT_FRENZIED: MobTrait = {
   icon: '💢',
 }
 
-const ELITE_TRAITS = [TRAIT_VAMPIRIC, TRAIT_FRENZIED]
+export const ELITE_TRAITS = [TRAIT_VAMPIRIC, TRAIT_FRENZIED]
+
+// ─── Bestiary Master List ─────────────────────────────────────────────────────
+
+export interface BestiaryEntry {
+  id:               string
+  name:             string
+  maxHp:            number
+  baseDamage:       number
+  attackSpeed:      number
+  dodgeChance?:     number
+  portraitUrl:      string
+  elitePortraitUrl?: string
+  isBoss?:          boolean
+  possibleTraits?:  MobTrait[]
+}
+
+export const BESTIARY_MASTER: BestiaryEntry[] = [
+  {
+    id: 'Goblin Rogue', name: 'Goblin Rogue',
+    maxHp: 65, baseDamage: 7, attackSpeed: 0.35, dodgeChance: 0.22,
+    portraitUrl: '/portraits/goblin-rogue.webp',
+    elitePortraitUrl: '/portraits/elite-goblin-warrior.webp',
+    possibleTraits: ELITE_TRAITS,
+  },
+  {
+    id: 'Undead Brute', name: 'Undead Brute',
+    maxHp: 110, baseDamage: 7, attackSpeed: 0.90,
+    portraitUrl: '/portraits/undead-brute.webp',
+    elitePortraitUrl: '/portraits/elite-undead-brute.webp',
+    possibleTraits: ELITE_TRAITS,
+  },
+  {
+    id: 'Orc Warrior', name: 'Orc Warrior',
+    maxHp: 100, baseDamage: 5, attackSpeed: 0.55,
+    portraitUrl: '/portraits/orc-warrior.webp',
+    possibleTraits: ELITE_TRAITS,
+  },
+  {
+    id: 'The Void Warden', name: 'The Void Warden',
+    maxHp: 1500, baseDamage: 25, attackSpeed: 0.50,
+    portraitUrl: '/portraits/void-warden.webp',
+    isBoss: true,
+  },
+]
 
 // ─── Mob spawning ─────────────────────────────────────────────────────────────
 
@@ -89,23 +133,32 @@ export function spawnMob(floor: number, nodeType: 'mob' | 'elite' | 'boss'): Mob
 
 // ─── Loot helpers ─────────────────────────────────────────────────────────────
 
-function itemPrice(rarity: Rarity): number {
+function itemPrice(rarity: Rarity, valueMult?: number): number {
   const [lo, hi] = rarity === 'common'   ? [ 20,  30]
                  : rarity === 'uncommon' ? [ 45,  65]
                  : rarity === 'rare'     ? [100, 140]
                  : rarity === 'set'      ? [300, 400]
                  :                         [220, 280]
-  return Math.floor(Math.random() * (hi - lo + 1)) + lo
+  const base = Math.floor(Math.random() * (hi - lo + 1)) + lo
+  return Math.round(base * (valueMult ?? 1))
 }
 
-export function generateMarketItems(floor?: number): { item: Item; price: number }[] {
+export function generateMarketItems(floor?: number, voidRiftMutations?: boolean): { item: Item; price: number }[] {
   const result: { item: Item; price: number }[] = []
   const usedNames = new Set<string>()
   let attempts = 0
   while (result.length < 4 && attempts < 50) {
-    const item = pickItemForFloor(floor ?? 1)
+    let item = pickItemForFloor(floor ?? 1)
     if (!usedNames.has(item.name)) {
-      result.push({ item, price: itemPrice(item.rarity) })
+      if (
+        voidRiftMutations &&
+        (item.rarity === 'common' || item.rarity === 'uncommon' || item.rarity === 'rare') &&
+        Math.random() < 0.25
+      ) {
+        const v = VARIANTS[Math.floor(Math.random() * VARIANTS.length)]
+        item = applyVariantToItem(item, v)
+      }
+      result.push({ item, price: itemPrice(item.rarity, item.variant?.valueMult) })
       usedNames.add(item.name)
     }
     attempts++

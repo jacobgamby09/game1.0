@@ -1,12 +1,11 @@
-import type { Item, Rarity } from '../types'
+import type { Item, ItemVariant, Rarity } from '../types'
 import {
   Sword, Hammer, Axe,
   Shield, ShieldHalf, ShieldCheck,
   HardHat, Crown, Eye, Ghost, Skull,
   Shirt, Layers, Footprints, Wind,
-  Award, Heart, Zap, Circle, Gem, Target, Infinity, Droplets,
-  Flame, Snowflake, Sparkles, Coins,
-  GemIcon,
+  Award, Heart, Zap, Gem, Target, Infinity, Droplets,
+  Flame, Snowflake, Coins,
 } from 'lucide-react'
 
 type ItemBase = Omit<Item, 'id'>
@@ -17,7 +16,7 @@ function newItemId(): string {
 
 // ─── Item Library ─────────────────────────────────────────────────────────────
 
-const ITEM_LIBRARY: ItemBase[] = [
+export const ITEM_LIBRARY: ItemBase[] = [
 
   // ── mainHand (weapons) ──────────────────────────────────────────────────────
   { name: 'Rusty Sword', equipSlot: 'mainHand', rarity: 'common', icon: Sword, description: 'A chipped blade found near the entrance.', stats: { damage: 5 } },
@@ -100,6 +99,43 @@ const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Bloodbound Mask', equipSlot: 'head', rarity: 'set', setName: 'bloodbound', icon: Skull, description: 'A bone mask painted with a bloodbound covenant.', stats: { damage: 3, lifesteal: 2 } },
   { name: 'Bloodbound Ring', equipSlot: 'ring1', rarity: 'set', setName: 'bloodbound', icon: Droplets, description: 'A garnet ring that deepens in colour after each kill.', stats: { lifesteal: 3, critChance: 0.03 } },
 ]
+
+// ─── Variant helpers ──────────────────────────────────────────────────────────
+
+export function getMinorHealthPotion(): Item {
+  const base = ITEM_LIBRARY.find(i => i.name === 'Minor Health Potion')!
+  return { ...base, id: newItemId() }
+}
+
+export const VARIANTS: ItemVariant[] = [
+  { name: 'Heavy',       damageMult: 1.25, attackSpeedMult: 0.85 },
+  { name: 'Swift',       attackSpeedMult: 1.15, damageMult: 0.85 },
+  { name: 'Reckless',    critBonus: 0.10 },
+  { name: 'Reinforced',  drBonus: 2, attackSpeedMult: 0.90 },
+  { name: 'Vital',       hpBonus: 20, drBonus: -1 },
+  { name: 'Lightweight', attackSpeedMult: 1.10 },
+  { name: 'Gilded',      valueMult: 2 },
+  { name: 'Dull',        hpBonus: 15, critBonus: -0.05 },
+]
+
+export function applyVariantToItem(item: Item, variant: ItemVariant): Item {
+  const s = { ...item.stats }
+  if (variant.damageMult !== undefined && s.damage !== undefined)
+    s.damage = Math.round(s.damage * variant.damageMult)
+  if (variant.attackSpeedMult !== undefined && s.attackSpeed !== undefined)
+    s.attackSpeed = Math.round(s.attackSpeed * variant.attackSpeedMult * 100) / 100
+  if (variant.name === 'Reckless' && s.hp !== undefined)
+    s.hp = Math.round(s.hp * 0.90)
+  else if (variant.name === 'Lightweight' && s.hp !== undefined)
+    s.hp = Math.round(s.hp * 0.85)
+  else if (variant.hpBonus !== undefined)
+    s.hp = (s.hp ?? 0) + variant.hpBonus
+  if (variant.drBonus !== undefined)
+    s.damageReduction = (s.damageReduction ?? 0) + variant.drBonus
+  if (variant.critBonus !== undefined)
+    s.critChance = Math.round(((s.critChance ?? 0) + variant.critBonus) * 1000) / 1000
+  return { ...item, name: `${variant.name} ${item.name}`, stats: s, variant: { ...variant }, isMutated: true }
+}
 
 // ─── Rarity weight helpers ────────────────────────────────────────────────────
 
