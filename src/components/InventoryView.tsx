@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Crown, Shirt, Layers, Swords, Shield, Award, Gem, Coins, FlaskConical,
 } from 'lucide-react'
-import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SET_BONUSES, SET_BONUS_TEXT } from '../stores/useGameStore'
+import { useGameStore, getEffectiveStats, getItemSellValue, RARITY_COLORS, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SET_BONUSES, SET_BONUS_TEXT, PLAYER_SKILLS } from '../stores/useGameStore'
 import type { Item, EquipSlot, ItemSlot, EquipmentSlotName, EquipmentSlotUpgrades, SlotRarityLevel, SetName, Upgrades, Player } from '../stores/useGameStore'
 import ItemComparisonPanel from './ItemComparisonPanel'
 
@@ -583,6 +583,30 @@ export default function InventoryView() {
           {eff.thorns         > 0 && <p className="text-pink-400 text-sm font-semibold">🔺 {eff.thorns} Thorns</p>}
         </div>
         <ActiveSetBonuses equipment={equipment} />
+
+        {/* Hero Skills */}
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-3">
+          <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">Hero Skills</p>
+          {PLAYER_SKILLS.map(skill => {
+            const Icon = skill.icon
+            return (
+              <div key={skill.id} className="flex items-start gap-3">
+                <div className={`mt-0.5 shrink-0 ${skill.iconColor}`}>
+                  <Icon size={16} />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">{skill.name}</span>
+                    {skill.cooldownSec > 0 && (
+                      <span className="text-[10px] text-gray-500">{skill.cooldownSec}s CD</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-400 leading-snug">{skill.description}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Section 2: Backpack */}

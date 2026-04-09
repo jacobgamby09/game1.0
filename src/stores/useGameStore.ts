@@ -10,7 +10,8 @@ import type {
   Boon,
 } from '../types'
 import { VARIANTS, applyVariantToItem, getMinorHealthPotion, ITEM_LIBRARY } from '../utils/itemLibrary'
-import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES, SET_BONUS_TEXT } from '../data/constants'
+import { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES, SET_BONUS_TEXT, PLAYER_SKILLS } from '../data/constants'
+export type { PlayerSkill } from '../data/constants'
 import { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot } from '../utils/gameHelpers'
 import { spawnMob, generateMarketItems, randomDrop, randomThreeDrops, buildMap } from '../utils/storeHelpers'
 
@@ -27,7 +28,7 @@ export type {
 export type { ItemVariant } from '../types'
 export type { SetName } from '../types'
 export type { SetBonusTier } from '../data/constants'
-export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES, SET_BONUS_TEXT }
+export { TALENT_TREE, RARITY_COLORS, MAX_POTION_STACK, MAX_POTION_SLOTS, SLOT_TIER_COLORS, SLOT_TIER_BONUSES, SLOT_UPGRADE_COSTS, BOONS, SET_BONUSES, SET_BONUS_TEXT, PLAYER_SKILLS }
 export { getItemSellValue, computeAvailablePoints, computePlayerLevel, getEffectiveStats, getTargetEquipSlot }
 
 // ─── Balancing functions ──────────────────────────────────────────────────────

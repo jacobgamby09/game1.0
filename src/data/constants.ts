@@ -145,3 +145,41 @@ export const SET_BONUS_TEXT: Record<string, Record<2 | 4, string>> = {
   assassin:   { 2: '+10% Dodge', 4: '+20% Crit & +20% Atk Spd' },
   bloodbound: { 2: '+3 Lifesteal', 4: '+10 Base Dmg & +15% Heal' },
 }
+
+// ─── Player skills (character sheet & combat tooltips) ────────────────────────
+
+export interface PlayerSkill {
+  id:          string
+  name:        string
+  icon:        React.ElementType
+  iconColor:   string
+  cooldownSec: number
+  description: string
+}
+
+export const PLAYER_SKILLS: PlayerSkill[] = [
+  {
+    id:          'auto_attack',
+    name:        'Auto Attack',
+    icon:        Swords,
+    iconColor:   'text-amber-400',
+    cooldownSec: 0,
+    description: 'Passive. Deals your full Damage stat to the enemy at your Attack Speed rate. Has a chance to Crit for 2× damage.',
+  },
+  {
+    id:          'power_strike',
+    name:        'Power Strike',
+    icon:        Axe,
+    iconColor:   'text-red-400',
+    cooldownSec: 5.6,
+    description: 'Active. Instantly deals 3× your base damage to the enemy. Resets your attack progress. Cooldown: 5.6s.',
+  },
+  {
+    id:          'second_wind',
+    name:        'Second Wind',
+    icon:        HeartPulse,
+    iconColor:   'text-teal-400',
+    cooldownSec: 15,
+    description: 'Active. Heals 15% of your Max HP and grants Iron Will (+10 Damage Reduction) for 3 seconds. Cooldown: 15s.',
+  },
+]

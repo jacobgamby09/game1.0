@@ -469,6 +469,7 @@ function ActiveSkills({ powerStrikeCooldown, onPowerStrike, secondWindCooldown, 
         <button
           onClick={onPowerStrike}
           disabled={!isCombatActive || !bashReady}
+          title="Power Strike — Deals 3× your base damage. Cooldown: 5.6s."
           className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg text-xs font-bold transition-colors
             ${bashReady && isCombatActive
               ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
@@ -483,6 +484,7 @@ function ActiveSkills({ powerStrikeCooldown, onPowerStrike, secondWindCooldown, 
         <button
           onClick={onSecondWind}
           disabled={!isCombatActive || !swReady}
+          title="Second Wind — Heals 15% Max HP and grants +10 DR for 3s. Cooldown: 15s."
           className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg text-xs font-bold transition-colors
             ${swReady && isCombatActive
               ? 'border border-teal-500 bg-teal-500/10 text-teal-300 hover:bg-teal-500/20'
