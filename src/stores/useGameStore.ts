@@ -63,7 +63,7 @@ export function calculateLevelFromXp(totalXp: number): { level: number; currentX
 // ─── Internal constants ───────────────────────────────────────────────────────
 
 const TICK_MS = 50
-const POWER_STRIKE_COOLDOWN_MS = 5600
+const POWER_STRIKE_COOLDOWN_MS = 7000
 const XP_PER_CHEST = 25
 
 const SUFFIXES: { name: string; stat: keyof Item['stats']; bonus: Record<Rarity, number> }[] = [
@@ -118,8 +118,7 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
     * (state.currentMob?.tier === 'elite' ? 2 : 1)
     * (hasMidas ? (state.buildings.apothecary >= 5 ? 4 : 3) : 1)
   const { scrapDrop, dustDrop } = calcMetaDrops(state.currentMob?.tier ?? 'normal')
-  const scholarMult = state.activeBoon === 'scholar' ? 1.5 : 1
-  const pendingXp    = Math.round(calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss') * scholarMult)
+  const pendingXp    = Math.round(calculateMonsterXp(state.currentFloor, state.currentMob?.tier === 'boss'))
   const levelBefore  = calculateLevelFromXp(state.playerXp).level
   const levelAfter   = calculateLevelFromXp(state.playerXp + pendingXp).level
   return {
@@ -418,6 +417,9 @@ export const useGameStore = create<GameStore>()(
       if (boonId === 'thick-blood') {
         const newMaxHp = state.player.maxHp + 30
         patch.player = { ...state.player, maxHp: newMaxHp, currentHp: newMaxHp }
+      }
+      if (boonId === 'scholar') {
+        patch.playerXp = state.playerXp + totalTalentXpCost(2)
       }
       return patch
     }),

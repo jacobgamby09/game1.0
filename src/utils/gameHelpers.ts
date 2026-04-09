@@ -134,7 +134,7 @@ export function getEffectiveStats(
     attackSpeed:                     (player.attackSpeed + flatSpd + gearSpd) * (1 + pctSpd),
     damageReduction:      flatDr + gearDr,
     critChance:           flatCrit + gearCrit,
-    dodgeChance:          flatDodge + gearDodge,
+    dodgeChance:          Math.min(flatDodge + gearDodge, 0.25),
     lifesteal:            Math.floor(flatLifesteal + gearLifesteal),
     thorns:               Math.floor(gearThorns),
     postCombatHealPct:    flatHealPct,

@@ -24,55 +24,55 @@ export const ITEM_LIBRARY: ItemBase[] = [
   { name: 'Serrated Blade', equipSlot: 'mainHand', rarity: 'uncommon', icon: Sword, description: 'Jagged teeth catch armour and rend flesh.', stats: { damage: 4, critChance: 0.04 } },
   { name: 'Heavy Mace', equipSlot: 'mainHand', rarity: 'uncommon', icon: Hammer, description: 'Slow and brutal — each strike has real weight.', stats: { damage: 7, attackSpeed: -0.15 } },
   { name: "Assassin's Kris", equipSlot: 'mainHand', rarity: 'rare', icon: Sword, description: 'Wavy-bladed ritual dagger that finds every gap in armour.', stats: { damage: 3, attackSpeed: 0.25, critChance: 0.07 } },
-  { name: 'Blood-soaked Cleaver', equipSlot: 'mainHand', rarity: 'rare', icon: Axe, description: 'The blade has tasted so much blood it practically heals itself.', stats: { damage: 6, lifesteal: 3 } },
-  { name: 'Void Blade', equipSlot: 'mainHand', rarity: 'epic', icon: Sword, description: 'A cursed edge that hungers for more.', stats: { damage: 9, lifesteal: 4, critChance: 0.05 } },
+  { name: 'Blood-soaked Cleaver', equipSlot: 'mainHand', rarity: 'rare', icon: Axe, description: 'The blade has tasted so much blood it practically heals itself.', stats: { damage: 6, lifesteal: 2 } },
+  { name: 'Void Blade', equipSlot: 'mainHand', rarity: 'epic', icon: Sword, description: 'A cursed edge that hungers for more.', stats: { damage: 9, lifesteal: 2, critChance: 0.05 } },
   { name: 'Thunderous Warhammer', equipSlot: 'mainHand', rarity: 'epic', icon: Hammer, description: 'Hits like a siege weapon — and swings about as fast.', stats: { damage: 15, attackSpeed: -0.3 } },
 
   // ── offHand (shields) ───────────────────────────────────────────────────────
   { name: 'Wooden Buckler', equipSlot: 'offHand', rarity: 'common', icon: Shield, description: 'A simple disc of hardwood; better than a bare arm.', stats: { hp: 10 } },
   { name: 'Cracked Kite Shield', equipSlot: 'offHand', rarity: 'common', icon: Shield, description: 'Reliable protection despite the fault lines running through it.', stats: { hp: 8, damageReduction: 1 } },
-  { name: "Duelist's Parry Dagger", equipSlot: 'offHand', rarity: 'uncommon', icon: Sword, description: 'A nimble blade held reversed — perfect for deflecting blows.', stats: { dodgeChance: 0.05 } },
+  { name: "Duelist's Parry Dagger", equipSlot: 'offHand', rarity: 'uncommon', icon: Sword, description: 'A nimble blade held reversed — perfect for deflecting blows.', stats: { dodgeChance: 0.03 } },
   { name: 'Iron Bulwark', equipSlot: 'offHand', rarity: 'uncommon', icon: ShieldHalf, description: 'Iron-banded wood, heavier than it looks.', stats: { hp: 10, damageReduction: 2 } },
   { name: 'Tower Shield of the Bear', equipSlot: 'offHand', rarity: 'rare', icon: Shield, description: 'Massive. Every hit that lands feels like it hit a wall.', stats: { hp: 18, damageReduction: 2 } },
-  { name: 'Bladed Gauntlet', equipSlot: 'offHand', rarity: 'rare', icon: Shield, description: 'Armoured fist lined with forward-facing spikes.', stats: { damage: 3, dodgeChance: 0.05 } },
+  { name: 'Bladed Gauntlet', equipSlot: 'offHand', rarity: 'rare', icon: Shield, description: 'Armoured fist lined with forward-facing spikes.', stats: { damage: 3, dodgeChance: 0.03 } },
   { name: 'Aegis of the Ancients', equipSlot: 'offHand', rarity: 'epic', icon: ShieldCheck, description: 'An artifact buckler older than the kingdom, still unbroken.', stats: { hp: 27, damageReduction: 3 } },
 
   // ── head ────────────────────────────────────────────────────────────────────
   { name: 'Padded Cap', equipSlot: 'head', rarity: 'common', icon: HardHat, description: 'Cloth-padded leather cap; not glamorous but functional.', stats: { hp: 8 } },
-  { name: "Hunter's Cowl", equipSlot: 'head', rarity: 'uncommon', icon: Eye, description: 'Light hood favoured by rangers for moving unseen.', stats: { dodgeChance: 0.06 } },
-  { name: 'Shadow Hood', equipSlot: 'head', rarity: 'rare', icon: Ghost, description: 'Silk-dark hood that blurs your outline and steadies your hand.', stats: { critChance: 0.04, dodgeChance: 0.06 } },
-  { name: 'Crown of the Warlord', equipSlot: 'head', rarity: 'epic', icon: Crown, description: 'A conqueror\'s crown — wearing it makes enemies hesitate.', stats: { damage: 4, lifesteal: 3 } },
+  { name: "Hunter's Cowl", equipSlot: 'head', rarity: 'uncommon', icon: Eye, description: 'Light hood favoured by rangers for moving unseen.', stats: { dodgeChance: 0.03 } },
+  { name: 'Shadow Hood', equipSlot: 'head', rarity: 'rare', icon: Ghost, description: 'Silk-dark hood that blurs your outline and steadies your hand.', stats: { critChance: 0.04, dodgeChance: 0.03 } },
+  { name: 'Crown of the Warlord', equipSlot: 'head', rarity: 'epic', icon: Crown, description: 'A conqueror\'s crown — wearing it makes enemies hesitate.', stats: { damage: 4, lifesteal: 1 } },
 
   // ── chest ───────────────────────────────────────────────────────────────────
   { name: 'Leather Tunic', equipSlot: 'chest', rarity: 'common', icon: Shirt, description: 'Tough hide stitched into a serviceable coat.', stats: { hp: 15 } },
   { name: 'Chainmail', equipSlot: 'chest', rarity: 'uncommon', icon: Layers, description: 'Overlapping rings of tempered steel; diffuses the worst of it.', stats: { damageReduction: 3 } },
-  { name: 'Shadow Garb', equipSlot: 'chest', rarity: 'rare', icon: Ghost, description: 'Slim dark armour that lets you slip through gaps in an attack.', stats: { critChance: 0.03, dodgeChance: 0.05 } },
+  { name: 'Shadow Garb', equipSlot: 'chest', rarity: 'rare', icon: Ghost, description: 'Slim dark armour that lets you slip through gaps in an attack.', stats: { critChance: 0.03, dodgeChance: 0.03 } },
   { name: 'Plate of Vitality', equipSlot: 'chest', rarity: 'rare', icon: Shirt, description: 'Thick iron plates riveted over a chain base.', stats: { hp: 20, damageReduction: 2 } },
   { name: 'Dragonscale Chestplate', equipSlot: 'chest', rarity: 'epic', icon: Shirt, description: 'Scales pried from a slain wyvern — still radiating warmth.', stats: { hp: 15, damageReduction: 3, critChance: 0.03 } },
 
   // ── legs ────────────────────────────────────────────────────────────────────
   { name: 'Leather Greaves', equipSlot: 'legs', rarity: 'common', icon: Footprints, description: 'Worn leather guards that still do the job.', stats: { hp: 8 } },
-  { name: 'Windrunner Boots', equipSlot: 'legs', rarity: 'uncommon', icon: Wind, description: 'Swift-soled boots enchanted for evasion.', stats: { dodgeChance: 0.05 } },
+  { name: 'Windrunner Boots', equipSlot: 'legs', rarity: 'uncommon', icon: Wind, description: 'Swift-soled boots enchanted for evasion.', stats: { dodgeChance: 0.03 } },
   { name: 'Ironclad Legguards', equipSlot: 'legs', rarity: 'rare', icon: Layers, description: 'Solid iron plates welded to a chain base.', stats: { hp: 12, damageReduction: 2 } },
-  { name: 'Phantom Treads', equipSlot: 'legs', rarity: 'epic', icon: Ghost, description: 'You move before your mind finishes thinking.', stats: { dodgeChance: 0.08, critChance: 0.03 } },
+  { name: 'Phantom Treads', equipSlot: 'legs', rarity: 'epic', icon: Ghost, description: 'You move before your mind finishes thinking.', stats: { dodgeChance: 0.04, critChance: 0.03 } },
 
   // ── amulet ──────────────────────────────────────────────────────────────────
   { name: 'Brass Pendant', equipSlot: 'amulet', rarity: 'common', icon: Award, description: 'A plain brass pendant with a faint martial enchantment.', stats: { damage: 2 } },
-  { name: 'Amulet of Vigor', equipSlot: 'amulet', rarity: 'uncommon', icon: Heart, description: 'Pulses gently against the skin, lending vitality.', stats: { lifesteal: 3 } },
-  { name: 'Amulet of the Swift', equipSlot: 'amulet', rarity: 'rare', icon: Zap, description: 'Cool jade carved into a serpent devouring its tail.', stats: { attackSpeed: 0.2, dodgeChance: 0.06 } },
-  { name: 'Eye of the Void', equipSlot: 'amulet', rarity: 'epic', icon: Eye, description: 'A gem that stares back — and teaches you to strike first.', stats: { critChance: 0.06, lifesteal: 3, damage: 3 } },
+  { name: 'Amulet of Vigor', equipSlot: 'amulet', rarity: 'uncommon', icon: Heart, description: 'Pulses gently against the skin, lending vitality.', stats: { lifesteal: 1 } },
+  { name: 'Amulet of the Swift', equipSlot: 'amulet', rarity: 'rare', icon: Zap, description: 'Cool jade carved into a serpent devouring its tail.', stats: { attackSpeed: 0.2, dodgeChance: 0.03 } },
+  { name: 'Eye of the Void', equipSlot: 'amulet', rarity: 'epic', icon: Eye, description: 'A gem that stares back — and teaches you to strike first.', stats: { critChance: 0.06, lifesteal: 1, damage: 3 } },
 
   // ── ring1 ───────────────────────────────────────────────────────────────────
   { name: 'Copper Band', equipSlot: 'ring1', rarity: 'common', icon: Gem, description: 'A plain ring of cold copper.', stats: { attackSpeed: 0.10 } },
   { name: 'Band of Fortitude', equipSlot: 'ring1', rarity: 'uncommon', icon: Gem, description: 'Thick-set ring engraved with a shield rune.', stats: { damage: 3, critChance: 0.03 } },
   { name: 'Ring of the Predator', equipSlot: 'ring1', rarity: 'rare', icon: Target, description: 'Set with a fang — your strikes feel predatory.', stats: { critChance: 0.05, damage: 2 } },
-  { name: 'Ouroboros Ring', equipSlot: 'ring1', rarity: 'epic', icon: Infinity, description: 'A serpent swallowing its tail — you take, and it gives back.', stats: { lifesteal: 3, critChance: 0.03, attackSpeed: 0.1 } },
+  { name: 'Ouroboros Ring', equipSlot: 'ring1', rarity: 'epic', icon: Infinity, description: 'A serpent swallowing its tail — you take, and it gives back.', stats: { lifesteal: 1, critChance: 0.03, attackSpeed: 0.1 } },
 
   // ── ring2 ───────────────────────────────────────────────────────────────────
   { name: 'Silver Ring', equipSlot: 'ring2', rarity: 'common', description: 'A light silver ring that makes your hands feel swifter.', stats: { attackSpeed: 0.05 } },
   { name: 'Iron Signet', equipSlot: 'ring2', rarity: 'uncommon', description: 'A military signet stamped with a crossed-swords crest.', stats: { damage: 2, attackSpeed: 0.10 } },
   { name: 'Serpent Ring', equipSlot: 'ring2', rarity: 'rare', description: 'A coiled serpent whose fangs bite the wearer\'s foe.', stats: { critChance: 0.04, damage: 3 } },
-  { name: 'Void Ring', equipSlot: 'ring2', rarity: 'epic', description: 'Stares back at you when you look into its gem.', stats: { lifesteal: 3, critChance: 0.04, damage: 3 } },
+  { name: 'Void Ring', equipSlot: 'ring2', rarity: 'epic', description: 'Stares back at you when you look into its gem.', stats: { lifesteal: 1, critChance: 0.04, damage: 3 } },
 
   // ── potions ─────────────────────────────────────────────────────────────────
   { name: 'Minor Health Potion', equipSlot: 'potion', rarity: 'common', icon: Heart, description: 'Heals 30% of your Max HP instantly.', stats: {}, consumableEffect: { type: 'heal', value: 0.3 } },

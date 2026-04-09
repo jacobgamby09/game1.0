@@ -469,7 +469,7 @@ function ActiveSkills({ powerStrikeCooldown, onPowerStrike, secondWindCooldown, 
         <button
           onClick={onPowerStrike}
           disabled={!isCombatActive || !bashReady}
-          title="Power Strike — Deals 3× your base damage. Cooldown: 5.6s."
+          title="Power Strike — Deals 3× your base damage. Cooldown: 7s."
           className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg text-xs font-bold transition-colors
             ${bashReady && isCombatActive
               ? 'border border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'

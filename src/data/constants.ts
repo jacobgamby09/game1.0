@@ -92,7 +92,7 @@ export const BOONS: Boon[] = [
   {
     id: 'scholar',
     name: 'Scholar of the Void',
-    description: '+50% XP gained from all sources.',
+    description: 'Start the run with 2 extra Talent Points.',
     icon: '📖',
     iconUrl: '/boons/scholar.webp',
   },
@@ -171,8 +171,8 @@ export const PLAYER_SKILLS: PlayerSkill[] = [
     name:        'Power Strike',
     icon:        Axe,
     iconColor:   'text-red-400',
-    cooldownSec: 5.6,
-    description: 'Active. Instantly deals 3× your base damage to the enemy. Resets your attack progress. Cooldown: 5.6s.',
+    cooldownSec: 7,
+    description: 'Active. Instantly deals 3× your base damage to the enemy. Resets your attack progress. Cooldown: 7s.',
   },
   {
     id:          'second_wind',
