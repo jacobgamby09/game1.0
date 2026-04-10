@@ -168,6 +168,17 @@ export default function BestiaryView() {
                 />
               </div>
 
+              {/* Immunity notice for elites and bosses */}
+              {(selected.isElite || selected.isBoss) && (
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-[10px] font-semibold uppercase tracking-widest
+                  ${selected.isBoss
+                    ? 'border-amber-700/50 bg-amber-950/30 text-amber-400'
+                    : 'border-red-700/50 bg-red-950/30 text-red-400'
+                  }`}>
+                  🛡 Immune to Power Strike interrupt &amp; Freeze
+                </div>
+              )}
+
               {/* Traits */}
               {selected.traits && selected.traits.length > 0 && (
                 <div className="flex flex-col gap-2">

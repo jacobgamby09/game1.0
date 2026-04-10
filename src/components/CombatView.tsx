@@ -833,6 +833,16 @@ function CombatArena() {
             )}
           </div>
 
+          {(currentMob.tier === 'elite' || currentMob.tier === 'boss') && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-[10px] font-semibold uppercase tracking-widest
+              ${currentMob.tier === 'boss'
+                ? 'border-amber-700/50 bg-amber-950/30 text-amber-400'
+                : 'border-red-700/50 bg-red-950/30 text-red-400'
+              }`}>
+              🛡 Immune to Power Strike interrupt &amp; Freeze
+            </div>
+          )}
+
           <button
             onClick={engageCombat}
             className="px-10 py-4 rounded-xl border-2 border-amber-500 bg-amber-500/20

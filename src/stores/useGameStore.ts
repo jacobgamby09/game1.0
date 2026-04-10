@@ -39,7 +39,7 @@ export const calculateTalentCost = (currentTotalPoints: number): number =>
 
 // XP awarded for killing a monster. monsterLevel = current floor number.
 export const calculateMonsterXp = (monsterLevel: number, isBoss: boolean): number =>
-  isBoss ? 500 : 75 + monsterLevel * 15
+  isBoss ? 150 : 15 + monsterLevel * 3
 
 // Total XP spent to have k talent points (sum of calculateTalentCost(0..k-1))
 function totalTalentXpCost(k: number): number {
@@ -64,7 +64,7 @@ export function calculateLevelFromXp(totalXp: number): { level: number; currentX
 
 const TICK_MS = 50
 const POWER_STRIKE_COOLDOWN_MS = 7000
-const XP_PER_CHEST = 25
+const XP_PER_CHEST = 8
 
 const SUFFIXES: { name: string; stat: keyof Item['stats']; bonus: Record<Rarity, number> }[] = [
   { name: 'of the Bear',  stat: 'hp',              bonus: { common: 8,    uncommon: 16,   rare: 24,   epic: 0, set: 0 } },
@@ -112,9 +112,9 @@ function mobDeathPatch(state: { act1Map: MapNode[][]; currentMapNodeId: string |
       n.id === state.currentMapNodeId ? { ...n, isCompleted: true } : n
     )
   )
-  const goldBase = Math.floor(Math.random() * 6) + 5  // 5–10
+  const goldBase = Math.floor(Math.random() * 4) + 3  // 3–6
   const hasMidas = state.activeBuffs.some(b => b.type === 'midas')
-  const goldAmount = (goldBase + state.currentFloor * 2)
+  const goldAmount = (goldBase + state.currentFloor)
     * (state.currentMob?.tier === 'elite' ? 2 : 1)
     * (hasMidas ? (state.buildings.apothecary >= 5 ? 4 : 3) : 1)
   const { scrapDrop, dustDrop } = calcMetaDrops(state.currentMob?.tier ?? 'normal')
@@ -504,6 +504,9 @@ export const useGameStore = create<GameStore>()(
       const mob = { ...state.currentMob }
       mob.currentHp = Math.max(0, mob.currentHp - dmg)
 
+      const isImmuneToInterrupt = mob.tier === 'elite' || mob.tier === 'boss'
+      const newMobAttackProgress = isImmuneToInterrupt ? state.mobAttackProgress : 0
+
       const damageIndicators = [
         ...state.damageIndicators,
         { id: now + Math.random(), value: dmg, isCrit: false, isSkill: true, target: 'enemy' as const, createdAt: now },
@@ -512,7 +515,7 @@ export const useGameStore = create<GameStore>()(
       if (mob.currentHp <= 0) {
         return {
           damageIndicators,
-          mobAttackProgress: 0,
+          mobAttackProgress: newMobAttackProgress,
           powerStrikeCooldown: POWER_STRIKE_COOLDOWN_MS,
           ...triggerEnemyDeath(state, mob),
           currentRunStats: { ...state.currentRunStats, monstersKilled: state.currentRunStats.monstersKilled + 1 },
@@ -520,12 +523,17 @@ export const useGameStore = create<GameStore>()(
         }
       }
 
+      const eventPatch = isImmuneToInterrupt
+        ? { combatEventKey: state.combatEventKey + 1, combatEventText: `${mob.name} resisted the interrupt!` }
+        : {}
+
       return {
         currentMob: mob,
-        mobAttackProgress: 0,
+        mobAttackProgress: newMobAttackProgress,
         powerStrikeCooldown: POWER_STRIKE_COOLDOWN_MS,
         isCombatActive: true,
         damageIndicators,
+        ...eventPatch,
       }
     }),
 
@@ -704,6 +712,16 @@ export const useGameStore = create<GameStore>()(
         return {
           potionBelt: newBelt,
           player: { ...state.player, currentHp: Math.min(eff.maxHp, state.player.currentHp + healAmt) },
+        }
+      }
+
+      // Elites and Bosses are immune to freeze
+      const mobTier = state.currentMob?.tier
+      if (effect.type === 'freezeEnemy' && (mobTier === 'elite' || mobTier === 'boss')) {
+        return {
+          potionBelt: newBelt,
+          combatEventKey: state.combatEventKey + 1,
+          combatEventText: `${state.currentMob?.name} is immune to Freeze!`,
         }
       }
 
