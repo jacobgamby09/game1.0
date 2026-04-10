@@ -480,19 +480,14 @@ function ActiveSkills({ powerStrikeCooldown, onPowerStrike, secondWindCooldown, 
           <span>{bashReady ? 'Power Strike' : `${(powerStrikeCooldown / 1000).toFixed(1)}s`}</span>
         </button>
 
-        {/* Slot 2 — Second Wind */}
+        {/* Slot 2 — Second Wind (locked until Act 2) */}
         <button
-          onClick={onSecondWind}
-          disabled={!isCombatActive || !swReady}
-          title="Second Wind — Heals 15% Max HP and grants +10 DR for 3s. Cooldown: 15s."
-          className={`flex flex-col items-center justify-center gap-1 h-16 rounded-lg text-xs font-bold transition-colors
-            ${swReady && isCombatActive
-              ? 'border border-teal-500 bg-teal-500/10 text-teal-300 hover:bg-teal-500/20'
-              : 'border border-gray-700 bg-gray-800 text-gray-500 opacity-60 cursor-not-allowed'
-            }`}
+          disabled
+          title="Second Wind — Unlocks in Act 2."
+          className="flex flex-col items-center justify-center gap-1 h-16 rounded-lg text-xs font-bold transition-colors border border-gray-800 bg-gray-900 text-gray-600 opacity-50 cursor-not-allowed"
         >
           <Heart size={18} />
-          <span>{swReady ? 'Second Wind' : `${(secondWindCooldown / 1000).toFixed(1)}s`}</span>
+          <span className="text-[10px]">🔒 Act 2</span>
         </button>
 
         {/* Slot 3 — Potion 1 */}
