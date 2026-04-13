@@ -39,7 +39,7 @@ export const calculateTalentCost = (currentTotalPoints: number): number =>
 
 // XP awarded for killing a monster. monsterLevel = current floor number.
 export const calculateMonsterXp = (monsterLevel: number, isBoss: boolean): number =>
-  isBoss ? 150 : 15 + monsterLevel * 3
+  isBoss ? 180 : 18 + monsterLevel * 4
 
 // Total XP spent to have k talent points (sum of calculateTalentCost(0..k-1))
 function totalTalentXpCost(k: number): number {
@@ -64,7 +64,7 @@ export function calculateLevelFromXp(totalXp: number): { level: number; currentX
 
 const TICK_MS = 50
 const POWER_STRIKE_COOLDOWN_MS = 7000
-const XP_PER_CHEST = 8
+const XP_PER_CHEST = 10
 
 const SUFFIXES: { name: string; stat: keyof Item['stats']; bonus: Record<Rarity, number> }[] = [
   { name: 'of the Bear',  stat: 'hp',              bonus: { common: 8,    uncommon: 16,   rare: 24,   epic: 0, set: 0 } },
